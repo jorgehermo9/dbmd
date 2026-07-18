@@ -16,6 +16,10 @@ Read [docs/architecture/overview.md](docs/architecture/overview.md) before chang
 
 ## Agent skills
 
+### Rust coding
+
+Any task that writes, modifies, reviews, or refactors Rust code must invoke and follow [`rust-skills`](.agents/skills/rust-skills/SKILL.md). Read the rule files relevant to the task before editing, prioritize critical and high-impact guidance, and run formatting, Clippy, and the applicable test suite afterward.
+
 ### Issue tracker
 
 Issues and PRDs are tracked in GitHub Issues for `jorgehermo9/dbmd`. External PRs are not a triage surface. See `docs/agents/issue-tracker.md`.
