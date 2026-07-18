@@ -1,8 +1,18 @@
 # Agent guidance
 
-Read [CONTEXT.md](CONTEXT.md) before naming product or domain concepts. Start with [docs/README.md](docs/README.md) for product and architecture documentation. Architecture decisions under `docs/adr/` override older exploratory prose when they overlap.
+Read [CONTEXT.md](CONTEXT.md) before naming product or domain concepts. Start with [docs/README.md](docs/README.md) for the complete documentation map.
 
-The implementation is currently a Phase 1 bootstrap. Do not describe placeholder rendering as live database introspection.
+Phase 1 is complete and Phase 2, the first useful SQLite render, is the active milestone. Do not describe placeholder rendering as live database introspection.
+
+## Project documentation
+
+### Product
+
+Read [docs/product/overview.md](docs/product/overview.md), [docs/product/concepts.md](docs/product/concepts.md), and [docs/product/roadmap.md](docs/product/roadmap.md) before planning product work. For observable command or feature behavior, read the owning specification under `docs/product/features/`.
+
+### Architecture
+
+Read [docs/architecture/overview.md](docs/architecture/overview.md) before changing implementation boundaries, then read the relevant focused document under `docs/architecture/`. Product specifications own user-visible behavior; architecture documents own implementation design. Accepted decisions under `docs/adr/` override older exploratory prose when they overlap.
 
 ## Agent skills
 
