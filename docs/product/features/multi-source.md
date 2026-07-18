@@ -1,8 +1,8 @@
 # Multiple Sources
 
-Status: named SQLite source selection and deterministic ordering implemented;
-cross-backend sources, CLI selection overrides, source-aware presentation, and
-directory layout remain.
+Status: configured SQLite selection, deterministic ordering, source-aware
+single-file presentation, and directory nesting implemented; cross-backend
+sources and CLI selection overrides remain.
 
 ## Configuration
 
@@ -47,9 +47,8 @@ sources = ["analytics", "app"]
 
 ## Single-file layout
 
-The current renderer preserves resolved source order but concatenates one
-complete embedded document per source. The source-section rules below are the
-required replacement before multi-source output is considered complete.
+The renderer emits one document with explicit source sections when multiple
+sources are selected. It preserves resolved source order.
 
 With `source_layout = "auto"`:
 

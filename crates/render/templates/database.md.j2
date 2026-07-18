@@ -1,65 +1,47 @@
-# Database: `{{ name }}`
+{% if context.sources | length == 1 -%}
+# Database: {{ context.sources[0].name }}
 
-## Tables
+{% else -%}
+# Database Context
 
-{% for table_doc in table_docs -%}
-{{ table_doc }}
+{% endif -%}
+{% for source in context.sources -%}
+{% if source.nested -%}
+## Source: `{{ source.id }}`{% if source.has_display_name %} — {{ source.name }}{% endif %}
 
-{% endfor -%}
+Backend: `{{ source.backend }}`
 
-{% if views -%}
-## Views
+{% endif -%}
+{% if source.tables -%}
+{{ source.section_heading }} Tables
 
-{% for view in views -%}
-### `{{ view.namespace }}.{{ view.name }}`
-
-| Column | Type | Nullable |
-|---|---|---|
-{% for col in view.columns -%}
-| `{{ col.name }}` | `{{ col.data_type }}` | {% if col.nullable is none %}unknown{% elif col.nullable %}yes{% else %}no{% endif %} |
-{% endfor %}
-
-```sql
-{{ view.definition }}
-```
+{% for table in source.tables -%}
+{% include "table.md.j2" %}
 
 {% endfor -%}
 {% endif -%}
+{% if source.views -%}
+{{ source.section_heading }} Views
 
-{% if triggers -%}
-## Triggers
-
-{% for trigger in triggers -%}
-### `{{ trigger.namespace }}.{{ trigger.name }}`
-
-**{{ trigger.timing }} {{ trigger.event.event }}** on `{{ trigger.target_namespace }}.{{ trigger.target }}`{% if trigger.event.columns is defined and trigger.event.columns %} of `{{ trigger.event.columns | join(", ") }}`{% endif %}.
-
-{% if trigger.when_expression -%}
-When: `{{ trigger.when_expression }}`
-
-{% endif -%}
-```sql
-{{ trigger.definition }}
-```
+{% for view in source.views -%}
+{% include "view.md.j2" %}
 
 {% endfor -%}
 {% endif -%}
+{% if source.triggers -%}
+{{ source.section_heading }} Triggers
 
-{% if functions -%}
-## Functions
-
-{% for function in functions -%}
-### `{{ function.namespace }}.{{ function.name }}{{ function.signature }}`
-
-{% if function.comment -%}
-{{ function.comment }}
-{% endif -%}
-
-{% if function.definition -%}
-```sql
-{{ function.definition }}
-```
-{% endif -%}
+{% for trigger in source.triggers -%}
+{% include "trigger.md.j2" %}
 
 {% endfor -%}
 {% endif -%}
+{% if source.functions -%}
+{{ source.section_heading }} Functions
+
+{% for function in source.functions -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% endfor -%}

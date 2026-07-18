@@ -6,6 +6,7 @@ use std::{
 
 use dbmd_core::SourceId;
 use dbmd_introspect::sqlite::{SqliteSource, SqliteSourceError};
+use dbmd_render::{OutputLayout, RenderOptions, SourceLayout};
 use serde::Deserialize;
 use thiserror::Error;
 
@@ -37,12 +38,40 @@ struct AttachmentConfig {
 struct OutputConfig {
     path: String,
     sources: Option<Vec<String>>,
+    profile: Option<String>,
+    layout: Option<LayoutConfig>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
+struct LayoutConfig {
+    #[serde(default)]
+    kind: LayoutKind,
+    #[serde(default)]
+    source_layout: SourceLayoutConfig,
+}
+
+#[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+enum LayoutKind {
+    #[default]
+    SingleFile,
+    Directory,
+}
+
+#[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+enum SourceLayoutConfig {
+    #[default]
+    Auto,
+    Nested,
 }
 
 #[derive(Debug)]
 pub(super) struct RenderPlan {
     pub sources: Vec<SqliteSource>,
     pub output_path: PathBuf,
+    pub render_options: RenderOptions,
 }
 
 pub(super) fn resolve(
@@ -55,7 +84,10 @@ pub(super) fn resolve(
         return Err(ConfigError::NoSources);
     }
 
-    let base = config_path.parent().unwrap_or_else(|| Path::new("."));
+    let base = config_path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
     let selection = config
         .output
         .sources
@@ -94,10 +126,27 @@ pub(super) fn resolve(
         sources.push(source);
     }
 
+    if config.output.profile.as_deref().unwrap_or("agent") != "agent" {
+        return Err(ConfigError::UnsupportedProfile(
+            config.output.profile.unwrap_or_default(),
+        ));
+    }
+    let layout = config.output.layout.unwrap_or_default();
+    let render_options = RenderOptions {
+        layout: match layout.kind {
+            LayoutKind::SingleFile => OutputLayout::SingleFile,
+            LayoutKind::Directory => OutputLayout::Directory,
+        },
+        source_layout: match layout.source_layout {
+            SourceLayoutConfig::Auto => SourceLayout::Auto,
+            SourceLayoutConfig::Nested => SourceLayout::Nested,
+        },
+    };
     let output_path = resolve_path(base, &expand_environment(&config.output.path, environment)?);
     Ok(RenderPlan {
         sources,
         output_path,
+        render_options,
     })
 }
 
@@ -168,6 +217,8 @@ pub enum ConfigError {
     InvalidEnvironmentName(String),
     #[error("required environment variable `{0}` is not set")]
     MissingEnvironment(String),
+    #[error("unsupported output profile `{0}`")]
+    UnsupportedProfile(String),
 }
 
 #[cfg(test)]

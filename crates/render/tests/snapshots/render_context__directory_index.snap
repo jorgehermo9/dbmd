@@ -1,0 +1,10 @@
+---
+source: crates/render/tests/render_context.rs
+expression: "String::from_utf8(files[&\"index.md\".parse().expect(\"path should be valid\")].clone()).expect(\"rendered Markdown should be UTF-8\")"
+---
+# Database Context
+
+## Sources
+
+- [`Analytics`](analytics/index.md) — `analytics` (`sqlite`)
+- [`app`](app/index.md) — `app` (`sqlite`)

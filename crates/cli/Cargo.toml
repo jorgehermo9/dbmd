@@ -9,3 +9,7 @@ repository.workspace = true
 anyhow.workspace = true
 clap.workspace = true
 dbmd-app = { path = "../app" }
+
+[dev-dependencies]
+rusqlite.workspace = true
+tempfile.workspace = true

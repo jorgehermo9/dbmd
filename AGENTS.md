@@ -2,7 +2,10 @@
 
 Read [CONTEXT.md](CONTEXT.md) before naming product or domain concepts. Start with [docs/README.md](docs/README.md) for the complete documentation map.
 
-Phases 1 and 2 are complete. Phase 3, beginning with `init` and then `verify`, is the active milestone. SQLite configured single-file rendering is live; one-off rendering, directory layouts, custom templates, and non-SQLite backends are not.
+Phases 1 and 2 are complete. Phase 3 is active: base `init`, `verify`,
+multi-source presentation, and single-file/directory SQLite rendering are live;
+one-off rendering, custom templates, CI initialization, and non-SQLite backends
+remain.
 
 ## Project documentation
 

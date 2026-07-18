@@ -28,27 +28,28 @@ impl TestProject {
     }
 
     pub fn request(&self) -> RenderRequest {
-        RenderRequest::with_environment(
-            self.directory.path().join("dbmd.toml"),
-            BTreeMap::from([
-                (
-                    "DBMD_TEST_DATABASE".to_string(),
-                    self.directory
-                        .path()
-                        .join("app.db")
-                        .to_string_lossy()
-                        .into_owned(),
-                ),
-                (
-                    "DBMD_TEST_ANALYTICS_DATABASE".to_string(),
-                    self.directory
-                        .path()
-                        .join("analytics.db")
-                        .to_string_lossy()
-                        .into_owned(),
-                ),
-            ]),
-        )
+        RenderRequest::with_environment(self.directory.path().join("dbmd.toml"), self.environment())
+    }
+
+    pub fn environment(&self) -> BTreeMap<String, String> {
+        BTreeMap::from([
+            (
+                "DBMD_TEST_DATABASE".to_string(),
+                self.directory
+                    .path()
+                    .join("app.db")
+                    .to_string_lossy()
+                    .into_owned(),
+            ),
+            (
+                "DBMD_TEST_ANALYTICS_DATABASE".to_string(),
+                self.directory
+                    .path()
+                    .join("analytics.db")
+                    .to_string_lossy()
+                    .into_owned(),
+            ),
+        ])
     }
 
     pub fn output_path(&self) -> std::path::PathBuf {

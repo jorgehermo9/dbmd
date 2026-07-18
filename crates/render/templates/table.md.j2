@@ -1,96 +1,47 @@
-## `{{ qualified_name }}`
+{{ table.heading }} {{ table.qualified_name }}
 
-{% if comment -%}
-{{ comment }}
+{% if table.comment -%}
+{{ table.comment }}
 
 {% endif -%}
-### Columns
+{{ table.detail_heading }} Columns
 
 | Column | Type | Nullable | Default | Notes |
 |---|---|---|---|---|
-{% for col in columns -%}
-| `{{ col.name }}` | `{{ col.data_type }}` | {% if col.nullable is none %}unknown{% elif col.nullable %}yes{% else %}no{% endif %} | {{ ("`" ~ col.default ~ "`") if col.default else "-" }} | {{ col.comment or "" }}{% if col.backend.backend == "clickhouse" and col.backend.codec %} codec: `{{ col.backend.codec }}`{% elif col.backend.backend == "sqlite" %}{% if col.backend.kind != "normal" %} {{ col.backend.kind }}{% endif %}{% if col.backend.collation != "BINARY" %} collate `{{ col.backend.collation }}`{% endif %}{% if col.backend.generated_expression %} as `{{ col.backend.generated_expression }}`{% endif %}{% endif %} |
-{% endfor -%}
+{% for column in table.columns -%}
+| {{ column.name }} | {{ column.data_type }} | {{ column.nullable }} | {{ column.default }} | {{ column.notes }} |
+{% endfor %}
 
-{% if constraints -%}
-### Constraints
+{% if table.constraints -%}
+{{ table.detail_heading }} Constraints
 
 | Name | Kind | Columns | Details |
 |---|---|---|---|
-{% for constraint in constraints -%}
-| {{ ("`" ~ constraint.name ~ "`") if constraint.name else "-" }} | `{{ constraint.kind }}` | `{{ constraint.columns | join(", ") }}` | {% if constraint.references %}references `{{ constraint.references.namespace }}.{{ constraint.references.table }}({{ constraint.references.columns | join(", ") }})`; update `{{ constraint.references.on_update }}`, delete `{{ constraint.references.on_delete }}`{% if constraint.references.match_name %}; match `{{ constraint.references.match_name }}`{% endif %}; {% if constraint.references.deferrability.deferrable %}deferrable initially `{{ constraint.references.deferrability.initially }}`{% else %}not deferrable{% endif %}{% elif constraint.expression %}`{{ constraint.expression }}`{% else %}-{% endif %}{% if constraint.backend.backend == "sqlite" and constraint.backend.conflict_resolution %}; conflict `{{ constraint.backend.conflict_resolution }}`{% endif %}{% if constraint.backend.backend == "sqlite" and constraint.backend.auto_increment %}; autoincrement{% endif %} |
-{% endfor -%}
+{% for constraint in table.constraints -%}
+| {{ constraint.name }} | {{ constraint.kind }} | {{ constraint.columns }} | {{ constraint.details }} |
+{% endfor %}
 
 {% endif -%}
-{% if indexes -%}
-### Indexes
+{% if table.indexes -%}
+{{ table.detail_heading }} Indexes
 
 | Name | Terms | Unique | Origin | Predicate |
 |---|---|---|---|---|
-{% for index in indexes -%}
-| `{{ index.name }}` | {% for term in index.terms %}{% if term.target.column is defined %}`{{ term.target.column }}`{% elif term.target.expression is defined %}`{{ term.target.expression }}`{% else %}`rowid`{% endif %} {{ term.order }} collate `{{ term.collation }}`{% if not loop.last %}, {% endif %}{% endfor %} | {{ "yes" if index.unique else "no" }} | `{{ index.backend.origin if index.backend.backend == "sqlite" else index.backend.backend }}` | {{ ("`" ~ index.predicate ~ "`") if index.predicate else "-" }} |
+{% for index in table.indexes -%}
+| {{ index.name }} | {{ index.terms }} | {{ index.unique }} | {{ index.origin }} | {{ index.predicate }} |
+{% endfor %}
+
+{% endif -%}
+{{ table.detail_heading }} {{ table.backend.title }}
+
+{% for fact in table.backend.facts -%}
+**{{ fact.label }}:** {{ fact.value }}
+
 {% endfor -%}
+{% for notice in table.backend.notices -%}
+{{ notice }}
 
-{% endif -%}
-{% if backend.backend == "clickhouse" -%}
-### Engine
-
-`{{ backend.engine_clause }}`
-
-{% if backend.order_by -%}
-**Order by:** `{{ backend.order_by | join(", ") }}`
-
-{% endif -%}
-{% if backend.primary_key -%}
-**Primary key:** `{{ backend.primary_key | join(", ") }}`
-
-{% endif -%}
-{% if backend.partition_by -%}
-**Partition by:** `{{ backend.partition_by }}`
-
-{% endif -%}
-{% if backend.sample_by -%}
-**Sample by:** `{{ backend.sample_by }}`
-
-{% endif -%}
-{% if backend.ttl -%}
-**TTL:** `{{ backend.ttl }}`
-
-{% endif -%}
-{% if backend.settings -%}
-**Settings**
-
-{% for key, value in backend.settings | items -%}
-- `{{ key }} = {{ value }}`
 {% endfor -%}
-{% endif -%}
-{% elif backend.backend == "postgres" -%}
-### PostgreSQL
-
-Kind: `{{ backend.table_kind }}`
-{% if backend.partition -%}
-
-Partition: `{{ backend.partition }}`
-{% endif -%}
-{% if backend.row_level_security -%}
-
-Row-level security enabled.
-{% endif -%}
-{% elif backend.backend == "sqlite" -%}
-### SQLite
-
-Kind: `{{ backend.kind.kind }}`{% if backend.kind.module is defined %} using `{{ backend.kind.module }}`{% if backend.kind.arguments %} with arguments `{{ backend.kind.arguments | join(", ") }}`{% endif %}{% elif backend.kind.virtual_table is defined and backend.kind.virtual_table %} owned by `{{ backend.kind.virtual_table }}`{% endif %}
-
-{% if backend.strict -%}
-Strict table.
-{% endif -%}
-{% if backend.without_rowid -%}
-Without rowid.
-{% endif -%}
-{% if backend.definition -%}
-
-```sql
-{{ backend.definition }}
-```
-{% endif -%}
+{% if table.backend.definition -%}
+{{ table.backend.definition }}
 {% endif -%}

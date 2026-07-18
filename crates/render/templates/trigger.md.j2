@@ -1,0 +1,9 @@
+{{ trigger.heading }} {{ trigger.qualified_name }}
+
+**{{ trigger.event }}** on {{ trigger.target }}.
+
+{% if trigger.when_expression -%}
+When: {{ trigger.when_expression }}
+
+{% endif -%}
+{{ trigger.definition }}

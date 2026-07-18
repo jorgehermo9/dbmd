@@ -1,0 +1,70 @@
+---
+source: crates/render/tests/render_context.rs
+expression: context
+---
+version: 1
+sources:
+  - id: analytics
+    name: "`Analytics`"
+    has_display_name: true
+    backend: sqlite
+    nested: true
+    section_heading: "###"
+    object_heading: "####"
+    detail_heading: "#####"
+    tables:
+      - heading: "####"
+        detail_heading: "#####"
+        qualified_name: "`main.events`"
+        file_name: main.events.md
+        comment: ~
+        columns:
+          - name: "`id`"
+            data_type: "`INTEGER`"
+            nullable: "no"
+            default: "-"
+            notes: ""
+        constraints: []
+        indexes: []
+        backend:
+          title: SQLite
+          facts:
+            - label: Kind
+              value: "`ordinary`"
+          notices: []
+          definition: "```sql\nCREATE TABLE events (id INTEGER)\n```"
+    views: []
+    triggers: []
+    functions: []
+  - id: app
+    name: "`app`"
+    has_display_name: false
+    backend: sqlite
+    nested: true
+    section_heading: "###"
+    object_heading: "####"
+    detail_heading: "#####"
+    tables:
+      - heading: "####"
+        detail_heading: "#####"
+        qualified_name: "`main.users`"
+        file_name: main.users.md
+        comment: ~
+        columns:
+          - name: "`id`"
+            data_type: "`INTEGER`"
+            nullable: "no"
+            default: "-"
+            notes: ""
+        constraints: []
+        indexes: []
+        backend:
+          title: SQLite
+          facts:
+            - label: Kind
+              value: "`ordinary`"
+          notices: []
+          definition: "```sql\nCREATE TABLE users (id INTEGER)\n```"
+    views: []
+    triggers: []
+    functions: []

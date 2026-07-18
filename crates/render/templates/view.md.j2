@@ -1,0 +1,9 @@
+{{ view.heading }} {{ view.qualified_name }}
+
+| Column | Type | Nullable |
+|---|---|---|
+{% for column in view.columns -%}
+| {{ column.name }} | {{ column.data_type }} | {{ column.nullable }} |
+{% endfor %}
+
+{{ view.definition }}

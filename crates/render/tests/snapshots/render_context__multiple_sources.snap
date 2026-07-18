@@ -1,0 +1,52 @@
+---
+source: crates/render/tests/render_context.rs
+expression: markdown
+---
+# Database Context
+
+## Source: `analytics` — `Analytics`
+
+Backend: `sqlite`
+
+### Tables
+
+#### `main.events`
+
+##### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `INTEGER` | no | - |  |
+
+
+##### SQLite
+
+**Kind:** `ordinary`
+
+```sql
+CREATE TABLE events (id INTEGER)
+```
+
+
+## Source: `app`
+
+Backend: `sqlite`
+
+### Tables
+
+#### `main.users`
+
+##### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `INTEGER` | no | - |  |
+
+
+##### SQLite
+
+**Kind:** `ordinary`
+
+```sql
+CREATE TABLE users (id INTEGER)
+```

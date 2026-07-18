@@ -1,26 +1,24 @@
 # Rendering Architecture
 
-Status: deterministic embedded SQLite rendering and atomic single-file output
-implemented; dedicated render context, profiles, and directory artifacts remain
-target architecture.
+Status: explicit render context, deterministic embedded SQLite rendering,
+layout-neutral artifacts, and atomic single-file/directory output implemented;
+custom template resolution and selectable profiles remain.
 
 ## Current implementation
 
-`dbmd-render` embeds `database.md.j2` and `table.md.j2`, configures MiniJinja with
-strict undefined behavior, serializes one core `SourceSnapshot`, and builds
-fallible per-table presentation values such as `qualified_name` and the
-ClickHouse `engine_clause`. The application resolves configured SQLite sources,
-renders them in deterministic order, and atomically replaces one output file.
+`dbmd-render` builds a versioned `RenderContext` from a complete
+`DatabaseContext`, configures MiniJinja with strict undefined behavior, and
+returns a `RenderedArtifact`. Presentation values, Markdown-safe cells, dynamic
+code fences, qualified names, and backend summaries are computed before
+templates execute. The application atomically replaces one output file or a
+complete generated tree.
 
-This is an appropriate bootstrap but has intentional limitations:
+Current limitations:
 
-- Internal serde shape leaks into templates.
-- Each render call accepts one source snapshot rather than a complete database
-  context; the application currently concatenates selected source documents.
-- Only one implicit profile and single-file layout exist.
-- Core and introspection enforce collection ordering, but there is not yet a
-  versioned presentation-facing render context.
-- Directory artifacts do not exist.
+- Only the embedded `agent` profile is selectable.
+- Custom template roots are not loaded yet.
+- The context is explicitly versioned but not yet promised as a stable external
+  compatibility contract.
 
 ## Target pipeline
 
@@ -114,20 +112,21 @@ Validation runs before database connection when the required template set can be
 
 ## Output writer
 
-Rendering and writing are separate. The single-file path is implemented; the
-remaining entries describe the complete target:
+Rendering and writing are separate:
 
 - Stdout receives only a resolved single-file artifact.
 - Single-file output uses a temporary sibling file and rename.
-- Directory output uses a temporary sibling tree and replacement.
-- Verify compares a temporary artifact through the same render path and never calls the canonical writer.
+- Directory output uses a complete temporary sibling tree, replacement, and
+  rollback on a failed final rename.
+- Verify compares the in-memory artifact through the same render path and never
+  calls the canonical writer.
 
 Path validation and destructive ownership rules live in command/output orchestration, not inside templates.
 
 ## Compatibility milestones
 
-1. Stabilize default SQLite output with internal templates.
-2. Introduce an explicit render-context type and snapshots.
-3. Document a context version before promoting custom templates as compatible product surface.
-4. Add directory object entrypoints.
+1. Stabilize default SQLite output with internal templates. Complete.
+2. Introduce an explicit render-context type and snapshots. Complete.
+3. Document a context version before promoting custom templates as compatible product surface. Context version `1` exists; compatibility policy remains.
+4. Add directory object entrypoints. Complete for tables, views, triggers, and functions.
 5. Add additional profiles only when their differences can be maintained with golden tests.

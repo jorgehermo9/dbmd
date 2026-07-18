@@ -1,6 +1,9 @@
 # Configuration and CLI Architecture
 
-Status: the configured SQLite single-file subset is implemented. CLI overrides, profiles/layouts, custom templates, and non-SQLite source fields remain target architecture.
+Status: configured SQLite sources, profile/layout parsing, base initialization,
+single-file/directory rendering, and exact verification are implemented. CLI
+output overrides, custom templates, and non-SQLite source fields remain target
+architecture.
 
 ## Canonical config
 

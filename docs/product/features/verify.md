@@ -1,6 +1,6 @@
 # Verify
 
-Status: accepted and planned for the canonical-lifecycle milestone.
+Status: implemented for single-file and directory canonical artifacts.
 
 ## Purpose
 

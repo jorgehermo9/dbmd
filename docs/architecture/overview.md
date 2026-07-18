@@ -45,7 +45,9 @@ Current implementation:
 - `app` resolves named SQLite sources and environment-backed paths, coordinates rendering, and atomically replaces one Markdown file.
 - `cli` maps `render --config` to the application operation and presents its report.
 
-`init`, `verify`, directory layouts, custom templates, and additional backends remain. The current renderer still needs a versioned dedicated presentation context before custom templates become a compatibility promise.
+Base `init`, exact `verify`, multi-source presentation, directory layouts, and a
+versioned dedicated presentation context are implemented. Custom templates,
+one-off overrides, CI initialization, and additional backends remain.
 
 ## Target workspace
 

@@ -8,6 +8,8 @@ use support::TestProject;
 const CONFIG: &str = include_str!("fixtures/sqlite/full_schema/dbmd.toml");
 const SCHEMA: &str = include_str!("fixtures/sqlite/full_schema/schema.sql");
 const ANALYTICS_SCHEMA: &str = include_str!("fixtures/sqlite/full_schema/analytics.sql");
+const MULTI_SOURCE_CONFIG: &str = include_str!("fixtures/sqlite/multi_source/dbmd.toml");
+const DIRECTORY_CONFIG: &str = include_str!("fixtures/sqlite/directory/dbmd.toml");
 
 #[test]
 fn renders_the_complete_sqlite_schema_surface_deterministically() {
@@ -58,4 +60,40 @@ fn preserves_the_previous_artifact_when_introspection_fails() {
         fs::read_to_string(project.output_path()).expect("old artifact should remain"),
         "previous artifact\n"
     );
+}
+
+#[test]
+fn renders_selected_sources_in_configured_order_with_source_sections() {
+    let project = TestProject::from_fixture(MULTI_SOURCE_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+
+    let report = render(project.request()).expect("multiple SQLite sources should render");
+    let markdown = fs::read_to_string(project.output_path()).expect("artifact should exist");
+
+    assert_eq!(
+        report
+            .sources
+            .iter()
+            .map(dbmd_core::SourceId::as_str)
+            .collect::<Vec<_>>(),
+        ["analytics", "app"]
+    );
+    insta::assert_snapshot!("multiple_sqlite_sources", markdown);
+}
+
+#[test]
+fn atomically_renders_a_directory_artifact_without_stale_files() {
+    let project = TestProject::from_fixture(DIRECTORY_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let output = project.path().join("database");
+    fs::create_dir_all(output.join("tables")).expect("old artifact tree should be created");
+    fs::write(output.join("tables/stale.md"), "stale\n").expect("stale artifact should be created");
+
+    let report = render(project.request()).expect("directory artifact should render");
+    let index = fs::read_to_string(output.join("index.md")).expect("index should exist");
+    let table = fs::read_to_string(output.join("tables/main.accounts.md"))
+        .expect("table artifact should exist");
+
+    assert_eq!(report.output_path, output);
+    assert!(!report.output_path.join("tables/stale.md").exists());
+    insta::assert_snapshot!("directory_index", index);
+    insta::assert_snapshot!("directory_table", table);
 }

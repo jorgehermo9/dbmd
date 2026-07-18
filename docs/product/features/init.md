@@ -1,6 +1,7 @@
 # Initialize
 
-Status: accepted and planned.
+Status: base SQLite initialization implemented; template, CI, and agent-snippet
+initialization remain planned.
 
 ## Purpose
 

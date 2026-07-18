@@ -1,6 +1,8 @@
 # Testing Strategy
 
-Status: core, complete SQLite introspection fixtures, deterministic application golden rendering, atomic-failure preservation, and thin CLI help tests are implemented. Verify and directory-output suites remain future work.
+Status: core, complete SQLite introspection fixtures, render-context and layout
+snapshots, deterministic application goldens, atomic file/tree replacement,
+exact verification, and compiled CLI lifecycle tests are implemented.
 
 ## Goals
 

@@ -1,6 +1,7 @@
 # Render
 
-Status: configured SQLite single-file rendering implemented; one-off flags, stdout, directory layouts, custom profiles, and non-SQLite backends remain.
+Status: configured SQLite single-file and directory rendering implemented;
+one-off flags, stdout, custom profiles, and non-SQLite backends remain.
 
 ## Purpose
 
@@ -57,7 +58,7 @@ The [multiple-sources specification](multi-source.md#selection) owns source iden
 
 ## Output destinations
 
-Status: configured single-file output implemented; stdout and directory output
+Status: configured single-file and directory output implemented; stdout
 planned.
 
 `--stdout` is valid only when the resolved layout produces one file. It does not change the selected layout.

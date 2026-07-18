@@ -1,0 +1,9 @@
+{{ function.heading }} {{ function.qualified_name }}
+
+{% if function.comment -%}
+{{ function.comment }}
+
+{% endif -%}
+{% if function.definition -%}
+{{ function.definition }}
+{% endif -%}

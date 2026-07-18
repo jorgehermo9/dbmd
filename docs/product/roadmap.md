@@ -60,7 +60,8 @@ Delivered beyond the tracer bullet: configured attached SQLite namespaces,
 complete persistent SQLite DDL/schema-surface coverage, first-class views and
 triggers, virtual/shadow tables, and application-level golden Markdown tests.
 
-Multi-source output formatting and directory layout remain MVP product requirements.
+Multi-source presentation and directory layout were completed in the active
+canonical-lifecycle milestone.
 
 Exit criteria:
 
@@ -73,13 +74,20 @@ Exit criteria:
 
 Status: current.
 
-- `dbmd init` for safe-to-commit configuration.
-- `dbmd verify` with byte-for-byte comparison.
-- Compact changed/added/deleted summaries.
-- `dbmd verify --diff` with a complete unified diff.
-- Multi-source rendering and deterministic selection order.
-- Directory object layout for large schemas.
+- `dbmd init` for safe-to-commit configuration. Implemented for base SQLite
+  initialization; template and CI initialization remain.
+- `dbmd verify` with byte-for-byte and file-set comparison. Implemented.
+- Compact changed/added/deleted summaries. Implemented.
+- `dbmd verify --diff` with a complete unified diff. Implemented.
+- Multi-source rendering and deterministic selection order. Implemented for
+  configured sources; CLI selection overrides remain.
+- Directory object layout for large schemas. Implemented with atomic
+  whole-tree replacement.
 - GitHub Action and generated GitHub Actions workflow.
+
+The render module now owns an explicit versioned presentation context and a
+layout-neutral in-memory artifact. Custom template loading, profile selection,
+one-off output overrides, and CI generation remain before Phase 3 is complete.
 
 Generated Markdown remains free of timestamps, fingerprints, versions, and generated-by headers. Verification compares fresh output rather than trusting embedded metadata.
 

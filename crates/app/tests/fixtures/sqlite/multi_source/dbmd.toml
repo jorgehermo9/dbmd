@@ -1,0 +1,13 @@
+[sources.app]
+display_name = "Application"
+backend = "sqlite"
+path = "${DBMD_TEST_DATABASE}"
+
+[sources.analytics]
+display_name = "Analytics"
+backend = "sqlite"
+path = "${DBMD_TEST_ANALYTICS_DATABASE}"
+
+[output]
+path = "DATABASE.md"
+sources = ["analytics", "app"]
