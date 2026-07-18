@@ -1,10 +1,5 @@
 # Templates and Profiles
 
-Status: embedded `agent`, arbitrary custom profile selection, complete custom
-roots, directory entrypoints, preflight validation, CLI precedence, and
-`init-templates` are implemented. Additional embedded profiles and a stable
-external context-compatibility promise remain.
-
 ## Purpose
 
 Templates control presentation while normalized snapshots and render contexts carry product semantics. Teams can choose built-in profiles or own a complete custom template set.
@@ -22,10 +17,10 @@ The selected template set is validated before dbmd opens a database connection.
 `output.profile` selects an arbitrary profile directory. Built-in product profiles are expected to include:
 
 - `agent` — default balance of compactness and explicit semantics.
-- `agent-compact` — more aggressive context-window optimization after the default stabilizes.
+- `agent-compact` — more aggressive context-window optimization.
 - `human` — optional human-oriented formatting without changing snapshot semantics.
 
-Only `agent` is required for the first useful release.
+The embedded template set provides the `agent` profile.
 
 ## Custom template roots
 
@@ -55,7 +50,7 @@ dbmd does not fall back from a missing custom entrypoint to an embedded template
 - `PROFILE/directory/table.md.j2`, `view.md.j2`, `trigger.md.j2`, and
   `function.md.j2`, plus `enum.md.j2`.
 
-The current loader requires the complete set before connection, independent of
+The loader requires the complete set before connection, independent of
 the selected layout. `dbmd init-templates` creates exactly this tree.
 
 Builtin partial paths are internal implementation details. Custom sets own any partials they reference.
@@ -71,13 +66,9 @@ Builtin partial paths are internal implementation details. Custom sets own any p
 ## Render-context compatibility
 
 Custom templates receive the dedicated, versioned render context rather than
-core model structs. The compatibility policy is still pre-release and may
-change until a stable external contract is declared.
+core model structs. Context versioning identifies shape but does not constitute
+a stable external compatibility guarantee.
 
-An `explain` or diagnostic mode should make the resolved template root, profile, layout, entrypoints, and context version visible. A future context-dump mode may support template authors if it can avoid exposing sensitive data.
-
-## Open decisions
-
-- When to declare the render context stable enough for compatibility guarantees.
-- Exact directory entrypoints for enums, extensions, and source indexes.
-- Whether a safe machine-readable example context should be emitted for template development.
+`explain` exposes the resolved template root, profile, layout, and required
+entrypoints without exposing expanded environment values. A machine-readable
+example context is outside this contract.

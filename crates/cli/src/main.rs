@@ -3,8 +3,9 @@ use std::{io::Write, path::PathBuf, process::ExitCode};
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
 use dbmd_app::{
-    ArtifactChangeKind, InitCiRequest, InitRequest, InitTemplatesRequest, RenderOutput,
-    RenderRequest, VerifyRequest,
+    ArtifactChangeKind, DiagnosticStage, DiagnosticStatus, DoctorRequest, ExplainDestination,
+    ExplainRequest, InitAgentsRequest, InitCiRequest, InitRequest, InitTemplatesRequest,
+    RenderOutput, RenderRequest, TemplateSource, VerifyRequest,
 };
 
 #[derive(Debug, Parser)]
@@ -63,6 +64,36 @@ enum Command {
         #[arg(long)]
         diff: bool,
     },
+    /// Show local configuration resolution without connecting to a database.
+    Explain {
+        /// Project configuration path.
+        #[arg(long, default_value = "dbmd.toml")]
+        config: PathBuf,
+        /// Source ID to explain; repeat to replace configured selection in flag order.
+        #[arg(long = "source")]
+        sources: Vec<String>,
+        /// Replace the configured output path.
+        #[arg(long, conflicts_with = "stdout")]
+        output: Option<PathBuf>,
+        /// Explain a single-file stdout destination.
+        #[arg(long, conflicts_with = "output")]
+        stdout: bool,
+        /// Complete custom template root containing the selected profile.
+        #[arg(long)]
+        template_root: Option<PathBuf>,
+    },
+    /// Diagnose whether dbmd can operate successfully in this project.
+    Doctor {
+        /// Project configuration path.
+        #[arg(long, default_value = "dbmd.toml")]
+        config: PathBuf,
+        /// Check every configured source, including sources outside canonical output selection.
+        #[arg(long)]
+        all_sources: bool,
+        /// Connect and run full introspection checks for selected sources.
+        #[arg(long)]
+        connect: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -75,6 +106,15 @@ enum InitCommand {
         /// Explicitly replace an existing workflow.
         #[arg(long)]
         force: bool,
+    },
+    /// Print agent guidance or safely install it in an explicit file.
+    Agents {
+        /// Project configuration path.
+        #[arg(long, default_value = "dbmd.toml")]
+        config: PathBuf,
+        /// Instruction file to create or update; omit to print the snippet.
+        #[arg(long)]
+        file: Option<PathBuf>,
     },
 }
 
@@ -101,6 +141,27 @@ fn run(cli: Cli) -> Result<ExitCode> {
         } => {
             let report = dbmd_app::init_ci(InitCiRequest::new(path).with_overwrite(force))?;
             println!("Created {}", report.workflow_path.display());
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Init {
+            command: Some(InitCommand::Agents { config, file }),
+            ..
+        } => {
+            let request = match file {
+                Some(path) => InitAgentsRequest::new(config).with_file(path),
+                None => InitAgentsRequest::new(config),
+            };
+            let report = dbmd_app::init_agents(request)?;
+            if let Some(path) = report.written_path {
+                let action = if report.changed {
+                    "Updated"
+                } else {
+                    "Unchanged"
+                };
+                println!("{action} {}", path.display());
+            } else {
+                print!("{}", report.instructions);
+            }
             Ok(ExitCode::SUCCESS)
         }
         Command::Init {
@@ -196,6 +257,144 @@ fn run(cli: Cli) -> Result<ExitCode> {
                 eprintln!("\n{diff}");
             }
             Ok(ExitCode::FAILURE)
+        }
+        Command::Explain {
+            config,
+            sources,
+            output,
+            stdout,
+            template_root,
+        } => {
+            let request = ExplainRequest::new(config);
+            let request = if sources.is_empty() {
+                request
+            } else {
+                request.with_sources(sources)
+            };
+            let request = match output {
+                Some(path) => request.with_output_path(path),
+                None => request,
+            };
+            let request = if stdout { request.to_stdout() } else { request };
+            let request = match template_root {
+                Some(root) => request.with_template_root(root),
+                None => request,
+            };
+            print_explain(&dbmd_app::explain(request)?);
+            Ok(ExitCode::SUCCESS)
+        }
+        Command::Doctor {
+            config,
+            all_sources,
+            connect,
+        } => {
+            let request = DoctorRequest::new(config);
+            let request = if all_sources {
+                request.with_all_sources()
+            } else {
+                request
+            };
+            let request = if connect {
+                request.with_connections()
+            } else {
+                request
+            };
+            let report = dbmd_app::doctor(request);
+            print_doctor(&report);
+            Ok(if report.is_ready() {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            })
+        }
+    }
+}
+
+fn print_explain(report: &dbmd_app::ExplainReport) {
+    println!("Config: {}", report.config_path.display());
+    println!("Sources:");
+    for (index, source) in report.sources.iter().enumerate() {
+        let backend = source.backend_name();
+        println!("  {}. {} ({backend})", index + 1, source.id);
+    }
+    println!("Output:");
+    println!(
+        "  Canonical: {}",
+        report.canonical_output_display_path.display()
+    );
+    match &report.destination {
+        ExplainDestination::Filesystem { display_path } => {
+            println!("  Effective: {}", display_path.display());
+        }
+        ExplainDestination::Stdout => println!("  Effective: stdout"),
+    }
+    println!(
+        "  Override: {}",
+        if report.output_overridden {
+            "yes"
+        } else {
+            "no"
+        }
+    );
+    println!("Layout: {}", report.layout_name());
+    println!(
+        "Directory variant: {}",
+        if report.directory_variant.is_some() {
+            "objects"
+        } else {
+            "n/a"
+        }
+    );
+    println!("Source layout: {}", report.source_layout_name());
+    println!("Profile: {}", report.profile);
+    match &report.template_source {
+        TemplateSource::Embedded => println!("Templates: embedded"),
+        TemplateSource::Custom { display_root } => {
+            println!("Templates: {}", display_root.display());
+        }
+    }
+    println!("Template entrypoints:");
+    for path in &report.required_template_entrypoints {
+        println!("  - {}", path.display());
+    }
+    match &report.planned_display_files {
+        Some(files) if files.is_empty() => println!("Planned files: stdout"),
+        Some(files) => {
+            println!("Planned files:");
+            for path in files {
+                println!("  - {}", path.display());
+            }
+        }
+        None => println!("Planned files: requires introspection"),
+    }
+    println!(
+        "Environment: {}",
+        if report.required_environment.is_empty() {
+            "none".to_string()
+        } else {
+            report.required_environment.join(", ")
+        }
+    );
+}
+
+fn print_doctor(report: &dbmd_app::DoctorReport) {
+    for diagnostic in &report.diagnostics {
+        let status = match diagnostic.status {
+            DiagnosticStatus::Passed => "pass",
+            DiagnosticStatus::Failed => "fail",
+            DiagnosticStatus::Skipped => "skip",
+        };
+        let stage = match diagnostic.stage {
+            DiagnosticStage::Configuration => "configuration",
+            DiagnosticStage::Environment => "environment",
+            DiagnosticStage::Output => "output",
+            DiagnosticStage::Templates => "templates",
+            DiagnosticStage::Connection => "connection",
+        };
+        if let Some(source) = &diagnostic.source {
+            println!("[{status}] {stage} ({source}): {}", diagnostic.message);
+        } else {
+            println!("[{status}] {stage}: {}", diagnostic.message);
         }
     }
 }

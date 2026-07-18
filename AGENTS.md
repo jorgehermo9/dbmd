@@ -2,20 +2,24 @@
 
 Read [CONTEXT.md](CONTEXT.md) before naming product or domain concepts. Start with [docs/README.md](docs/README.md) for the complete documentation map.
 
-Phases 1 and 2 are complete. Phase 3 is active: base `init`, `verify`,
-multi-source presentation, and single-file/directory SQLite rendering are live;
-one-off rendering, custom templates, CI initialization, and non-SQLite backends
-remain.
-
 ## Project documentation
 
 ### Product
 
-Read [docs/product/overview.md](docs/product/overview.md), [docs/product/concepts.md](docs/product/concepts.md), and [docs/product/roadmap.md](docs/product/roadmap.md) before planning product work. For observable command or feature behavior, read the owning specification under `docs/product/features/`.
+Read [docs/product/overview.md](docs/product/overview.md) and [docs/product/concepts.md](docs/product/concepts.md) before planning product work. For observable command or feature behavior, read the owning specification under `docs/product/features/`.
 
 ### Architecture
 
 Read [docs/architecture/overview.md](docs/architecture/overview.md) before changing implementation boundaries, then read the relevant focused document under `docs/architecture/`. Product specifications own user-visible behavior; architecture documents own implementation design. Accepted decisions under `docs/adr/` override older exploratory prose when they overlap.
+
+### Planning scratchpads
+
+Do not put temporal plans, implementation phases, progress ledgers, session
+notes, or next-step lists in persistent product, architecture, agent, or skill
+documentation. Use `docs/plan/<planning-session-slug>/` as a temporary
+scratchpad when a planning session needs files. Remove that directory when the
+plan is implemented, abandoned, or otherwise no longer needed. Persistent docs
+describe durable product contracts, architecture, and accepted decisions only.
 
 ## Agent skills
 

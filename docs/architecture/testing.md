@@ -1,10 +1,5 @@
 # Testing Strategy
 
-Status: core, complete SQLite introspection fixtures, PostgreSQL container
-fixtures, render-context and layout snapshots, deterministic application
-goldens, atomic file/tree replacement, exact verification, and compiled CLI
-lifecycle tests are implemented.
-
 ## Goals
 
 Tests must prove semantic fidelity, deterministic output, safe filesystem behavior, and actionable command failures. Happy-path struct construction alone is insufficient for a database-introspection product.
@@ -50,7 +45,8 @@ Mock catalog rows may isolate normalization edge cases, but they do not replace 
 
 ### Render-context tests
 
-Snapshot the stable context separately from Markdown once the seam exists. This distinguishes semantic/model regressions from presentation changes.
+Snapshot the stable context separately from Markdown. This distinguishes
+semantic/model regressions from presentation changes.
 
 ### Golden Markdown tests
 
@@ -77,7 +73,10 @@ dbmd.toml + SQLite .sql fixture
   → deterministic DATABASE.md
 ```
 
-The comprehensive Phase 2 fixture covers tables, columns, primary and foreign keys, indexes, views, generated columns, strict tables, and `WITHOUT ROWID`. Focused cases cover config resolution, environment expansion, source selection, failure preservation, and atomic replacement.
+The comprehensive SQLite application fixture covers tables, columns, primary
+and foreign keys, indexes, views, generated columns, strict tables, and
+`WITHOUT ROWID`. Focused cases cover config resolution, environment expansion,
+source selection, failure preservation, and atomic replacement.
 
 ### Filesystem tests
 
@@ -99,6 +98,9 @@ Exercise the compiled binary for:
 - Stdout versus file output.
 - Compact verify summaries and complete diff mode.
 - Credential redaction.
+- Credential-free explain output and render-override precedence.
+- Doctor's local default, explicit connection mode, all-source scope, and exit status.
+- Agent-instruction preview and explicit safe file update.
 
 CLI tests remain deliberately few. Domain, introspection, rendering, configuration, and filesystem behavior belong to their owning crate rather than being retested exhaustively through the binary.
 
@@ -126,7 +128,7 @@ Shared helpers stay local to the owning crate until genuine cross-crate duplicat
 
 Use Insta for structural and Markdown snapshots. Commit `.snap` files, review changes intentionally with `cargo insta review`, and run CI with snapshot updates disabled. Prefer ordinary assertions when a value is small enough to understand more clearly without a snapshot.
 
-## First SQLite fixture matrix
+## SQLite fixture matrix
 
 At minimum, create databases covering:
 
@@ -171,5 +173,5 @@ cargo test -p dbmd-app --features postgres-tests --test postgres
 
 The shared lifecycle implementation lives in `crates/test-support`; fixture SQL,
 assertions, and snapshots remain in the crate whose public seam they test.
-Current catalog coverage is documented beside the adapter in
+Catalog coverage is documented beside the adapter in
 `crates/introspect/src/postgres/README.md`.

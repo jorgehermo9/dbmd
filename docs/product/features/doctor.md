@@ -1,7 +1,5 @@
 # Doctor
 
-Status: accepted, planned after the core render and verify lifecycle.
-
 ## Purpose
 
 `dbmd doctor` answers: can dbmd operate successfully in this project?
@@ -34,8 +32,16 @@ Doctor may reuse shared preflight code, but it is not a superset of verify's dri
 
 Diagnostics should be grouped by stage and source, with actionable fixes. A failing connection must not prevent reporting independent local config or template errors when those checks can run safely.
 
-## Open decisions
+## Command
 
-- Whether connection checks run by default or require an explicit flag for safety and speed.
-- Which checks can run concurrently without making output confusing.
-- Whether structured JSON output should accompany human diagnostics.
+```sh
+dbmd doctor [--config dbmd.toml] [--all-sources] [--connect]
+```
+
+Local checks are the default. Database access is explicit through `--connect`;
+that mode runs the same full introspection surface required by rendering, so it
+checks connectivity, metadata permissions, and query compatibility together.
+Checks run in deterministic order and produce human-readable pass, fail, or
+skip diagnostics. Any failed enabled check produces a nonzero exit status.
+
+JSON and concurrent checks are not part of the current command contract.

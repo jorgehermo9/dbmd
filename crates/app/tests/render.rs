@@ -145,6 +145,27 @@ fn configless_sqlite_request_renders_without_reading_a_project_config() {
 }
 
 #[test]
+fn output_override_does_not_require_environment_used_only_by_canonical_path() {
+    let config = r#"
+[sources.app]
+backend = "sqlite"
+path = "app.db"
+
+[output]
+path = "${CANONICAL_OUTPUT}"
+"#;
+    let project = TestProject::from_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
+    let output = project.path().join("ALTERNATE.md");
+    let request =
+        RenderRequest::with_environment(project.path().join("dbmd.toml"), BTreeMap::new())
+            .with_output_path(&output);
+
+    let report = render(request).expect("overridden canonical output should not be resolved");
+
+    assert_eq!(report.output.path(), Some(output.as_path()));
+}
+
+#[test]
 fn directory_output_refuses_to_replace_the_project_root() {
     let config = r#"
 [sources.app]

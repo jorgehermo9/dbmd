@@ -67,6 +67,34 @@ pub(super) fn replace(
     }
 }
 
+pub(super) fn probe_writable(destination: &ValidatedOutputPath) -> Result<(), OutputError> {
+    let mut candidate = artifact_parent(destination.as_path());
+    loop {
+        match fs::symlink_metadata(candidate) {
+            Ok(metadata) if metadata.is_dir() && !metadata.file_type().is_symlink() => {
+                NamedTempFile::new_in(candidate).map_err(|source| OutputError::Temporary {
+                    path: candidate.to_path_buf(),
+                    source,
+                })?;
+                return Ok(());
+            }
+            Ok(_) => return Err(OutputError::UnsafePath(candidate.to_path_buf())),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                candidate = candidate
+                    .parent()
+                    .filter(|parent| !parent.as_os_str().is_empty())
+                    .ok_or_else(|| OutputError::UnsafePath(destination.as_path().to_path_buf()))?;
+            }
+            Err(source) => {
+                return Err(OutputError::Inspect {
+                    path: candidate.to_path_buf(),
+                    source,
+                });
+            }
+        }
+    }
+}
+
 pub(super) struct Comparison {
     pub changes: Vec<crate::ArtifactChange>,
     pub diff: Option<String>,
@@ -355,10 +383,8 @@ fn replace_directory(
 fn validate_file(path: &Path) -> Result<(), OutputError> {
     validate_common(path)?;
     match fs::symlink_metadata(path) {
-        Ok(metadata) if metadata.file_type().is_symlink() || metadata.is_dir() => {
-            Err(OutputError::UnsafePath(path.to_path_buf()))
-        }
-        Ok(_) => Ok(()),
+        Ok(metadata) if metadata.is_file() && !metadata.file_type().is_symlink() => Ok(()),
+        Ok(_) => Err(OutputError::UnsafePath(path.to_path_buf())),
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
         Err(source) => Err(OutputError::Inspect {
             path: path.to_path_buf(),

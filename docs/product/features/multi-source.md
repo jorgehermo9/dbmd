@@ -1,9 +1,5 @@
 # Multiple Sources
 
-Status: configured SQLite/PostgreSQL selection, cross-backend dispatch,
-deterministic ordering, repeated CLI selection overrides, source-aware
-single-file presentation, and directory nesting are implemented.
-
 ## Configuration
 
 Sources use one canonical named shape:
@@ -24,7 +20,8 @@ backend = "sqlite"
 path = "./dev.db"
 ```
 
-There is no singular `[source]` shorthand in MVP. Backend fields live directly inside each source table while all supported sources are connection-backed.
+There is no singular `[source]` shorthand. Backend fields live directly inside
+each source table while all supported sources are connection-backed.
 
 ## Identity
 
@@ -83,14 +80,10 @@ Direct source-ID directories are preferred over an extra `sources/` wrapper. Dis
 
 The canonical render succeeds only if every selected source succeeds. Partial canonical artifacts are unsafe because they look complete. Errors identify the failing source without exposing its credentials.
 
-One-off future modes may permit partial diagnostic output, but they must not write the canonical artifact.
+Partial diagnostic modes must not write the canonical artifact.
 
-## Deferred source kinds
+## Source kinds outside the contract
 
-SQL dumps, prior snapshots, command output, and catalog JSON are deferred. Adding them requires an explicit source-kind model rather than overloading connection fields.
-
-## Open decisions
-
-- Location and precedence of source-specific object filters.
-- Whether display names ever support limited variables; the default remains plain text.
-- Whether Unicode display names need additional rendering rules. Source IDs remain ASCII slugs for MVP.
+SQL dumps, prior snapshots, command output, and catalog JSON are outside the
+connection-backed source model. Supporting them requires an explicit
+source-kind model rather than overloaded connection fields.

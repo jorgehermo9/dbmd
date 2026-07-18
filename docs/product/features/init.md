@@ -1,8 +1,5 @@
 # Initialize
 
-Status: base SQLite, complete template-tree, and protected GitHub Actions
-initialization are implemented. Agent-instruction snippets remain planned.
-
 ## Purpose
 
 `dbmd init` creates a safe, understandable starting contract without placing credentials in committed files.
@@ -21,7 +18,8 @@ The command creates `dbmd.toml` when no project configuration exists. It should:
 - Default to `DATABASE.md`, the `agent` profile, and `single_file` layout.
 - Explain what was created and the next `dbmd render` command.
 
-It must not silently overwrite an existing config. A future explicit force flag may replace generated config, but interactive prompting is not required for automation.
+It must not silently overwrite an existing config. Base initialization has no
+force mode and does not require interactive prompting.
 
 ## Template initialization
 
@@ -39,24 +37,33 @@ It validates destination conflicts and never presents custom templates as overla
 dbmd init ci
 ```
 
-Initial support targets GitHub Actions. The generated workflow should install a pinned or explicitly selected dbmd version, make required source credentials available through documented secrets, and run `dbmd verify`.
+CI initialization targets GitHub Actions. The generated workflow installs a
+pinned dbmd version, makes required source credentials available through
+documented secrets, and runs `dbmd verify`.
 
 The command refuses conflicting user-maintained workflows unless `--force` is
 explicitly supplied.
 
 ## Agent instructions
 
-Initialization may print or write snippets for `AGENTS.md` and `CLAUDE.md` that tell agents:
+```sh
+dbmd init agents
+dbmd init agents --file AGENTS.md
+```
+
+Without `--file`, the command prints a complete marked snippet. With an explicit
+file it creates or replaces only the `<!-- dbmd:begin -->` through
+`<!-- dbmd:end -->` block and preserves all unrelated text. Repeating the
+command is idempotent. Symlinks, non-regular files, duplicate markers, and
+malformed marker blocks are rejected.
+
+The generated guidance tells agents:
 
 - Where the canonical artifact lives.
 - To read it before reconstructing schema state from migrations.
 - To treat `dbmd verify` failure as a request to regenerate and review changes.
 - Not to edit generated artifacts manually.
 
-Generated snippets must not overwrite unrelated instructions.
-
-## Open decisions
-
-- Exact force and dry-run behavior for existing files.
-- Whether base `init` offers agent-instruction snippets immediately or through a subcommand.
-- Whether non-GitHub CI generators are justified after the initial integration.
+Generating the snippet only parses the configured output field, preserves any
+`${NAME}` reference literally, and never requires database credentials or
+expanded environment values.

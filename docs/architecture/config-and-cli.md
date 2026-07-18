@@ -1,14 +1,9 @@
 # Configuration and CLI Architecture
 
-Status: configured SQLite and PostgreSQL sources, parsed/resolved/render-plan
-config stages, render overrides, configless SQLite, stdout, complete custom
-template roots, lifecycle initialization, single-file/directory rendering, and
-exact verification are implemented. ClickHouse source fields remain target
-architecture.
-
 ## Canonical config
 
-The default file is `dbmd.toml`. MVP supports one named multi-source shape and one configured output:
+The default file is `dbmd.toml`. Configuration uses one named multi-source
+shape and one configured output:
 
 ```toml
 [sources.analytics]
@@ -41,7 +36,7 @@ source_layout = "auto"
 dir = "templates/dbmd"
 ```
 
-There is no `[source]` shorthand, YAML config, or `[outputs.<name>]` map in MVP.
+There is no `[source]` shorthand, YAML config, or `[outputs.<name>]` map.
 
 ## Parsing stages
 
@@ -72,7 +67,7 @@ Rules must be simple and documented:
 
 - No shell execution.
 - No command substitution.
-- No implicit `.env` loading in MVP unless explicitly adopted later.
+- No implicit `.env` loading.
 - Errors name variables but never expanded values.
 - Redacted diagnostics preserve enough non-secret structure to identify a source.
 
@@ -125,13 +120,13 @@ pub enum Source { Sqlite(SqliteSource), Postgres(PostgresSource) }
 pub fn introspect(source: &Source) -> Result<SourceSnapshot, IntrospectionError>;
 ```
 
-A generic backend trait remains deferred because application orchestration needs
-closed dispatch, not runtime-extensible drivers. The stable behavior is
+A generic backend trait is not part of this boundary because application
+orchestration needs closed dispatch, not runtime-extensible drivers. The stable behavior is
 introspection producing a normalized `SourceSnapshot`; dynamic dispatch is not
 itself a product requirement.
 
-The current adapters use synchronous clients. Async runtime adoption remains a
-measured implementation choice rather than part of the public seam.
+Adapters use synchronous clients. Runtime choice is internal and not part of
+the public seam.
 
 ## Output-path validation
 
@@ -145,10 +140,13 @@ The writer treats directory output as fully owned. It must avoid deleting arbitr
 
 The CLI parses command-specific values, converts them to application requests, calls one operation, and presents its report or error. It does not read project configuration, connect to databases, render templates, or write artifacts itself.
 
-The initial application interface is intentionally small:
+Application interfaces are operation-oriented and intentionally small:
 
 ```rust
 pub fn render(request: RenderRequest) -> Result<RenderReport, RenderError>;
+pub fn verify(request: VerifyRequest) -> Result<VerifyReport, VerifyError>;
+pub fn explain(request: ExplainRequest) -> Result<ExplainReport, ExplainError>;
+pub fn doctor(request: DoctorRequest) -> DoctorReport;
 ```
 
 `dbmd-app` may internally compose:
@@ -161,7 +159,11 @@ pub fn render(request: RenderRequest) -> Result<RenderReport, RenderError>;
 - Renderer.
 - Artifact writer/comparator.
 
-Application operations decide which capabilities to invoke and return structured results. CLI commands decide only how to present those results. This keeps `doctor`, `verify`, and `lint` from becoming modes of one oversized command function.
+Application operations decide which capabilities to invoke and return structured
+results. CLI commands decide only how to present those results. Explain reuses
+resolved plans without database access. Doctor reuses local preflight and only
+dispatches introspection when connections are explicitly enabled. This keeps
+doctor, verify, and lint from becoming modes of one oversized command function.
 
 ## Error taxonomy
 
@@ -186,8 +188,3 @@ Credentials are redacted at construction, not through hopeful formatting discipl
 Configured paths, including CLI output/template overrides, resolve relative to
 the selected config file. Configless SQLite paths resolve relative to the
 process working directory.
-
-## Open implementation decisions
-
-- Async seam timing.
-- Exact atomic directory replacement behavior across operating systems.

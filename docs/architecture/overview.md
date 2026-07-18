@@ -1,7 +1,5 @@
 # Architecture Overview
 
-Status: Phase 2 vertical slice implemented through the core, introspection, rendering, application, and thin CLI modules.
-
 ## Principles
 
 ### Explicit semantics
@@ -24,33 +22,7 @@ Internal Rust types can evolve in response to introspection adapters. A dedicate
 
 SQLite proves the end-to-end architecture before generalized backend interfaces are introduced. PostgreSQL and ClickHouse then deepen the model with real edge cases.
 
-## Current workspace
-
-```text
-crates/
-  core/      normalized schema-model sketch
-  introspect/ concrete SQLite and PostgreSQL introspection
-  render/    embedded MiniJinja renderer
-  app/       config, orchestration, and atomic single-file output
-  cli/       thin command parsing and report presentation
-```
-
-Package names remain prefixed (`dbmd-core`, `dbmd-render`) while directories stay concise.
-
-Current implementation:
-
-- `core` contains validated source identity, `SourceSnapshot`, `DatabaseContext`, and common/backend-specific schema-object types.
-- `introspect` covers SQLite's persistent DDL/schema surface and a fixture-driven PostgreSQL catalog surface through concrete adapters and a closed dispatch enum.
-- `render` renders tables, constraints, indexes, views, triggers, virtual/shadow tables, and raw definitions with embedded templates.
-- `app` resolves named SQLite and PostgreSQL sources with environment-backed connection fields, coordinates rendering, and atomically replaces file or directory artifacts.
-- `cli` maps `render --config` to the application operation and presents its report.
-
-Base `init`, exact `verify`, multi-source presentation, directory layouts, a
-versioned dedicated presentation context, and PostgreSQL source dispatch are
-implemented. Custom templates, one-off overrides, CI initialization, and
-ClickHouse remain.
-
-## Target workspace
+## Workspace
 
 ```text
 crates/
@@ -60,6 +32,17 @@ crates/
   app/         config resolution, operation orchestration, and safe output policy
   cli/         argument parsing and user-facing presentation
 ```
+
+Package names remain prefixed (`dbmd-core`, `dbmd-render`) while directories stay concise.
+
+- `core` contains validated source identity, `SourceSnapshot`, `DatabaseContext`, and common/backend-specific schema-object types.
+- `introspect` covers SQLite's persistent DDL/schema surface and a fixture-driven PostgreSQL catalog surface through concrete adapters and a closed dispatch enum.
+- `render` renders tables, constraints, indexes, views, triggers, virtual/shadow tables, and raw definitions with embedded templates.
+- `app` resolves named SQLite and PostgreSQL sources with environment-backed
+  connection fields; coordinates rendering and verification; diagnoses local
+  and connection readiness; explains plans; and atomically replaces file,
+  directory, workflow, template, and marked instruction artifacts.
+- `cli` maps arguments into operation requests and presents structured reports.
 
 The dependency direction is:
 
@@ -71,7 +54,7 @@ cli → app → core
 
 `core` is pure but not an anemic struct collection: it owns domain constructors, invariants, semantic helpers, and deterministic collection ordering. It does not know TOML, environment variables, filesystem paths, database clients, CLI arguments, or templates.
 
-## Target data flow
+## Data flow
 
 ```text
 CLI arguments ─┐
@@ -102,7 +85,7 @@ The resolved contract carries no expanded secrets into render contexts or diagno
 
 `dbmd-app` presents a small operation-oriented interface to the CLI. It owns parsing, environment expansion, defaults, CLI precedence, source selection, operation planning, failure semantics, and artifact output policy. Commands consume resolved plans rather than independently interpreting configuration.
 
-The initial render interface is directional rather than a compatibility promise:
+The render interface is operation-oriented:
 
 ```rust
 pub fn render(request: RenderRequest) -> Result<RenderReport, RenderError>;
@@ -112,7 +95,7 @@ pub fn render(request: RenderRequest) -> Result<RenderReport, RenderError>;
 
 `dbmd-introspect` owns database I/O, catalog-specific row types, backend-version capability handling, and conversion into a normalized `SourceSnapshot`. Catalog queries and compatibility logic do not leak into application orchestration, core domain types, or rendering.
 
-The first SQLite interface is concrete:
+The SQLite interface is concrete:
 
 ```rust
 pub fn introspect(source: SqliteSource) -> Result<SourceSnapshot, IntrospectionError>;
@@ -140,7 +123,8 @@ Output writing and verification operate on a common in-memory artifact represent
 - `app` owns configuration and filesystem dependencies, coordinates the other modules, and exposes deep operation interfaces to the CLI.
 - `cli` maps Clap values to application requests and presents reports or errors. It contains no database or rendering behavior.
 
-Config and output do not become separate crates during Phase 2. They are cohesive internal modules of `app` until real consumers or dependency pressure prove another seam.
+Config and output are cohesive internal modules of `app`; they become separate
+crates only if a concrete consumer or dependency boundary requires it.
 
 ## Command responsibility
 

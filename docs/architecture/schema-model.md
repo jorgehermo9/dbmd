@@ -1,9 +1,5 @@
 # Schema Model
 
-Status: source identity, source aggregation, namespace terminology, backend
-terminology, SQLite normalization, PostgreSQL extensions, and a versioned
-dedicated render context are implemented; cross-backend fact provenance remains.
-
 ## Responsibilities
 
 The normalized model represents database structure after backend introspection and before presentation. It should:
@@ -106,7 +102,9 @@ pub enum Fact<T> {
 
 Reasons should be typed or stable identifiers where dbmd needs programmatic behavior. Free-form explanation belongs in the render context.
 
-Do not wrap every scalar reflexively. Introduce `Fact<T>` where absence, derivation, and unknown lead an agent to different conclusions. ClickHouse effective keys are the first motivating case.
+Do not wrap every scalar reflexively. Introduce `Fact<T>` where absence,
+derivation, and unknown lead an agent to different conclusions. ClickHouse
+effective keys are a motivating case.
 
 ## SQL expressions and types
 
@@ -127,7 +125,9 @@ Preserve the raw source expression even when optional parsed metadata is added.
 
 Metadata sources include `sqlite_schema`, `PRAGMA table_xinfo`, `index_list`, `index_xinfo`, `foreign_key_list`, and `table_list` when supported.
 
-The implementation-level [SQLite coverage matrix](../../crates/introspect/src/sqlite/README.md) is the source of truth for current support and fixture evidence. This architecture document defines the intended model rather than duplicating live support status.
+The adapter-local [SQLite coverage matrix](../../crates/introspect/src/sqlite/README.md)
+is the source of truth for fixture evidence. This architecture document defines
+the model rather than duplicating adapter coverage.
 
 The extension model must represent:
 
@@ -146,7 +146,8 @@ model values with raw SQL definitions retained as a fidelity backstop.
 
 ### PostgreSQL
 
-Use `pg_catalog` where `information_schema` loses semantics. Candidate extensions include:
+Use `pg_catalog` where `information_schema` loses semantics. PostgreSQL
+extensions include:
 
 - Relation kinds, tablespaces, inheritance, and partitioning.
 - Row-level security and policies.
@@ -155,14 +156,15 @@ Use `pg_catalog` where `information_schema` loses semantics. Candidate extension
 - Index methods, predicates, expressions, and included columns.
 - Function volatility and signatures.
 
-The first PostgreSQL release should be scoped by fixtures rather than by exposing every catalog feature.
+PostgreSQL adapter scope is defined by fixtures rather than an attempt to expose
+every catalog feature.
 
 The implementation-level [PostgreSQL coverage matrix](../../crates/introspect/src/postgres/README.md)
-records the currently proven catalog and DDL surface.
+records the fixture-proven catalog and DDL surface.
 
 ### ClickHouse
 
-Candidate extensions include:
+ClickHouse extensions include:
 
 - Engine name and parameters.
 - Sorting, explicit/effective primary, partition, and sampling keys.
@@ -171,7 +173,8 @@ Candidate extensions include:
 - Data-skipping indexes.
 - Table settings.
 
-Keep engine names and parameters structurally modest until real `engine_full` examples justify a typed engine enum.
+Engine names and parameters remain structurally modest; a typed engine enum
+requires representative `engine_full` fixture evidence.
 
 ## Deterministic normalization
 
@@ -184,26 +187,3 @@ Drivers must not expose catalog row order as product behavior. Before rendering,
 - Unordered settings/maps using ordered map types or explicit sorting.
 
 Ordering policy belongs in normalization or render-context construction, with one testable owner per collection.
-
-## Model evolution checkpoints
-
-Completed for the first useful SQLite render:
-
-- Introduced database-context and source-snapshot identity.
-- Renamed the misleading table engine/backend terminology.
-- Canonicalized backend tags.
-- Defined namespace representation using attached SQLite database fixtures.
-
-Completed before custom templates become a compatibility surface:
-
-- Internal model serialization is separated from the versioned template context.
-
-Before ClickHouse:
-
-- Introduce provenance for effective keys.
-- Test explicit, defaulted, empty, and unavailable key scenarios.
-
-Before promising a public machine-readable snapshot format:
-
-- Define versioning independently from Markdown and template context.
-- Specify compatibility and unknown-field behavior.

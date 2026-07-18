@@ -1,10 +1,5 @@
 # Render
 
-Status: configured SQLite and PostgreSQL rendering, configless SQLite,
-single-file and directory layouts, ordered source/output/template overrides,
-stdout, custom profiles, and safe atomic output are implemented. ClickHouse and
-additional one-off backends remain.
-
 ## Purpose
 
 `dbmd render` produces an agent-readable artifact from current database structure. A plain invocation uses the canonical project contract in `dbmd.toml` and replaces the configured output.
@@ -22,14 +17,13 @@ Resolution order is:
 2. Project configuration.
 3. Built-in optional defaults.
 
-Output-shaping overrides are permitted for one-off renders. They do not redefine what a later plain `dbmd verify` checks.
+Output-shaping overrides are permitted for one-off renders. They do not redefine
+what a subsequent plain `dbmd verify` checks.
 
-Implemented overrides are `--config`, repeated `--source`, `--output`,
+The override contract includes `--config`, repeated `--source`, `--output`,
 `--stdout`, and `--template-root`.
 
 ## One-off usage
-
-Status: implemented for SQLite.
 
 A developer should be able to try dbmd without first creating a config file:
 
@@ -59,8 +53,6 @@ Connection and introspection errors remain distinct from local preflight failure
 The [multiple-sources specification](multi-source.md#selection) owns source identity, selection precedence, validation, and deterministic ordering. Render applies that resolved order without reinterpretation.
 
 ## Output destinations
-
-Status: configured single-file/directory output and stdout implemented.
 
 `--stdout` is valid only when the resolved layout produces one file. It does not change the selected layout.
 
@@ -126,9 +118,3 @@ Errors identify the owning stage:
 - Output writing.
 
 Messages should name the source and relevant path without printing credentials.
-
-## Open decisions
-
-- Whether archive or manifest stdout modes are useful for directory layout after MVP.
-- Whether subset filters belong under each source, under output selection, or both.
-- Whether directory `sections` should ship beside `objects` or follow later.

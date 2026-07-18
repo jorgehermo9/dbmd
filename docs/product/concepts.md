@@ -1,7 +1,5 @@
 # Product Concepts
 
-Status: accepted vocabulary; refine through real backend fixtures before declaring a stable external data model.
-
 The canonical definitions live in [CONTEXT.md](../../CONTEXT.md). This document explains how those terms form the product model.
 
 ## Conceptual model
@@ -40,7 +38,8 @@ database = "default"
 
 `analytics` controls CLI selection, ordering references, generated paths, verification identity, and fallback headings. `display_name` is presentation-only. Changing the display name may change rendered prose but never changes source identity.
 
-Source IDs are filesystem-safe ASCII slugs. The exact MVP grammar is owned by the [multiple-sources specification](features/multi-source.md#identity).
+Source IDs are filesystem-safe ASCII slugs. The exact grammar is owned by the
+[multiple-sources specification](features/multi-source.md#identity).
 
 ## Snapshots
 
@@ -121,4 +120,6 @@ Drift is an exact difference between a fresh render and the committed canonical 
 - Newly required files.
 - Extra stale files in a dbmd-owned directory artifact.
 
-Semantic or whitespace-normalized comparison is outside MVP. Deterministic generation is the mechanism for avoiding meaningless churn.
+Semantic or whitespace-normalized comparison is outside the verification
+contract. Deterministic generation is the mechanism for avoiding meaningless
+churn.

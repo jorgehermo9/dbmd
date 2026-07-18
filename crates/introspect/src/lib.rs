@@ -3,7 +3,7 @@
 pub mod postgres;
 pub mod sqlite;
 
-use dbmd_core::{SourceId, SourceSnapshot};
+use dbmd_core::{Backend, SourceId, SourceSnapshot};
 use thiserror::Error;
 
 /// One resolved concrete database source.
@@ -22,6 +22,15 @@ impl Source {
         match self {
             Self::Sqlite(source) => source.id(),
             Self::Postgres(source) => source.id(),
+        }
+    }
+
+    /// Returns the database family handled by this source adapter.
+    #[must_use]
+    pub fn backend(&self) -> Backend {
+        match self {
+            Self::Sqlite(_) => Backend::Sqlite,
+            Self::Postgres(_) => Backend::Postgres,
         }
     }
 }
@@ -59,4 +68,23 @@ pub enum IntrospectionError {
     /// PostgreSQL connection or catalog introspection failed.
     #[error(transparent)]
     Postgres(#[from] postgres::IntrospectionError),
+}
+
+impl IntrospectionError {
+    /// Returns a credential-free causal diagnostic suitable for operational checks.
+    #[must_use]
+    pub fn diagnostic(&self) -> String {
+        let error: &dyn std::error::Error = match self {
+            Self::Sqlite(error) => error,
+            Self::Postgres(error) => error,
+        };
+        let mut message = error.to_string();
+        let mut source = error.source();
+        while let Some(error) = source {
+            message.push_str(": ");
+            message.push_str(&error.to_string());
+            source = error.source();
+        }
+        message
+    }
 }

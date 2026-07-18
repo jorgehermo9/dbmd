@@ -1,8 +1,5 @@
 # Product Overview
 
-Status: accepted product direction; the first useful SQLite render is
-implemented and the canonical lifecycle is current.
-
 ## Thesis
 
 dbmd is a Rust CLI that generates an agent-readable Markdown artifact representing live database structure. The canonical artifact is committed beside application code so agents and humans can inspect the current schema without replaying migrations or querying the database during every coding task.
@@ -26,7 +23,9 @@ The missing artifact is an accurate, deterministic, reviewable, searchable, and 
 
 Native tools such as `pg_dump --schema-only`, SQLite `.schema`, and ClickHouse `SHOW CREATE TABLE` are valuable metadata sources but are not the final agent-oriented artifact.
 
-An MCP server may become complementary later, but plain committed files are the initial product boundary. They work with ordinary file tools, code review, and CI without requiring a live service during agent tasks.
+Plain committed files are the product boundary. They work with ordinary file
+tools, code review, and CI without requiring a live service during agent tasks;
+a live MCP server is outside this product contract.
 
 ## Target users
 
@@ -55,7 +54,9 @@ Committed configuration defines one canonical artifact. CLI flags support explor
 
 ### Start narrow and go deep
 
-A backend is useful only when dbmd preserves enough semantics to prevent common wrong assumptions. SQLite comes first, followed by PostgreSQL and ClickHouse depth.
+A backend is useful only when dbmd preserves enough semantics to prevent common
+wrong assumptions. Each backend adapter is scoped by explicit fixture-backed
+coverage.
 
 ### Complete the lifecycle
 
@@ -74,8 +75,8 @@ The product includes initialization, generation, verification, CI integration, a
 ## Non-goals
 
 - Replace migration tools.
-- Become a live MCP server in the initial product.
-- Reimplement every feature of existing database-documentation tools before proving the agent-first format.
+- Become a live MCP server.
+- Reimplement every feature of existing database-documentation tools.
 - Put volatile production statistics in the primary schema artifact by default.
 - Pretend every backend fits one universal SQL dialect or namespace model.
 - Guarantee a stable custom-template context before that compatibility surface is explicitly versioned.
@@ -92,7 +93,9 @@ dbmd verify
 - `render` resolves the selected sources, introspects them, and replaces the canonical artifact.
 - `verify` renders to a temporary location and fails when the committed artifact differs.
 
-Supporting commands such as `doctor`, `explain`, and `lint` have separate responsibilities and are specified under [features](features/README.md).
+`explain` reports local resolution, `doctor` diagnoses operational readiness,
+and `lint` evaluates schema policy. Each responsibility
+has a separate specification under [features](features/README.md).
 
 ## Default product shape
 
@@ -113,17 +116,3 @@ Supporting commands such as `doctor`, `explain`, and `lint` have separate respon
 - Pull requests show stable, comprehensible changes when the database structure changes.
 - Backend-specific output prevents obvious wrong assumptions, especially around keys, engines, generated values, and namespace behavior.
 - A project can install drift checking and agent instructions without designing its own lifecycle.
-
-## Current status
-
-The first useful SQLite render and the initial PostgreSQL depth slice are
-implemented end to end. `dbmd render` reads `dbmd.toml`, expands environment
-references, selects named SQLite and PostgreSQL sources in deterministic order,
-introspects them through concrete adapters, renders the embedded Markdown
-profile, and atomically replaces the configured artifact.
-
-The active milestone is closing the remaining canonical-lifecycle edges in
-[Phase 3](roadmap.md). Base/template/CI initialization, exact verification,
-multi-source presentation, directory layout, configless SQLite, stdout, and
-complete custom template roots are implemented. Agent-instruction generation
-and release hardening remain while PostgreSQL depth continues in parallel.

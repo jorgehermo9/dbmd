@@ -1,13 +1,24 @@
 #![doc = include_str!("../README.md")]
 
 mod config;
+mod doctor;
+mod explain;
 mod init;
+mod init_agents;
 mod init_ci;
 mod init_templates;
 mod output;
 
-pub use config::ConfigError;
+pub use config::{ConfigError, ConfigParseKind};
+pub use doctor::{
+    doctor, Diagnostic, DiagnosticStage, DiagnosticStatus, DoctorReport, DoctorRequest,
+};
+pub use explain::{
+    explain, DirectoryVariant, ExplainDestination, ExplainError, ExplainReport, ExplainRequest,
+    ExplainedSource, TemplateSource,
+};
 pub use init::{init, InitError, InitReport, InitRequest};
+pub use init_agents::{init_agents, InitAgentsError, InitAgentsReport, InitAgentsRequest};
 pub use init_ci::{init_ci, InitCiError, InitCiReport, InitCiRequest};
 pub use init_templates::{
     init_templates, InitTemplatesError, InitTemplatesReport, InitTemplatesRequest,
@@ -22,7 +33,7 @@ use dbmd_render::{RenderedArtifact, Renderer};
 use thiserror::Error;
 
 /// Inputs for one configured render operation.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct RenderRequest {
     input: RenderInput,
     environment: BTreeMap<String, String>,
@@ -30,6 +41,23 @@ pub struct RenderRequest {
     output_path: Option<PathBuf>,
     template_root: Option<PathBuf>,
     stdout: bool,
+}
+
+impl std::fmt::Debug for RenderRequest {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("RenderRequest")
+            .field("input", &self.input)
+            .field(
+                "environment_keys",
+                &self.environment.keys().collect::<Vec<_>>(),
+            )
+            .field("source_selection", &self.source_selection)
+            .field("output_path", &self.output_path)
+            .field("template_root", &self.template_root)
+            .field("stdout", &self.stdout)
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -151,11 +179,25 @@ impl RenderOutput {
 }
 
 /// Inputs for one canonical verification operation.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct VerifyRequest {
     config_path: PathBuf,
     environment: BTreeMap<String, String>,
     include_diff: bool,
+}
+
+impl std::fmt::Debug for VerifyRequest {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("VerifyRequest")
+            .field("config_path", &self.config_path)
+            .field(
+                "environment_keys",
+                &self.environment.keys().collect::<Vec<_>>(),
+            )
+            .field("include_diff", &self.include_diff)
+            .finish()
+    }
 }
 
 impl VerifyRequest {
@@ -251,6 +293,7 @@ pub fn render(request: RenderRequest) -> Result<RenderReport, RenderError> {
             source_selection: request.source_selection,
             output_path: request.output_path,
             template_root: request.template_root,
+            ..config::Overrides::default()
         },
         if request.stdout {
             BuildDestination::Stdout
@@ -341,9 +384,13 @@ fn generate(
                 project_root: None,
                 repository_root: None,
                 output_path: overrides.output_path,
+                canonical_output_path: None,
+                canonical_output_display_path: None,
                 template_root: overrides.template_root,
+                template_display_root: None,
                 profile: "agent".to_string(),
                 render_options: dbmd_render::RenderOptions::default(),
+                required_environment: Vec::new(),
             }
         }
     };

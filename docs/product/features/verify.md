@@ -1,7 +1,5 @@
 # Verify
 
-Status: implemented for single-file and directory canonical artifacts.
-
 ## Purpose
 
 `dbmd verify` answers one question: does the committed canonical artifact exactly match a fresh render from the canonical project contract?
@@ -35,7 +33,7 @@ Verify never creates, removes, or edits the configured output.
 - Manually edited but semantically equivalent Markdown is drift.
 - Timestamps and metadata lines receive no special treatment because default artifacts do not contain them.
 
-Whitespace-normalized or semantic comparison is outside MVP.
+Whitespace-normalized or semantic comparison is outside the verification contract.
 
 ## Default drift report
 
@@ -62,8 +60,3 @@ The summary uses full status words rather than git's single-letter codes.
 ## Failure categories
 
 Setup, connection, introspection, and rendering failures are not reported as drift. The command must distinguish “the artifact differs” from “dbmd could not produce a trustworthy comparison.”
-
-## Open decisions
-
-- Whether later releases should verify a requested schema/table subset without weakening canonical whole-artifact verification.
-- Whether optional diff truncation controls are useful for constrained CI logs.

@@ -1,11 +1,6 @@
 # Rendering Architecture
 
-Status: explicit render context, deterministic SQLite and PostgreSQL rendering,
-layout-neutral artifacts, stdout, complete custom template roots, and atomic
-single-file/directory output are implemented. Additional built-in profiles and
-a public compatibility promise for custom contexts remain.
-
-## Current implementation
+## Render module
 
 `dbmd-render` builds a versioned `RenderContext` from a complete
 `DatabaseContext`, configures MiniJinja with strict undefined behavior, and
@@ -14,16 +9,16 @@ code fences, qualified names, and backend summaries are computed before
 templates execute. The application atomically replaces one output file or a
 complete generated tree.
 
-Current limitations:
+The compatibility boundary is intentionally narrow:
 
 - `agent` is the only embedded profile; arbitrary profile directories are
   selectable from a complete custom root.
-- A custom root must contain the complete eight-file profile currently emitted
+- A custom root must contain the complete eight-file profile emitted
   by `dbmd init-templates`.
-- The context is explicitly versioned but not yet promised as a stable external
+- The context is explicitly versioned but is not a stable external
   compatibility contract.
 
-## Target pipeline
+## Rendering pipeline
 
 ```text
 DatabaseContext
@@ -72,7 +67,7 @@ Resolution inputs are:
 
 Backend is context data and can select internal partials; it is not a required top-level entrypoint dimension.
 
-Custom roots are complete sets, not overlays. The current loader validates the
+Custom roots are complete sets, not overlays. The loader validates the
 complete profile before connection, including both layouts and all supported
 object entrypoints. Partials are private to each set.
 
@@ -90,7 +85,9 @@ An index links to stable object paths. Each table, view, function, enum, or othe
 
 ### Directory sections
 
-Section-oriented files are a later variant for teams preferring fewer files. The in-memory artifact abstraction should not assume one object per file, but the first directory implementation may support only objects.
+The directory contract is object-oriented: indexes link to one stable file per
+supported schema object. Section-oriented files are outside this contract. The
+in-memory artifact abstraction remains layout-neutral.
 
 ## Markdown policy
 
@@ -128,10 +125,9 @@ Rendering and writing are separate:
 
 Path validation and destructive ownership rules live in command/output orchestration, not inside templates.
 
-## Compatibility milestones
+## Compatibility rules
 
-1. Stabilize default SQLite output with internal templates. Complete.
-2. Introduce an explicit render-context type and snapshots. Complete.
-3. Document a context version before promoting custom templates as compatible product surface. Context version `1` exists; compatibility policy remains.
-4. Add directory object entrypoints. Complete for tables, views, triggers, and functions.
-5. Add additional profiles only when their differences can be maintained with golden tests.
+- Templates receive an explicit render-context type covered by snapshots.
+- Context version `1` identifies shape but does not promise external stability.
+- Directory object entrypoints cover each rendered schema-object family.
+- Every embedded profile requires independently reviewed golden tests.

@@ -295,3 +295,164 @@ fn verify_uses_nonzero_exit_and_prints_the_complete_diff_for_drift() {
         "manual edit\n"
     );
 }
+
+#[test]
+fn explain_prints_a_credential_free_local_plan() {
+    let project = tempfile::tempdir().expect("temporary CLI project should be created");
+    fs::write(
+        project.path().join("dbmd.toml"),
+        r#"
+[sources.production]
+backend = "postgres"
+url = "${DATABASE_URL}"
+
+[output]
+path = "DATABASE.md"
+"#,
+    )
+    .expect("config should be written");
+
+    let explain = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+        .current_dir(project.path())
+        .env("DATABASE_URL", "postgres://secret:password@database/app")
+        .arg("explain")
+        .output()
+        .expect("explain should execute");
+
+    assert!(
+        explain.status.success(),
+        "{}",
+        String::from_utf8_lossy(&explain.stderr)
+    );
+    let stdout = String::from_utf8(explain.stdout).expect("plan should be UTF-8");
+    assert!(stdout.contains("1. production (postgres)"));
+    assert!(stdout.contains("Environment: DATABASE_URL"));
+    assert!(stdout.contains("Canonical:"));
+    assert!(!stdout.contains("password"));
+}
+
+#[test]
+fn explain_redacts_expanded_path_values_and_malformed_config_source_lines() {
+    let project = tempfile::tempdir().expect("temporary CLI project should be created");
+    fs::write(
+        project.path().join("dbmd.toml"),
+        r#"
+[sources.app]
+backend = "sqlite"
+path = "app.db"
+
+[output]
+path = "${OUTPUT_SECRET}/DATABASE.md"
+
+[templates]
+dir = "${TEMPLATE_SECRET}/dbmd"
+"#,
+    )
+    .expect("config should be written");
+    let explain = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+        .current_dir(project.path())
+        .env("OUTPUT_SECRET", "private-output")
+        .env("TEMPLATE_SECRET", "private-template")
+        .arg("explain")
+        .output()
+        .expect("explain should execute");
+    let stdout = String::from_utf8(explain.stdout).expect("plan should be UTF-8");
+    assert!(stdout.contains("${OUTPUT_SECRET}"));
+    assert!(stdout.contains("${TEMPLATE_SECRET}"));
+    assert!(!stdout.contains("private-output"));
+    assert!(!stdout.contains("private-template"));
+
+    fs::write(
+        project.path().join("dbmd.toml"),
+        "[sources.app]\nbackend = \"postgres\"\nurl = \"postgres://secret:password@host/db\" trailing\n",
+    )
+    .expect("malformed config should replace fixture");
+    let malformed = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+        .current_dir(project.path())
+        .arg("explain")
+        .output()
+        .expect("explain should report malformed config");
+    let stderr = String::from_utf8(malformed.stderr).expect("diagnostic should be UTF-8");
+    assert!(!malformed.status.success());
+    assert!(stderr.contains("line 3"));
+    assert!(!stderr.contains("password"));
+    assert!(!stderr.contains("postgres://"));
+}
+
+#[test]
+fn doctor_requires_explicit_connection_checks_and_uses_failure_exit_status() {
+    let project = tempfile::tempdir().expect("temporary CLI project should be created");
+    fs::write(
+        project.path().join("dbmd.toml"),
+        r#"
+[sources.app]
+backend = "sqlite"
+path = "missing.db"
+
+[output]
+path = "DATABASE.md"
+"#,
+    )
+    .expect("config should be written");
+
+    let local = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+        .current_dir(project.path())
+        .arg("doctor")
+        .output()
+        .expect("local doctor should execute");
+    let connected = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+        .current_dir(project.path())
+        .args(["doctor", "--connect"])
+        .output()
+        .expect("connection doctor should execute");
+
+    assert!(local.status.success());
+    assert!(String::from_utf8(local.stdout)
+        .expect("diagnostics should be UTF-8")
+        .contains("[skip] connection"));
+    assert!(!connected.status.success());
+    assert!(String::from_utf8(connected.stdout)
+        .expect("diagnostics should be UTF-8")
+        .contains("[fail] connection (app)"));
+}
+
+#[test]
+fn init_agents_prints_or_safely_updates_an_explicit_instruction_file() {
+    let project = tempfile::tempdir().expect("temporary CLI project should be created");
+    fs::write(
+        project.path().join("dbmd.toml"),
+        r#"
+[sources.app]
+backend = "sqlite"
+path = "app.db"
+
+[output]
+path = "DATABASE.md"
+"#,
+    )
+    .expect("config should be written");
+
+    let preview = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+        .current_dir(project.path())
+        .args(["init", "agents"])
+        .output()
+        .expect("agent preview should execute");
+    assert!(preview.status.success());
+    assert!(String::from_utf8(preview.stdout)
+        .expect("instructions should be UTF-8")
+        .contains("<!-- dbmd:begin -->"));
+    assert!(!project.path().join("AGENTS.md").exists());
+
+    fs::write(project.path().join("AGENTS.md"), "# Existing\n")
+        .expect("existing file should be written");
+    let write = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+        .current_dir(project.path())
+        .args(["init", "agents", "--file", "AGENTS.md"])
+        .output()
+        .expect("agent update should execute");
+    assert!(write.status.success());
+    let contents = fs::read_to_string(project.path().join("AGENTS.md"))
+        .expect("updated instructions should exist");
+    assert!(contents.starts_with("# Existing\n"));
+    assert!(contents.contains("Do not edit the generated artifact manually"));
+}
