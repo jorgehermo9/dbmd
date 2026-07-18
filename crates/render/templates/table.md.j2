@@ -1,0 +1,88 @@
+## `{{ qualified_name }}`
+
+{% if comment -%}
+{{ comment }}
+
+{% endif -%}
+### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+{% for col in columns -%}
+| `{{ col.name }}` | `{{ col.data_type }}` | {{ "yes" if col.nullable else "no" }} | {{ ("`" ~ col.default ~ "`") if col.default else "-" }} | {{ col.comment or "" }}{% if col.backend.backend == "click_house" and col.backend.codec %} codec: `{{ col.backend.codec }}`{% endif %} |
+{% endfor -%}
+
+{% if constraints -%}
+### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+{% for constraint in constraints -%}
+| {{ ("`" ~ constraint.name ~ "`") if constraint.name else "-" }} | `{{ constraint.kind }}` | `{{ constraint.columns | join(", ") }}` | {% if constraint.references %}references `{{ constraint.references.schema }}.{{ constraint.references.table }}({{ constraint.references.columns | join(", ") }})`{% elif constraint.expression %}`{{ constraint.expression }}`{% else %}-{% endif %} |
+{% endfor -%}
+
+{% endif -%}
+{% if indexes -%}
+### Indexes
+
+| Name | Type | Columns | Expression | Unique |
+|---|---|---|---|---|
+{% for index in indexes -%}
+| `{{ index.name }}` | {{ ("`" ~ index.kind ~ "`") if index.kind else "-" }} | `{{ index.columns | join(", ") }}` | {{ ("`" ~ index.expression ~ "`") if index.expression else "-" }} | {{ "yes" if index.unique else "no" }} |
+{% endfor -%}
+
+{% endif -%}
+{% if engine.backend == "click_house" -%}
+### Engine
+
+`{{ engine.engine_clause }}`
+
+{% if engine.order_by -%}
+**Order by:** `{{ engine.order_by | join(", ") }}`
+
+{% endif -%}
+{% if engine.primary_key -%}
+**Primary key:** `{{ engine.primary_key | join(", ") }}`
+
+{% endif -%}
+{% if engine.partition_by -%}
+**Partition by:** `{{ engine.partition_by }}`
+
+{% endif -%}
+{% if engine.sample_by -%}
+**Sample by:** `{{ engine.sample_by }}`
+
+{% endif -%}
+{% if engine.ttl -%}
+**TTL:** `{{ engine.ttl }}`
+
+{% endif -%}
+{% if engine.settings -%}
+**Settings**
+
+{% for key, value in engine.settings | items -%}
+- `{{ key }} = {{ value }}`
+{% endfor -%}
+{% endif -%}
+{% elif engine.backend == "postgres" -%}
+### PostgreSQL
+
+Kind: `{{ engine.table_kind }}`
+{% if engine.partition -%}
+
+Partition: `{{ engine.partition }}`
+{% endif -%}
+{% if engine.row_level_security -%}
+
+Row-level security enabled.
+{% endif -%}
+{% elif engine.backend == "sqlite" -%}
+### SQLite
+
+{% if engine.strict -%}
+Strict table.
+{% endif -%}
+{% if engine.without_rowid -%}
+Without rowid.
+{% endif -%}
+{% endif -%}
