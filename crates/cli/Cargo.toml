@@ -8,5 +8,4 @@ repository.workspace = true
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
-dbmd-core = { path = "../core" }
-dbmd-render = { path = "../render" }
+dbmd-app = { path = "../app" }

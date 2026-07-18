@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Status: Phase 1 structure implemented; driver, config, render-context, and artifact-writer boundaries remain target architecture.
+Status: Phase 2 vertical slice implemented through the core, introspection, rendering, application, and thin CLI modules.
 
 ## Principles
 
@@ -16,32 +16,57 @@ Common schema concepts share a model. Backend extensions remain typed when their
 
 Stable ordering and computed semantics are established before templates run. Templates choose layout; they do not repair unstable catalog order or infer hidden defaults.
 
-### Templates are an external boundary
+### Templates are a compatibility seam
 
-Internal Rust types can evolve in response to drivers. A dedicated render context will isolate public template compatibility from those changes.
+Internal Rust types can evolve in response to introspection adapters. A dedicated render context will isolate public template compatibility from those changes.
 
 ### Narrow vertical slices
 
-SQLite proves the end-to-end architecture before new abstraction crates or generalized driver frameworks are introduced. PostgreSQL and ClickHouse then deepen the model with real edge cases.
+SQLite proves the end-to-end architecture before generalized backend interfaces are introduced. PostgreSQL and ClickHouse then deepen the model with real edge cases.
 
 ## Current workspace
 
 ```text
 crates/
   core/      normalized schema-model sketch
+  introspect/ concrete SQLite introspection
   render/    embedded MiniJinja renderer
-  cli/       command parsing and orchestration bootstrap
+  app/       config, orchestration, and atomic single-file output
+  cli/       thin command parsing and report presentation
 ```
 
 Package names remain prefixed (`dbmd-core`, `dbmd-render`) while directories stay concise.
 
 Current implementation:
 
-- `core` contains one `DatabaseSchema` and common/backend-specific object structs.
-- `render` serializes core structs, adds a few computed fields, and renders two embedded templates.
-- `cli` creates a placeholder PostgreSQL table in memory and prints the result.
+- `core` contains validated source identity, `SourceSnapshot`, `DatabaseContext`, and common/backend-specific schema-object types.
+- `introspect` covers SQLite's persistent DDL/schema surface through catalog metadata plus stored-definition parsing.
+- `render` renders tables, constraints, indexes, views, triggers, virtual/shadow tables, and raw definitions with embedded templates.
+- `app` resolves named SQLite sources and environment-backed paths, coordinates rendering, and atomically replaces one Markdown file.
+- `cli` maps `render --config` to the application operation and presents its report.
 
-No current module parses config, connects to a database, normalizes catalog rows, writes an artifact, or verifies drift.
+`init`, `verify`, directory layouts, custom templates, and additional backends remain. The current renderer still needs a versioned dedicated presentation context before custom templates become a compatibility promise.
+
+## Target workspace
+
+```text
+crates/
+  core/        pure domain model, invariants, and deterministic normalization
+  introspect/  database I/O and backend-specific metadata interpretation
+  render/      render-context construction and in-memory artifact generation
+  app/         config resolution, operation orchestration, and safe output policy
+  cli/         argument parsing and user-facing presentation
+```
+
+The dependency direction is:
+
+```text
+cli → app → core
+          ├→ introspect → core
+          └→ render → core
+```
+
+`core` is pure but not an anemic struct collection: it owns domain constructors, invariants, semantic helpers, and deterministic collection ordering. It does not know TOML, environment variables, filesystem paths, database clients, CLI arguments, or templates.
 
 ## Target data flow
 
@@ -55,7 +80,7 @@ dbmd.toml ─────┘        │
                         │        ├→ raw catalog rows
                         │        └→ normalized source snapshot
                         │
-                        └→ ordered project snapshot
+                        └→ database context
                                   │
                                   ├→ render context
                                   ├→ selected template set
@@ -68,37 +93,51 @@ dbmd.toml ─────┘        │
 
 The resolved contract carries no expanded secrets into render contexts or diagnostics.
 
-## Primary boundaries
+## Primary modules and seams
 
-### Configuration boundary
+### Application module
 
-Parsing, environment expansion, defaults, CLI precedence, source selection, and compatibility validation produce a resolved contract. Commands consume this result rather than independently interpreting config.
+`dbmd-app` presents a small operation-oriented interface to the CLI. It owns parsing, environment expansion, defaults, CLI precedence, source selection, operation planning, failure semantics, and artifact output policy. Commands consume resolved plans rather than independently interpreting configuration.
 
-### Driver boundary
+The initial render interface is directional rather than a compatibility promise:
 
-A driver owns database I/O and catalog-specific row types. Catalog queries and compatibility logic do not leak into core normalization or rendering.
+```rust
+pub fn render(request: RenderRequest) -> Result<RenderReport, RenderError>;
+```
 
-### Normalization boundary
+### Introspection module
+
+`dbmd-introspect` owns database I/O, catalog-specific row types, backend-version capability handling, and conversion into a normalized `SourceSnapshot`. Catalog queries and compatibility logic do not leak into application orchestration, core domain types, or rendering.
+
+The first SQLite interface is concrete:
+
+```rust
+pub fn introspect(source: SqliteSource) -> Result<SourceSnapshot, IntrospectionError>;
+```
+
+Do not introduce a generic backend trait for one adapter. A shared backend seam should be designed only after a second concrete adapter proves what actually varies.
+
+### Normalization seam
 
 Normalization maps raw backend metadata to source snapshots, establishes deterministic order, and records observed/effective/unknown facts.
 
-### Render boundary
+### Render module
 
 The render-context builder computes presentation-ready facts and qualified names. MiniJinja renders an in-memory file set with strict undefined behavior.
 
-### Artifact boundary
+### Artifact seam
 
 Output writing and verification operate on a common in-memory artifact representation: one file or a relative-path-to-bytes map. Render writes it atomically; verify compares it without modifying the canonical destination.
 
-## Crate evolution
+## Crate responsibilities
 
-Do not create a crate solely because architecture diagrams name a boundary. During the SQLite slice:
+- `core` owns `DatabaseContext`, `SourceSnapshot`, schema objects, domain invariants, semantic helpers, and deterministic normalization without I/O dependencies.
+- `introspect` owns SQLite connection/catalog behavior and returns core types. Internal query and row-mapping modules remain implementation details.
+- `render` accepts core domain values and rendering choices, builds a dedicated presentation context, and returns an in-memory artifact.
+- `app` owns configuration and filesystem dependencies, coordinates the other modules, and exposes deep operation interfaces to the CLI.
+- `cli` maps Clap values to application requests and presents reports or errors. It contains no database or rendering behavior.
 
-- Config and SQLite driver modules may begin inside `cli` if their APIs remain testable.
-- `core` owns normalized snapshots and semantic helpers without database dependencies.
-- `render` owns render-context construction, template loading, and in-memory artifact generation.
-
-Extract `config`, `drivers`, or test-support crates when a second consumer, a second backend, or compile-time dependency pressure proves the seam.
+Config and output do not become separate crates during Phase 2. They are cohesive internal modules of `app` until real consumers or dependency pressure prove another seam.
 
 ## Command responsibility
 
@@ -125,5 +164,6 @@ Shared preflight and introspection internals do not blur these user-facing respo
 - [Rendering](rendering.md)
 - [Configuration and CLI](config-and-cli.md)
 - [Testing](testing.md)
+- [SQLite introspection coverage](../../crates/introspect/src/sqlite/README.md)
 - [Product feature specifications](../product/features/README.md)
 - [Architecture decisions](../adr/README.md)

@@ -18,7 +18,7 @@ The one output destination declared by a project's committed configuration. It i
 
 ### Database context
 
-The stable schema information an agent needs to reason correctly about a database: objects, relationships, constraints, indexes, definitions, comments, and backend-specific behavior. Volatile operational statistics are not database context by default.
+The ordered collection of source snapshots selected for one operation. It contains the stable schema information an agent needs to reason correctly about the selected databases: objects, relationships, constraints, indexes, definitions, comments, and backend-specific behavior. It does not include project configuration, credentials, templates, output policy, or volatile operational statistics by default.
 
 ### Drift
 
@@ -44,13 +44,13 @@ The file organization of an agent-readable artifact. The supported product conce
 
 A named presentation policy for generated artifacts, such as `agent`, `agent-compact`, or `human`. A profile changes rendering, not the underlying source snapshot.
 
-### Project snapshot
-
-The ordered collection of source snapshots selected for one render.
-
 ### Schema object
 
 A database object represented by dbmd, such as a table, view, materialized view, function, enum, extension, constraint, or index.
+
+### Schema surface
+
+The persistent and connection-visible database structures a backend can expose for introspection. Schema-surface coverage concerns the resulting objects and semantics, not the historical DDL operations that created them.
 
 ### Source
 
@@ -76,6 +76,6 @@ A relevant fact that dbmd cannot determine confidently. Unknown is distinct from
 
 - A project configuration declares one or more sources and one canonical artifact.
 - Introspecting a source produces a source snapshot.
-- Selecting and ordering source snapshots produces a project snapshot.
-- A profile, output layout, and template set transform a project snapshot into an agent-readable artifact.
+- Selecting and ordering source snapshots produces a database context.
+- A profile, output layout, and template set transform a database context into an agent-readable artifact.
 - Comparing a fresh artifact with the canonical artifact detects drift.

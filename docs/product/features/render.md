@@ -1,6 +1,6 @@
 # Render
 
-Status: partial. The CLI renders a hard-coded in-memory schema to stdout; configuration, introspection, selection, and file output are not implemented.
+Status: configured SQLite single-file rendering implemented; one-off flags, stdout, directory layouts, custom profiles, and non-SQLite backends remain.
 
 ## Purpose
 
@@ -21,7 +21,12 @@ Resolution order is:
 
 Output-shaping overrides are permitted for one-off renders. They do not redefine what a later plain `dbmd verify` checks.
 
+Today the only CLI override is `--config`; the remaining overrides in this
+specification are planned behavior.
+
 ## One-off usage
+
+Status: planned.
 
 A developer should be able to try dbmd without first creating a config file:
 
@@ -51,6 +56,9 @@ Connection and introspection errors remain distinct from local preflight failure
 The [multiple-sources specification](multi-source.md#selection) owns source identity, selection precedence, validation, and deterministic ordering. Render applies that resolved order without reinterpretation.
 
 ## Output destinations
+
+Status: configured single-file output implemented; stdout and directory output
+planned.
 
 `--stdout` is valid only when the resolved layout produces one file. It does not change the selected layout.
 

@@ -1,6 +1,6 @@
 # Configuration and CLI Architecture
 
-Status: accepted product shape; not implemented.
+Status: the configured SQLite single-file subset is implemented. CLI overrides, profiles/layouts, custom templates, and non-SQLite source fields remain target architecture.
 
 ## Canonical config
 
@@ -20,6 +20,9 @@ url = "${DATABASE_URL}"
 [sources.local]
 backend = "sqlite"
 path = "./dev.db"
+
+[sources.local.attachments.analytics]
+path = "./analytics.db"
 
 [output]
 path = "DATABASE.md"
@@ -55,7 +58,7 @@ struct ResolvedProject { /* defaults and expanded connections */ }
 struct RenderPlan { /* selected sources, templates, destination */ }
 ```
 
-Avoid passing partially resolved config deep into drivers or renderers.
+Avoid passing partially resolved config deep into introspection or rendering modules.
 
 ## Environment expansion
 
@@ -107,19 +110,15 @@ source preflight
 
 Render and verify fail fast enough to avoid partial work. Doctor may continue independent checks to provide a fuller diagnosis.
 
-## Driver dispatch
+## Introspection dispatch
 
-The first backend can use direct SQLite dispatch without committing to an async trait. Directional options are:
+The first backend uses a concrete SQLite interface in `dbmd-introspect` without committing to an async trait:
 
 ```rust
-enum BackendDriver {
-    Sqlite(SqliteDriver),
-    Postgres(PostgresDriver),
-    ClickHouse(ClickHouseDriver),
-}
+pub fn introspect(source: SqliteSource) -> Result<SourceSnapshot, IntrospectionError>;
 ```
 
-or a trait once common async behavior is proven. The stable boundary is a driver producing a normalized `SourceSnapshot`; dynamic dispatch is not itself a product requirement.
+A generic backend trait is deferred until a second concrete adapter proves a shared interface. The stable behavior is introspection producing a normalized `SourceSnapshot`; dynamic dispatch is not itself a product requirement.
 
 Avoid async runtime adoption until PostgreSQL or ClickHouse clients require it. A sync SQLite vertical slice should not pay that cost preemptively.
 
@@ -131,19 +130,27 @@ Directory replacement rejects repository root, home, `.git`, and other nonsensic
 
 The writer treats directory output as fully owned. It must avoid deleting arbitrary paths when config values, symlinks, or relative traversal are involved.
 
-## Command modules
+## Application and CLI modules
 
-CLI parsing should produce command-specific input types. Orchestration modules may share:
+The CLI parses command-specific values, converts them to application requests, calls one operation, and presents its report or error. It does not read project configuration, connect to databases, render templates, or write artifacts itself.
+
+The initial application interface is intentionally small:
+
+```rust
+pub fn render(request: RenderRequest) -> Result<RenderReport, RenderError>;
+```
+
+`dbmd-app` may internally compose:
 
 - Config loader.
 - Resolver and validators.
 - Source planner.
-- Driver dispatch.
+- Introspection dispatch.
 - Snapshot normalization.
 - Renderer.
 - Artifact writer/comparator.
 
-Commands decide which capabilities to invoke and how to report outcomes. This keeps `doctor`, `verify`, and `lint` from becoming modes of one oversized command function.
+Application operations decide which capabilities to invoke and return structured results. CLI commands decide only how to present those results. This keeps `doctor`, `verify`, and `lint` from becoming modes of one oversized command function.
 
 ## Error taxonomy
 
@@ -161,11 +168,10 @@ Use structured internal errors with user-facing context:
 - Output write/replace.
 - Verification drift.
 
-Credentials are redacted at construction, not through hopeful formatting discipline at the final display boundary.
+Credentials are redacted at construction, not through hopeful formatting discipline at the final display seam.
 
 ## Open implementation decisions
 
-- Config modules inside `cli` versus a crate after reuse appears.
 - Relative path base for explicit `--config` and one-off CLI usage.
-- Async boundary timing.
+- Async seam timing.
 - Exact atomic directory replacement behavior across operating systems.

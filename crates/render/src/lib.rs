@@ -1,4 +1,4 @@
-use dbmd_core::{DatabaseSchema, Table};
+use dbmd_core::{SourceSnapshot, Table};
 use minijinja::{context, Environment, UndefinedBehavior};
 use serde_json::{json, Value};
 use thiserror::Error;
@@ -9,6 +9,8 @@ pub enum RenderError {
     Template(#[from] minijinja::Error),
     #[error("failed to serialize render context: {0}")]
     Context(#[from] serde_json::Error),
+    #[error("invalid internal render context: {0}")]
+    InvalidContext(&'static str),
 }
 
 pub struct Renderer<'env> {
@@ -27,19 +29,20 @@ impl<'env> Renderer<'env> {
         Ok(Self { env })
     }
 
-    pub fn render_database(&self, schema: &DatabaseSchema) -> Result<String, RenderError> {
+    pub fn render_database(&self, source: &SourceSnapshot) -> Result<String, RenderError> {
         let tmpl = self.env.get_template("database.md.j2")?;
-        let table_docs = schema
+        let table_docs = source
             .tables
             .iter()
             .map(|table| self.render_table(table))
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(tmpl.render(context! {
-            name => schema.name,
+            name => source.display_name.as_deref().unwrap_or(source.id.as_str()),
             table_docs => table_docs,
-            views => schema.views,
-            functions => schema.functions,
+            views => source.views,
+            triggers => source.triggers,
+            functions => source.functions,
         })?)
     }
 
@@ -50,17 +53,19 @@ impl<'env> Renderer<'env> {
 
     fn table_context(&self, table: &Table) -> Result<Value, RenderError> {
         let mut value = serde_json::to_value(table)?;
-        let object = value
-            .as_object_mut()
-            .expect("serialized table should be a JSON object");
+        let object = value.as_object_mut().ok_or(RenderError::InvalidContext(
+            "serialized table was not an object",
+        ))?;
         object.insert("qualified_name".to_string(), json!(table.qualified_name()));
 
-        if let dbmd_core::TableEngine::ClickHouse(clickhouse) = &table.engine {
-            let engine = object
-                .get_mut("engine")
+        if let dbmd_core::TableBackend::ClickHouse(clickhouse) = &table.backend {
+            let backend = object
+                .get_mut("backend")
                 .and_then(Value::as_object_mut)
-                .expect("serialized engine should be a JSON object");
-            engine.insert(
+                .ok_or(RenderError::InvalidContext(
+                    "serialized table backend was not an object",
+                ))?;
+            backend.insert(
                 "engine_clause".to_string(),
                 json!(clickhouse.engine_clause()),
             );
@@ -76,7 +81,7 @@ mod tests {
 
     use dbmd_core::{
         ClickHouseColumn, ClickHouseTable, Column, ColumnBackend, Constraint, Index, Table,
-        TableEngine,
+        TableBackend,
     };
 
     use super::Renderer;
@@ -87,13 +92,13 @@ mod tests {
         settings.insert("index_granularity".to_string(), "8192".to_string());
 
         let table = Table {
-            schema: "analytics".to_string(),
+            namespace: "analytics".to_string(),
             name: "events".to_string(),
             comment: Some("Raw event stream with deduplication".to_string()),
             columns: vec![Column {
                 name: "event_type".to_string(),
                 data_type: "LowCardinality(String)".to_string(),
-                nullable: false,
+                nullable: Some(false),
                 default: None,
                 comment: Some("Values: page_view, click, purchase".to_string()),
                 backend: ColumnBackend::ClickHouse(ClickHouseColumn {
@@ -103,7 +108,7 @@ mod tests {
             }],
             constraints: Vec::<Constraint>::new(),
             indexes: Vec::<Index>::new(),
-            engine: TableEngine::ClickHouse(ClickHouseTable {
+            backend: TableBackend::ClickHouse(ClickHouseTable {
                 engine: "ReplacingMergeTree".to_string(),
                 engine_params: vec!["version".to_string(), "is_deleted".to_string()],
                 order_by: vec!["user_id".to_string(), "occurred_at".to_string()],

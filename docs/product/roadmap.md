@@ -1,6 +1,6 @@
 # Product Roadmap
 
-Status: Phase 1 complete; Phase 2 is the active milestone.
+Status: Phases 1 and 2 complete; Phase 3 is the active milestone.
 
 This roadmap orders product capability. It is not a promise that every later feature ships in the first public release.
 
@@ -21,7 +21,7 @@ The placeholder renderer does not introspect a database or write a canonical art
 
 ## Phase 2 — First useful SQLite render
 
-Status: current.
+Status: complete.
 
 Goal: turn a real local SQLite database into a deterministic, useful `DATABASE.md`.
 
@@ -52,11 +52,15 @@ Supporting work:
 
 - Minimal `dbmd.toml` parsing and environment expansion.
 - Stable source ID and display-name handling.
-- Project/source snapshot boundary for future multi-source rendering.
+- Database-context/source-snapshot seam for future multi-source rendering.
 - Dedicated render context before custom templates become a compatibility surface.
 - Snapshot or golden tests using real temporary SQLite databases.
 
-Multi-source configuration and directory layout remain MVP product requirements but do not block the first single-source tracer bullet.
+Delivered beyond the tracer bullet: configured attached SQLite namespaces,
+complete persistent SQLite DDL/schema-surface coverage, first-class views and
+triggers, virtual/shadow tables, and application-level golden Markdown tests.
+
+Multi-source output formatting and directory layout remain MVP product requirements.
 
 Exit criteria:
 
@@ -67,7 +71,7 @@ Exit criteria:
 
 ## Phase 3 — Canonical lifecycle and drift detection
 
-Status: planned.
+Status: current.
 
 - `dbmd init` for safe-to-commit configuration.
 - `dbmd verify` with byte-for-byte comparison.

@@ -1,6 +1,8 @@
 # Multiple Sources
 
-Status: accepted MVP behavior; not implemented.
+Status: named SQLite source selection and deterministic ordering implemented;
+cross-backend sources, CLI selection overrides, source-aware presentation, and
+directory layout remain.
 
 ## Configuration
 
@@ -39,10 +41,15 @@ sources = ["analytics", "app"]
 
 - Omitted selection renders all configured sources sorted by source ID.
 - Configured selection renders only the listed sources in list order.
-- Repeated CLI `--source` flags replace config selection and preserve flag order.
+- Repeated CLI `--source` flags will replace config selection and preserve flag
+  order; those flags are not implemented yet.
 - Empty selection and duplicate source IDs in an explicit order are invalid.
 
 ## Single-file layout
+
+The current renderer preserves resolved source order but concatenates one
+complete embedded document per source. The source-section rules below are the
+required replacement before multi-source output is considered complete.
 
 With `source_layout = "auto"`:
 

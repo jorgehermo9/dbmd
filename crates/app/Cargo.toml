@@ -1,0 +1,20 @@
+[package]
+name = "dbmd-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+dbmd-core = { path = "../core" }
+dbmd-introspect = { path = "../introspect" }
+dbmd-render = { path = "../render" }
+serde.workspace = true
+tempfile.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+rusqlite.workspace = true

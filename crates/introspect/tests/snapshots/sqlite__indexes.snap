@@ -1,0 +1,173 @@
+---
+source: crates/introspect/tests/sqlite.rs
+expression: snapshot
+---
+id: app
+display_name: ~
+backend: sqlite
+tables:
+  - namespace: main
+    name: catalog_items
+    comment: ~
+    columns:
+      - name: id
+        data_type: INTEGER
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: sqlite
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      - name: sku
+        data_type: TEXT
+        nullable: true
+        default: ~
+        comment: ~
+        backend:
+          backend: sqlite
+          kind: normal
+          collation: NOCASE
+          generated_expression: ~
+      - name: category
+        data_type: TEXT
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: sqlite
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      - name: name
+        data_type: TEXT
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: sqlite
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      - name: price_cents
+        data_type: INTEGER
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: sqlite
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+    constraints:
+      - name: ~
+        kind: primary_key
+        columns:
+          - id
+        expression: ~
+        references: ~
+        backend:
+          backend: sqlite
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+      - name: catalog_items_sku_key
+        kind: unique
+        columns:
+          - sku
+        expression: ~
+        references: ~
+        backend:
+          backend: sqlite
+          conflict_resolution: ignore
+          auto_increment: false
+          declared_on_column: true
+      - name: ~
+        kind: not_null
+        columns:
+          - category
+        expression: ~
+        references: ~
+        backend:
+          backend: sqlite
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+      - name: ~
+        kind: not_null
+        columns:
+          - name
+        expression: ~
+        references: ~
+        backend:
+          backend: sqlite
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+      - name: ~
+        kind: not_null
+        columns:
+          - price_cents
+        expression: ~
+        references: ~
+        backend:
+          backend: sqlite
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+    indexes:
+      - name: a_catalog_items_search_key
+        unique: true
+        terms:
+          - target:
+              column: category
+            collation: BINARY
+            order: ascending
+          - target:
+              expression: lower (name)
+            collation: NOCASE
+            order: descending
+        predicate: price_cents > 0
+        definition: "CREATE UNIQUE INDEX a_catalog_items_search_key\n    ON catalog_items (category, lower(name) COLLATE NOCASE DESC)\n    WHERE price_cents > 0"
+        backend:
+          backend: sqlite
+          origin: create_index
+      - name: sqlite_autoindex_catalog_items_1
+        unique: true
+        terms:
+          - target:
+              column: sku
+            collation: NOCASE
+            order: ascending
+        predicate: ~
+        definition: ~
+        backend:
+          backend: sqlite
+          origin: unique_constraint
+      - name: z_catalog_items_category_name
+        unique: false
+        terms:
+          - target:
+              column: category
+            collation: BINARY
+            order: ascending
+          - target:
+              column: name
+            collation: RTRIM
+            order: descending
+        predicate: ~
+        definition: "CREATE INDEX z_catalog_items_category_name\n    ON catalog_items (category ASC, name COLLATE RTRIM DESC)"
+        backend:
+          backend: sqlite
+          origin: create_index
+    backend:
+      backend: sqlite
+      without_rowid: false
+      strict: false
+      definition: "CREATE TABLE catalog_items (\n    id INTEGER PRIMARY KEY,\n    sku TEXT COLLATE NOCASE CONSTRAINT catalog_items_sku_key UNIQUE ON CONFLICT IGNORE,\n    category TEXT NOT NULL,\n    name TEXT NOT NULL,\n    price_cents INTEGER NOT NULL\n)"
+      kind:
+        kind: ordinary
+views: []
+triggers: []
+functions: []

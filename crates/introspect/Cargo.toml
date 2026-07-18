@@ -1,0 +1,19 @@
+[package]
+name = "dbmd-introspect"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+bumpalo.workspace = true
+dbmd-core = { path = "../core" }
+fallible-iterator.workspace = true
+rusqlite.workspace = true
+sqlite3-parser.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+tempfile.workspace = true

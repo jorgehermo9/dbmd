@@ -1,6 +1,8 @@
 # Schema Model
 
-Status: bootstrap model implemented; source aggregation, terminology cleanup, and provenance are required before the model becomes a stable internal contract.
+Status: source identity, source aggregation, namespace terminology, backend
+terminology, and SQLite normalization implemented; cross-backend fact provenance
+and a dedicated render context remain.
 
 ## Responsibilities
 
@@ -15,13 +17,13 @@ The normalized model represents database structure after backend introspection a
 
 ## Aggregate shape
 
-The current `DatabaseSchema` represents one unnamed source-like database. Multiple named sources require an explicit aggregate boundary.
+`SourceSnapshot` represents one identified introspection result. `DatabaseContext` is the explicit aggregate for the ordered sources selected by an application operation.
 
 Directional sketch:
 
 ```rust
-pub struct ProjectSnapshot {
-    pub sources: Vec<SourceSnapshot>,
+pub struct DatabaseContext {
+    sources: Vec<SourceSnapshot>,
 }
 
 pub struct SourceSnapshot {
@@ -34,7 +36,9 @@ pub struct SourceSnapshot {
 }
 ```
 
-Exact nesting should be proven by SQLite and multi-source fixtures. The invariant is that source identity is explicit and survives to output paths and headings.
+`DatabaseContext` is the domain aggregate consumed by application operations. Its constructor preserves resolved selection order and rejects an empty collection or duplicate source IDs. It contains no project configuration, credentials, template choices, or output paths.
+
+Exact object nesting should be proven by SQLite and multi-source fixtures. The invariant is that source identity is explicit and survives to output paths and headings.
 
 ## Object model
 
@@ -71,7 +75,7 @@ pub enum TableBackend {
 }
 ```
 
-The current code calls the backend extension field `engine` and its enum `TableEngine`. That terminology is misleading for PostgreSQL and SQLite and should be renamed before templates or consumers depend on it.
+The backend extension field is named `backend` and uses `TableBackend`. Reserve `engine` for backend concepts that actually use that term, such as a ClickHouse table engine.
 
 ## Backend identifiers
 
@@ -123,15 +127,22 @@ Preserve the raw source expression even when optional parsed metadata is added.
 
 Metadata sources include `sqlite_schema`, `PRAGMA table_xinfo`, `index_list`, `index_xinfo`, `foreign_key_list`, and `table_list` when supported.
 
+The implementation-level [SQLite coverage matrix](../../crates/introspect/src/sqlite/README.md) is the source of truth for current support and fixture evidence. This architecture document defines the intended model rather than duplicating live support status.
+
 The extension model must represent:
 
-- Hidden and generated columns.
+- Normal columns, virtual-table hidden columns, and virtual/stored generated columns as distinct `SqliteColumnKind` variants.
 - Strict tables.
 - `WITHOUT ROWID`.
 - Index origin and partial indexes.
 - Backend-version gaps in available PRAGMAs.
 
-Views should preserve raw SQL definitions. Virtual tables, FTS objects, and triggers need fixtures before final inclusion decisions.
+Generated-column kind comes from `PRAGMA table_xinfo`; virtual and stored
+expressions are preserved by parsing SQLite's stored schema SQL. Fixtures cover
+both forms.
+
+Views, virtual tables, FTS5 objects, shadow tables, and triggers are first-class
+model values with raw SQL definitions retained as a fidelity backstop.
 
 ### PostgreSQL
 
@@ -173,12 +184,15 @@ Ordering policy belongs in normalization or render-context construction, with on
 
 ## Model evolution checkpoints
 
-Before the first useful SQLite release:
+Completed for the first useful SQLite render:
 
-- Introduce project and source snapshot identity.
-- Rename the misleading table engine/backend terminology.
-- Canonicalize backend tags.
-- Decide namespace representation using attached SQLite database fixtures.
+- Introduced database-context and source-snapshot identity.
+- Renamed the misleading table engine/backend terminology.
+- Canonicalized backend tags.
+- Defined namespace representation using attached SQLite database fixtures.
+
+Before custom templates become a compatibility surface:
+
 - Separate internal model serialization from the template context.
 
 Before ClickHouse:

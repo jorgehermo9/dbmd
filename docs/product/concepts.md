@@ -19,7 +19,7 @@ Project configuration
         └── template set
 
 Ordered source snapshots
-  → Project snapshot
+  → Database context
   → Render
   → Agent-readable artifact
   → Compare with canonical artifact
@@ -44,7 +44,7 @@ Source IDs are filesystem-safe ASCII slugs. The exact MVP grammar is owned by th
 
 ## Snapshots
 
-A source snapshot is the normalized structural state of one source at render time. A project snapshot is the ordered collection selected for an output.
+A source snapshot is the normalized structural state of one source at introspection time. A database context is the ordered collection of source snapshots selected for an operation.
 
 The distinction matters because:
 
@@ -52,8 +52,9 @@ The distinction matters because:
 - The same backend may appear more than once.
 - Output order is part of the canonical artifact.
 - Source identity must survive normalization and rendering.
+- A project may configure sources that are not selected for a particular operation.
 
-A snapshot represents database structure, not operational history. It is not a migration plan, live connection, or long-term event log.
+A source snapshot represents database structure, not operational history. It is not a migration plan, live connection, or long-term event log. Database context does not imply the complete state of a project; configuration, template selection, and output policy remain separate.
 
 ## Namespace and qualification
 

@@ -1,6 +1,7 @@
 # Product Overview
 
-Status: accepted product direction; implementation is in the bootstrap phase.
+Status: accepted product direction; the first useful SQLite render is
+implemented and the canonical lifecycle is current.
 
 ## Thesis
 
@@ -115,4 +116,11 @@ Supporting commands such as `doctor`, `explain`, and `lint` have separate respon
 
 ## Current status
 
-The Cargo workspace, schema-model sketch, embedded template renderer, and placeholder CLI exist. No command currently reads `dbmd.toml`, connects to a database, or writes a canonical artifact. The current milestone is the first useful SQLite render described in the [roadmap](roadmap.md).
+The first useful SQLite render is implemented end to end. `dbmd render` reads
+`dbmd.toml`, expands environment references, selects named SQLite sources in a
+deterministic order, introspects their persistent schema surface, renders the
+embedded Markdown profile, and atomically replaces the configured artifact.
+
+The active milestone is the canonical lifecycle in [Phase 3](roadmap.md): add
+`init` and `verify`, then complete multi-source presentation and directory
+layouts before exposing custom templates as a compatibility surface.

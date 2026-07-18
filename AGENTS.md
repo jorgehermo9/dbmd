@@ -2,7 +2,7 @@
 
 Read [CONTEXT.md](CONTEXT.md) before naming product or domain concepts. Start with [docs/README.md](docs/README.md) for the complete documentation map.
 
-Phase 1 is complete and Phase 2, the first useful SQLite render, is the active milestone. Do not describe placeholder rendering as live database introspection.
+Phases 1 and 2 are complete. Phase 3, beginning with `init` and then `verify`, is the active milestone. SQLite configured single-file rendering is live; one-off rendering, directory layouts, custom templates, and non-SQLite backends are not.
 
 ## Project documentation
 
