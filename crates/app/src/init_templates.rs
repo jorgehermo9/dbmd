@@ -82,6 +82,29 @@ pub fn init_templates(
             })?;
         files.push(relative);
     }
+    for template in dbmd_backends::all_template_files() {
+        let relative = Path::new("agent").join(template.relative_path);
+        let destination = payload.join(&relative);
+        let directory = destination
+            .parent()
+            .expect("backend template paths always have a parent");
+        fs::create_dir_all(directory).map_err(|source| InitTemplatesError::Stage {
+            path: directory.to_path_buf(),
+            source,
+        })?;
+        let mut file =
+            fs::File::create(&destination).map_err(|source| InitTemplatesError::Write {
+                path: destination.clone(),
+                source,
+            })?;
+        file.write_all(template.contents.as_bytes())
+            .and_then(|()| file.sync_all())
+            .map_err(|source| InitTemplatesError::Write {
+                path: destination,
+                source,
+            })?;
+        files.push(relative);
+    }
     fs::rename(&payload, &request.template_root).map_err(|source| {
         if source.kind() == io::ErrorKind::AlreadyExists {
             InitTemplatesError::ExistingRoot(request.template_root.clone())

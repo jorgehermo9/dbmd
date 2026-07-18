@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, fs, path::PathBuf};
 
-use dbmd_core::{Backend, SourceId};
+use dbmd_backends::Backend;
+use dbmd_core::SourceId;
 use dbmd_render::{OutputLayout, SourceLayout};
 use thiserror::Error;
 
@@ -113,7 +114,6 @@ impl ExplainedSource {
         match self.backend {
             Backend::Sqlite => "sqlite",
             Backend::Postgres => "postgres",
-            Backend::ClickHouse => "clickhouse",
         }
     }
 }
@@ -302,10 +302,14 @@ fn report(operation: &ResolvedOperation) -> ExplainReport {
             .map_or(TemplateSource::Embedded, |display_root| {
                 TemplateSource::Custom { display_root }
             }),
-        required_template_entrypoints: dbmd_render::embedded_template_files()
-            .iter()
-            .map(|file| PathBuf::from(file.relative_path))
-            .collect(),
+        required_template_entrypoints: {
+            let backend_templates = dbmd_backends::all_template_files();
+            dbmd_render::embedded_template_files()
+                .iter()
+                .chain(&backend_templates)
+                .map(|file| PathBuf::from(file.relative_path))
+                .collect()
+        },
         planned_display_files,
         required_environment: operation.plan.required_environment.clone(),
     }

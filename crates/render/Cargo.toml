@@ -6,7 +6,6 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-dbmd-core = { path = "../core" }
 minijinja.workspace = true
 serde.workspace = true
 thiserror.workspace = true

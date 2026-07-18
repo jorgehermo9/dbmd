@@ -1,0 +1,407 @@
+---
+source: crates/backends/tests/sqlite.rs
+expression: snapshot
+---
+id: app
+display_name: ~
+catalog:
+  namespaces:
+    - name: main
+      comment: ~
+  tables:
+    - namespace: main
+      name: document_search
+      comment: ~
+      columns:
+        - name: title
+          data_type: ""
+          nullable: true
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: body
+          data_type: ""
+          nullable: true
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: document_search
+          data_type: ""
+          nullable: true
+          default: ~
+          comment: ~
+          kind: virtual_table_hidden
+          collation: BINARY
+          generated_expression: ~
+        - name: rank
+          data_type: ""
+          nullable: true
+          default: ~
+          comment: ~
+          kind: virtual_table_hidden
+          collation: BINARY
+          generated_expression: ~
+      constraints: []
+      indexes: []
+      without_rowid: false
+      strict: false
+      definition: "CREATE VIRTUAL TABLE document_search USING fts5(\n    title,\n    body,\n    content='documents',\n    content_rowid='id',\n    tokenize='porter unicode61'\n)"
+      kind:
+        kind: virtual
+        module: fts5
+        arguments:
+          - title
+          - body
+          - "content='documents'"
+          - "content_rowid='id'"
+          - "tokenize='porter unicode61'"
+    - namespace: main
+      name: document_search_config
+      comment: ~
+      columns:
+        - name: k
+          data_type: ""
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: v
+          data_type: ""
+          nullable: true
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: primary_key
+          columns:
+            - k
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+      indexes:
+        - name: sqlite_autoindex_document_search_config_1
+          unique: true
+          terms:
+            - target:
+                column: k
+              collation: BINARY
+              operator_class: ~
+              order: ascending
+              nulls_order: ~
+          predicate: ~
+          definition: ~
+          origin: primary_key
+      without_rowid: true
+      strict: false
+      definition: "CREATE TABLE 'document_search_config'(k PRIMARY KEY, v) WITHOUT ROWID"
+      kind:
+        kind: shadow
+        virtual_table: document_search
+    - namespace: main
+      name: document_search_data
+      comment: ~
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: block
+          data_type: BLOB
+          nullable: true
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+      indexes: []
+      without_rowid: false
+      strict: false
+      definition: "CREATE TABLE 'document_search_data'(id INTEGER PRIMARY KEY, block BLOB)"
+      kind:
+        kind: shadow
+        virtual_table: document_search
+    - namespace: main
+      name: document_search_docsize
+      comment: ~
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: sz
+          data_type: BLOB
+          nullable: true
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+      indexes: []
+      without_rowid: false
+      strict: false
+      definition: "CREATE TABLE 'document_search_docsize'(id INTEGER PRIMARY KEY, sz BLOB)"
+      kind:
+        kind: shadow
+        virtual_table: document_search
+    - namespace: main
+      name: document_search_idx
+      comment: ~
+      columns:
+        - name: segid
+          data_type: ""
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: term
+          data_type: ""
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: pgno
+          data_type: ""
+          nullable: true
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: primary_key
+          columns:
+            - segid
+            - term
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: false
+      indexes:
+        - name: sqlite_autoindex_document_search_idx_1
+          unique: true
+          terms:
+            - target:
+                column: segid
+              collation: BINARY
+              operator_class: ~
+              order: ascending
+              nulls_order: ~
+            - target:
+                column: term
+              collation: BINARY
+              operator_class: ~
+              order: ascending
+              nulls_order: ~
+          predicate: ~
+          definition: ~
+          origin: primary_key
+      without_rowid: true
+      strict: false
+      definition: "CREATE TABLE 'document_search_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID"
+      kind:
+        kind: shadow
+        virtual_table: document_search
+    - namespace: main
+      name: documents
+      comment: ~
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: title
+          data_type: TEXT
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: body
+          data_type: TEXT
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: updated_at
+          data_type: TEXT
+          nullable: false
+          default: CURRENT_TIMESTAMP
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: ~
+          kind: not_null
+          columns:
+            - title
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: ~
+          kind: not_null
+          columns:
+            - body
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: ~
+          kind: not_null
+          columns:
+            - updated_at
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+      indexes: []
+      without_rowid: false
+      strict: false
+      definition: "CREATE TABLE documents (\n    id INTEGER PRIMARY KEY,\n    title TEXT NOT NULL,\n    body TEXT NOT NULL,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n)"
+      kind:
+        kind: ordinary
+  views:
+    - namespace: main
+      name: document_summaries
+      definition: "CREATE VIEW document_summaries (document_id, heading) AS\nSELECT id, title FROM documents"
+      columns:
+        - name: document_id
+          data_type: INTEGER
+          nullable: ~
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: heading
+          data_type: TEXT
+          nullable: ~
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+    - namespace: main
+      name: document_titles
+      definition: "CREATE VIEW document_titles AS\nSELECT id, title, length(body) AS body_length FROM documents"
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: ~
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: title
+          data_type: TEXT
+          nullable: ~
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: body_length
+          data_type: ""
+          nullable: ~
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+  triggers:
+    - namespace: main
+      name: document_summaries_insert
+      target_namespace: main
+      target: document_summaries
+      timing: instead_of
+      event:
+        event: insert
+      when_expression: ~
+      definition: "CREATE TRIGGER document_summaries_insert\nINSTEAD OF INSERT ON document_summaries\nBEGIN\n    INSERT INTO documents (id, title, body)\n    VALUES (NEW.document_id, NEW.heading, '');\nEND"
+    - namespace: main
+      name: documents_prevent_root_delete
+      target_namespace: main
+      target: documents
+      timing: before
+      event:
+        event: delete
+      when_expression: OLD.id = 0
+      definition: "CREATE TRIGGER documents_prevent_root_delete\nBEFORE DELETE ON documents\nWHEN OLD.id = 0\nBEGIN\n    SELECT RAISE(IGNORE);\nEND"
+    - namespace: main
+      name: documents_touch_updated_at
+      target_namespace: main
+      target: documents
+      timing: after
+      event:
+        event: update
+        columns:
+          - title
+          - body
+      when_expression: NEW.updated_at = OLD.updated_at
+      definition: "CREATE TRIGGER documents_touch_updated_at\nAFTER UPDATE OF title, body ON documents\nFOR EACH ROW\nWHEN NEW.updated_at = OLD.updated_at\nBEGIN\n    UPDATE documents\n    SET updated_at = CURRENT_TIMESTAMP\n    WHERE id = NEW.id;\nEND"

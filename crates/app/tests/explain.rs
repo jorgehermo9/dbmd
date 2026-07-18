@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, fs};
 
 use dbmd_app::{explain, DirectoryVariant, ExplainDestination, ExplainRequest, TemplateSource};
-use dbmd_core::Backend;
+use dbmd_backends::Backend;
 
 #[test]
 fn explains_resolution_without_connecting_or_exposing_credentials() {
@@ -107,7 +107,10 @@ sources = ["first"]
             display_root: project.path().join("templates/dbmd")
         }
     );
-    assert_eq!(report.required_template_entrypoints.len(), 8);
+    assert_eq!(
+        report.required_template_entrypoints.len(),
+        dbmd_render::embedded_template_files().len() + dbmd_backends::all_template_files().len()
+    );
 }
 
 #[test]

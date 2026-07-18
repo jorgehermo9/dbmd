@@ -494,6 +494,7 @@ dependencies = [
  "anyhow",
  "clap",
  "dbmd-app",
+ "dbmd-backends",
  "dbmd-render",
  "rusqlite",
  "tempfile",
@@ -503,8 +504,8 @@ dependencies = [
 name = "dbmd-app"
 version = "0.1.0"
 dependencies = [
+ "dbmd-backends",
  "dbmd-core",
- "dbmd-introspect",
  "dbmd-render",
  "dbmd-test-support",
  "insta",
@@ -517,6 +518,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "dbmd-backends"
+version = "0.1.0"
+dependencies = [
+ "bumpalo",
+ "dbmd-core",
+ "dbmd-render",
+ "dbmd-test-support",
+ "fallible-iterator 0.3.0",
+ "insta",
+ "postgres",
+ "rusqlite",
+ "serde",
+ "sqlite3-parser",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "dbmd-core"
 version = "0.1.0"
 dependencies = [
@@ -525,26 +544,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "dbmd-introspect"
-version = "0.1.0"
-dependencies = [
- "bumpalo",
- "dbmd-core",
- "dbmd-test-support",
- "fallible-iterator 0.3.0",
- "insta",
- "postgres",
- "rusqlite",
- "sqlite3-parser",
- "tempfile",
- "thiserror",
-]
-
-[[package]]
 name = "dbmd-render"
 version = "0.1.0"
 dependencies = [
- "dbmd-core",
  "insta",
  "minijinja",
  "serde",

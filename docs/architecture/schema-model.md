@@ -1,189 +1,95 @@
 # Schema Model
 
-## Responsibilities
+## Identity envelope
 
-The normalized model represents database structure after backend introspection and before presentation. It should:
-
-- Preserve common relationships without erasing backend differences.
-- Carry stable source and namespace identity.
-- Distinguish observed, effective, and unknown facts when the distinction matters.
-- Support deterministic traversal.
-- Avoid dependencies on database drivers, CLI parsing, and templates.
-- Serialize into a dedicated render context without itself becoming the template API.
-
-## Aggregate shape
-
-`SourceSnapshot` represents one identified introspection result. `DatabaseContext` is the explicit aggregate for the ordered sources selected by an application operation.
-
-Directional sketch:
+A source snapshot has one backend-neutral envelope and one backend-owned
+catalog:
 
 ```rust
-pub struct DatabaseContext {
-    sources: Vec<SourceSnapshot>,
+pub struct SourceSnapshot<C> {
+    id: SourceId,
+    display_name: Option<String>,
+    catalog: C,
 }
 
-pub struct SourceSnapshot {
-    pub id: SourceId,
-    pub display_name: Option<String>,
-    pub backend: Backend,
-    pub namespaces: Vec<Namespace>,
-    pub views: Vec<View>,
-    pub functions: Vec<Function>,
+pub struct DatabaseContext<C> {
+    sources: Vec<SourceSnapshot<C>>,
 }
 ```
 
-`DatabaseContext` is the domain aggregate consumed by application operations. Its constructor preserves resolved selection order and rejects an empty collection or duplicate source IDs. It contains no project configuration, credentials, template choices, or output paths.
+`SourceId` is stable selection and path identity. `display_name` is
+presentation-only. `DatabaseContext` preserves resolved source order and
+rejects empty selections and duplicate IDs. Neither type contains credentials,
+templates, output paths, or backend registration.
 
-Exact object nesting should be proven by SQLite and multi-source fixtures. The invariant is that source identity is explicit and survives to output paths and headings.
+## Backend-owned catalogs
 
-## Object model
-
-Common concepts include:
-
-- Namespace.
-- Table.
-- Column.
-- Constraint.
-- Foreign-key reference.
-- Index.
-- View and materialized view.
-- Function and signature.
-- Enum and enum values.
-- Extension where supported.
-
-Tables and columns carry common fields plus backend-specific extensions:
+There is no universal `TableBackend`, `ColumnBackend`, or equivalent extension
+enum in core. SQLite and PostgreSQL own independent aggregate types:
 
 ```rust
-pub struct Table {
-    pub namespace: String,
-    pub name: String,
-    pub comment: Option<String>,
-    pub columns: Vec<Column>,
-    pub constraints: Vec<Constraint>,
-    pub indexes: Vec<Index>,
-    pub backend: TableBackend,
-}
-
-pub enum TableBackend {
-    Sqlite(SqliteTable),
-    Postgres(PostgresTable),
-    ClickHouse(ClickHouseTable),
-}
+sqlite::Catalog { tables: Vec<sqlite::Table>, /* ... */ }
+postgres::Catalog { tables: Vec<postgres::Table>, /* ... */ }
 ```
 
-The backend extension field is named `backend` and uses `TableBackend`. Reserve `engine` for backend concepts that actually use that term, such as a ClickHouse table engine.
+This permits SQLite `Trigger` to contain its single grammar event while
+PostgreSQL `Trigger` represents multiple events, row/statement orientation,
+transition tables, function arguments, constraint metadata, parentage, and
+enablement. Neither shape is forced to pretend that the other database has the
+same semantics.
 
-## Backend identifiers
+Shared values under `backends::relational` are deliberately small and require
+equivalent meaning across represented backends. Current examples include
+namespaces, constraint categories, foreign-key actions and references, and
+ordered index terms. Shared leaf types do not imply a shared aggregate model.
 
-Use one canonical product spelling per backend:
+## Composition catalog
 
-- `sqlite`
-- `postgres`
-- `clickhouse`
-
-Serde tags, config values, diagnostics, and render contexts should not alternate between `clickhouse` and `click_house`. Rust variant naming remains idiomatic without defining external spelling.
-
-## Facts and provenance
-
-Some values need provenance:
+Application operations need a heterogeneous ordered source collection. The
+`dbmd-backends` root provides a closed compile-time catalog enum:
 
 ```rust
-pub enum Fact<T> {
-    Observed(T),
-    Effective {
-        value: T,
-        reason: EffectiveReason,
-    },
-    Unknown {
-        reason: UnknownReason,
-    },
+pub enum Catalog {
+    Sqlite(sqlite::Catalog),
+    Postgres(postgres::Catalog),
 }
+
+pub type DatabaseContext = dbmd_core::DatabaseContext<Catalog>;
 ```
 
-Reasons should be typed or stable identifiers where dbmd needs programmatic behavior. Free-form explanation belongs in the render context.
+This is composition wiring, not the domain owner of concrete catalogs. Adding
+a backend changes this root by design but does not change core or render.
 
-Do not wrap every scalar reflexively. Introduce `Fact<T>` where absence,
-derivation, and unknown lead an agent to different conclusions. ClickHouse
-effective keys are a motivating case.
+## Facts and fidelity
 
-## SQL expressions and types
+Catalog adapters distinguish absence from unknown wherever it affects agent
+reasoning. Typed provenance may be introduced for facts whose observed,
+effective, and unknown states lead to different conclusions; it should not wrap
+every scalar reflexively.
 
-Raw strings are acceptable for defaults, generated expressions, checks, predicates, view definitions, keys, partitions, and TTLs while dbmd only needs faithful rendering.
-
-Structured parsing is justified when it enables:
-
-- Correct cross-object links.
-- Stable normalization unavailable from catalog fields.
-- Lint rules that cannot operate on raw expressions.
-- Backend-default computation.
-
-Preserve the raw source expression even when optional parsed metadata is added.
-
-## Backend coverage
-
-### SQLite
-
-Metadata sources include `sqlite_schema`, `PRAGMA table_xinfo`, `index_list`, `index_xinfo`, `foreign_key_list`, and `table_list` when supported.
-
-The adapter-local [SQLite coverage matrix](../../crates/introspect/src/sqlite/README.md)
-is the source of truth for fixture evidence. This architecture document defines
-the model rather than duplicating adapter coverage.
-
-The extension model must represent:
-
-- Normal columns, virtual-table hidden columns, and virtual/stored generated columns as distinct `SqliteColumnKind` variants.
-- Strict tables.
-- `WITHOUT ROWID`.
-- Index origin and partial indexes.
-- Backend-version gaps in available PRAGMAs.
-
-Generated-column kind comes from `PRAGMA table_xinfo`; virtual and stored
-expressions are preserved by parsing SQLite's stored schema SQL. Fixtures cover
-both forms.
-
-Views, virtual tables, FTS5 objects, shadow tables, and triggers are first-class
-model values with raw SQL definitions retained as a fidelity backstop.
-
-### PostgreSQL
-
-Use `pg_catalog` where `information_schema` loses semantics. PostgreSQL
-extensions include:
-
-- Relation kinds, tablespaces, inheritance, and partitioning.
-- Row-level security and policies.
-- Identity and generated columns.
-- Enum values.
-- Index methods, predicates, expressions, and included columns.
-- Function volatility and signatures.
-
-PostgreSQL adapter scope is defined by fixtures rather than an attempt to expose
-every catalog feature.
-
-The implementation-level [PostgreSQL coverage matrix](../../crates/introspect/src/postgres/README.md)
-records the fixture-proven catalog and DDL surface.
-
-### ClickHouse
-
-ClickHouse extensions include:
-
-- Engine name and parameters.
-- Sorting, explicit/effective primary, partition, and sampling keys.
-- TTL expressions.
-- Column codecs.
-- Data-skipping indexes.
-- Table settings.
-
-Engine names and parameters remain structurally modest; a typed engine enum
-requires representative `engine_full` fixture evidence.
+Raw strings are appropriate for defaults, generated expressions, checks,
+predicates, view/function/trigger definitions, partition expressions, and other
+SQL until structured parsing enables correctness, linking, or lint behavior.
+Preserve raw definitions when adding parsed fields.
 
 ## Deterministic normalization
 
-Drivers must not expose catalog row order as product behavior. Before rendering, normalize:
+Each backend owns stable ordering for its catalog:
 
-- Selected sources according to resolved selection order.
-- Namespaces and schema objects using stable backend-appropriate keys.
-- Columns using ordinal position.
-- Composite constraint and index columns using stored ordinal position.
-- Unordered settings/maps using ordered map types or explicit sorting.
+- Namespaces and objects use backend-appropriate stable keys.
+- Columns use catalog ordinal position.
+- Composite constraints and index terms use stored ordinal position.
+- Unordered maps are converted to ordered maps or sorted vectors.
+- Selected sources preserve the application-resolved order.
 
-Ordering policy belongs in normalization or render-context construction, with one testable owner per collection.
+Drivers never expose unspecified catalog row order as product behavior.
+
+## Coverage contracts
+
+The durable implementation coverage matrices live beside the owning backend:
+
+- [SQLite](../../crates/backends/src/sqlite/README.md)
+- [PostgreSQL](../../crates/backends/src/postgres/README.md)
+
+Product documentation states user-visible contracts; these module documents
+state which backend schema facts are implemented and fixture-proven.

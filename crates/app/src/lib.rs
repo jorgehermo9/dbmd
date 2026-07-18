@@ -27,8 +27,8 @@ pub use output::OutputError;
 
 use std::{collections::BTreeMap, fs, path::Path, path::PathBuf, str::FromStr};
 
-use dbmd_core::{DatabaseContext, SourceId};
-use dbmd_introspect::{self as introspect, IntrospectionError};
+use dbmd_backends::{self as backends, IntrospectionError};
+use dbmd_core::SourceId;
 use dbmd_render::{RenderedArtifact, Renderer};
 use thiserror::Error;
 
@@ -375,7 +375,7 @@ fn generate(
                 ));
             }
             config::RenderPlan {
-                sources: vec![dbmd_introspect::sqlite::SqliteSource::new(
+                sources: vec![dbmd_backends::sqlite::SqliteSource::new(
                     SourceId::from_str("local")
                         .expect("the built-in one-off source ID is always valid"),
                     path,
@@ -414,22 +414,27 @@ fn generate(
             )?)
         }
     };
+    let template_files = backends::all_template_files();
     let renderer = match &plan.template_root {
-        Some(root) => Renderer::from_template_root(root, &plan.profile)?,
-        None => Renderer::embedded()?,
+        Some(root) => Renderer::from_template_root(root, &plan.profile, &template_files)?,
+        None => Renderer::embedded(&template_files)?,
     };
     let snapshots = plan
         .sources
         .iter()
-        .map(introspect::introspect)
+        .map(backends::introspect)
         .collect::<Result<Vec<_>, _>>()?;
-    let context = DatabaseContext::new(snapshots)?;
+    let context = backends::DatabaseContext::new(snapshots)?;
     let source_ids = context
         .sources()
         .iter()
-        .map(|source| source.id.clone())
+        .map(|source| source.id().clone())
         .collect::<Vec<_>>();
-    let artifact = renderer.render_with_options(&context, plan.render_options)?;
+    let nested = plan.render_options.source_layout == dbmd_render::SourceLayout::Nested
+        || (plan.render_options.source_layout == dbmd_render::SourceLayout::Auto
+            && context.sources().len() > 1);
+    let render_context = backends::render_context(&context, nested);
+    let artifact = renderer.render_with_options(&render_context, plan.render_options)?;
     Ok(GeneratedArtifact {
         output_path,
         source_ids,

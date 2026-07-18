@@ -408,7 +408,11 @@ kind = "directory"
 }
 
 fn write_complete_template_profile(root: &std::path::Path) {
-    for file in dbmd_render::embedded_template_files() {
+    let backend_templates = dbmd_backends::all_template_files();
+    for file in dbmd_render::embedded_template_files()
+        .iter()
+        .chain(&backend_templates)
+    {
         let path = root.join("agent").join(file.relative_path);
         fs::create_dir_all(path.parent().expect("template should have a parent"))
             .expect("template directory should be created");

@@ -6,12 +6,6 @@ The default file is `dbmd.toml`. Configuration uses one named multi-source
 shape and one configured output:
 
 ```toml
-[sources.analytics]
-display_name = "Analytics"
-backend = "clickhouse"
-url = "${CLICKHOUSE_URL}"
-database = "default"
-
 [sources.app]
 backend = "postgres"
 url = "${DATABASE_URL}"
@@ -26,7 +20,7 @@ path = "./analytics.db"
 [output]
 path = "DATABASE.md"
 profile = "agent"
-sources = ["analytics", "app"]
+sources = ["app", "local"]
 
 [output.layout]
 kind = "single_file"
@@ -111,19 +105,25 @@ Render and verify fail fast enough to avoid partial work. Doctor may continue in
 
 ## Introspection dispatch
 
-SQLite and PostgreSQL expose concrete adapters in `dbmd-introspect`. Their proven
-shared behavior is represented by a closed source enum and one dispatch
-function, without a driver trait:
+SQLite and PostgreSQL expose concrete vertical modules in `dbmd-backends`.
+Their composition root provides a closed source enum and dispatch function,
+without a driver trait:
 
 ```rust
 pub enum Source { Sqlite(SqliteSource), Postgres(PostgresSource) }
-pub fn introspect(source: &Source) -> Result<SourceSnapshot, IntrospectionError>;
+pub fn introspect(source: &Source) -> Result<SourceSnapshot<Catalog>, IntrospectionError>;
 ```
 
 A generic backend trait is not part of this boundary because application
 orchestration needs closed dispatch, not runtime-extensible drivers. The stable behavior is
-introspection producing a normalized `SourceSnapshot`; dynamic dispatch is not
-itself a product requirement.
+introspection producing a normalized source envelope around one backend-owned
+catalog; dynamic dispatch is not itself a product requirement.
+
+The same composition root owns the internally tagged `SourceConfig` enum while
+each backend module owns its committed field struct and concrete source
+construction. App supplies project-relative path bases and a value-expansion
+closure, so environment policy and required-variable reporting remain
+project-level concerns without App destructuring SQLite or PostgreSQL fields.
 
 Adapters use synchronous clients. Runtime choice is internal and not part of
 the public seam.

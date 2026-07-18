@@ -110,7 +110,11 @@ path = "DATABASE.md"
     )
     .expect("config should be written");
     let root = project.path().join("custom-templates");
-    for file in dbmd_render::embedded_template_files() {
+    let backend_templates = dbmd_backends::all_template_files();
+    for file in dbmd_render::embedded_template_files()
+        .iter()
+        .chain(&backend_templates)
+    {
         let path = root.join("agent").join(file.relative_path);
         fs::create_dir_all(path.parent().expect("template should have a parent"))
             .expect("template directories should be created");
@@ -156,11 +160,13 @@ fn init_templates_creates_a_complete_compilable_profile() {
         String::from_utf8_lossy(&init.stderr)
     );
     let root = project.path().join("templates/dbmd");
-    dbmd_render::Renderer::from_template_root(&root, "agent")
+    dbmd_render::Renderer::from_template_root(&root, "agent", &dbmd_backends::all_template_files())
         .expect("CLI-initialized template root should compile");
+    let expected_count =
+        dbmd_render::embedded_template_files().len() + dbmd_backends::all_template_files().len();
     assert!(String::from_utf8(init.stdout)
         .expect("report should be UTF-8")
-        .contains("8 template files"));
+        .contains(&format!("{expected_count} template files")));
 }
 
 #[test]

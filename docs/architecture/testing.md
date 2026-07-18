@@ -8,18 +8,19 @@ Tests must prove semantic fidelity, deterministic output, safe filesystem behavi
 
 Each crate is tested at its public interface. Unit tests cover concentrated internal domain behavior; integration tests prove the behavior of the crate as a module. Tests should not expose internal seams solely to reach implementation details.
 
-### Core model tests
+### Core envelope tests
 
 Use focused unit tests for real domain behavior:
 
-- Qualification rules.
-- Effective-fact derivation.
-- Stable normalization order.
-- Backend-specific helpers with semantic meaning.
+- Source-ID validation.
+- Source envelope construction.
+- Selected source order.
+- Empty and duplicate source rejection.
 
 Avoid tests that only repeat field assignment or serde derives.
 
-Core integration tests exercise construction of complete `DatabaseContext` values and their cross-object invariants without database, template, or filesystem dependencies.
+Core integration tests exercise `DatabaseContext<C>` invariants without a
+database, template, filesystem dependency, or concrete backend catalog.
 
 ### Config tests
 
@@ -33,7 +34,7 @@ Table-driven tests cover:
 - Layout/flag incompatibilities.
 - Output-path resolution.
 
-### Introspection tests
+### Backend tests
 
 Introspection uses real databases where practical:
 
@@ -61,7 +62,10 @@ Include difficult content:
 - Name collisions across namespaces and sources.
 - Observed, effective, absent, and unknown facts.
 
-Renderer integration tests construct core values directly. This keeps presentation snapshots fast and makes a renderer regression distinguishable from an introspection regression.
+Renderer integration tests construct presentation values directly. Backend
+integration tests separately prove the catalog-to-render-context mapping. This
+keeps presentation tests fast and prevents `dbmd-render` from depending on
+backend catalogs.
 
 ### Application integration tests
 
@@ -110,7 +114,7 @@ Use Cargo integration-test directories within the owning crate rather than a wor
 
 ```text
 crates/core/tests/
-crates/introspect/tests/
+crates/backends/tests/
   fixtures/sqlite/<case>/schema.sql
   fixtures/postgres/<case>/schema.sql
   snapshots/
@@ -167,11 +171,11 @@ logical databases, forcibly drops each database through an RAII guard, and then
 drops the container:
 
 ```sh
-cargo test -p dbmd-introspect --features postgres-tests --test postgres
+cargo test -p dbmd-backends --features postgres-tests --test postgres
 cargo test -p dbmd-app --features postgres-tests --test postgres
 ```
 
 The shared lifecycle implementation lives in `crates/test-support`; fixture SQL,
 assertions, and snapshots remain in the crate whose public seam they test.
 Catalog coverage is documented beside the adapter in
-`crates/introspect/src/postgres/README.md`.
+`crates/backends/src/postgres/README.md`.

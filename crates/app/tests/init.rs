@@ -68,16 +68,20 @@ fn initializes_a_complete_project_owned_template_profile() {
     assert_eq!(report.template_root, root);
     assert_eq!(
         report.files.len(),
-        dbmd_render::embedded_template_files().len()
+        dbmd_render::embedded_template_files().len() + dbmd_backends::all_template_files().len()
     );
-    for file in dbmd_render::embedded_template_files() {
+    let backend_templates = dbmd_backends::all_template_files();
+    for file in dbmd_render::embedded_template_files()
+        .iter()
+        .chain(&backend_templates)
+    {
         assert_eq!(
             fs::read_to_string(root.join("agent").join(file.relative_path))
                 .expect("initialized template should exist"),
             file.contents
         );
     }
-    dbmd_render::Renderer::from_template_root(&root, "agent")
+    dbmd_render::Renderer::from_template_root(&root, "agent", &dbmd_backends::all_template_files())
         .expect("initialized template root should compile");
 }
 

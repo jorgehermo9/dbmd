@@ -1,13 +1,11 @@
 use std::str::FromStr;
 
-use dbmd_core::{
-    Backend, DatabaseContext, DatabaseContextError, SourceId, SourceIdError, SourceSnapshot,
-};
+use dbmd_core::{DatabaseContext, DatabaseContextError, SourceId, SourceIdError, SourceSnapshot};
 
-fn source(id: &str) -> SourceSnapshot {
+fn source(id: &str) -> SourceSnapshot<()> {
     SourceSnapshot::new(
         SourceId::from_str(id).expect("test source ID should be valid"),
-        Backend::Sqlite,
+        (),
     )
 }
 
@@ -37,8 +35,7 @@ fn source_id_rejects_empty_and_path_like_values() {
 
 #[test]
 fn database_context_preserves_selected_source_order_and_identity() {
-    let mut analytics = source("analytics");
-    analytics.display_name = Some("Analytics Warehouse".to_string());
+    let analytics = source("analytics").with_display_name("Analytics Warehouse");
     let application = source("app");
 
     let context = DatabaseContext::new(vec![analytics, application])
@@ -47,19 +44,19 @@ fn database_context_preserves_selected_source_order_and_identity() {
     let source_ids = context
         .sources()
         .iter()
-        .map(|source| source.id.as_str())
+        .map(|source| source.id().as_str())
         .collect::<Vec<_>>();
     assert_eq!(source_ids, ["analytics", "app"]);
     assert_eq!(
-        context.sources()[0].display_name.as_deref(),
+        context.sources()[0].display_name(),
         Some("Analytics Warehouse")
     );
-    assert_eq!(context.sources()[0].id.as_str(), "analytics");
+    assert_eq!(context.sources()[0].id().as_str(), "analytics");
 }
 
 #[test]
 fn database_context_rejects_an_empty_source_selection() {
-    let result = DatabaseContext::new(Vec::new());
+    let result = DatabaseContext::<()>::new(Vec::new());
 
     assert_eq!(result, Err(DatabaseContextError::Empty));
 }

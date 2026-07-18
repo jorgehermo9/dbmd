@@ -12,6 +12,10 @@ The Markdown output produced by dbmd. It prioritizes explicit database semantics
 
 The database family whose metadata rules dbmd understands, such as SQLite, PostgreSQL, or ClickHouse. A backend determines how a source is introspected and which semantics must be preserved.
 
+### Catalog
+
+The backend-owned, normalized structural content inside a source snapshot. A catalog is not a copy of vendor catalog rows: it expresses the database family's semantics in stable dbmd types while retaining raw definitions where they are the fidelity backstop.
+
 ### Canonical artifact
 
 The one output destination declared by a project's committed configuration. It is the artifact that `render` updates and `verify` checks. Alternate one-off renders are not canonical artifacts.
@@ -62,7 +66,7 @@ The filesystem-safe key that identifies a source in configuration, CLI selection
 
 ### Source snapshot
 
-The normalized, point-in-time structural description produced by introspecting one source. It contains schema objects and the backend facts needed to understand them.
+The normalized, point-in-time structural description produced by introspecting one source. It is a common identity envelope containing the source ID, optional display name, and exactly one backend-owned catalog.
 
 ### Template set
 

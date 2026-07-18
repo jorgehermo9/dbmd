@@ -2,6 +2,10 @@
 
 **{{ trigger.event }}** on {{ trigger.target }}.
 
+{% for fact in trigger.facts -%}
+**{{ fact.label }}:** {{ fact.value }}
+
+{% endfor -%}
 {% if trigger.when_expression -%}
 When: {{ trigger.when_expression }}
 

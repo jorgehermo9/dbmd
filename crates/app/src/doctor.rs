@@ -183,7 +183,7 @@ pub fn doctor(request: DoctorRequest) -> DoctorReport {
                     ),
                 };
             }
-            match dbmd_introspect::introspect(source) {
+            match dbmd_backends::introspect(source) {
                 Ok(_) => Diagnostic {
                     stage: DiagnosticStage::Connection,
                     source: Some(source.id().clone()),
@@ -306,8 +306,12 @@ fn template_diagnostic(plan: &config::DoctorPlan) -> Diagnostic {
         };
     }
     let result = match &plan.render.template_root {
-        Some(root) => dbmd_render::Renderer::from_template_root(root, &plan.render.profile),
-        None => dbmd_render::Renderer::embedded(),
+        Some(root) => dbmd_render::Renderer::from_template_root(
+            root,
+            &plan.render.profile,
+            &dbmd_backends::all_template_files(),
+        ),
+        None => dbmd_render::Renderer::embedded(&dbmd_backends::all_template_files()),
     };
     match result {
         Ok(_) => Diagnostic {

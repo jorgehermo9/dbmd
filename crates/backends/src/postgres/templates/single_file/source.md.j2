@@ -1,0 +1,58 @@
+{% if source.nested -%}
+## Source: `{{ source.id }}`{% if source.has_display_name %} — {{ source.name }}{% endif %}
+
+Backend: `{{ source.backend }}`
+
+{% endif -%}
+{% if source.namespaces -%}
+{{ source.section_heading }} Namespaces
+
+| Name | Comment |
+|---|---|
+{% for namespace in source.namespaces -%}
+| {{ namespace.name }} | {{ namespace.comment or "-" }} |
+{% endfor %}
+
+{% endif -%}
+{% if source.enums -%}
+{{ source.section_heading }} Enum Types
+
+| Type | Values | Comment |
+|---|---|---|
+{% for enum in source.enums -%}
+| {{ enum.qualified_name }} | {{ enum.values }} | {{ enum.comment or "-" }} |
+{% endfor %}
+
+{% endif -%}
+{% if source.tables -%}
+{{ source.section_heading }} Tables
+
+{% for table in source.tables -%}
+{% include "table.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.views -%}
+{{ source.section_heading }} Views
+
+{% for view in source.views -%}
+{% include "view.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.triggers -%}
+{{ source.section_heading }} Triggers
+
+{% for trigger in source.triggers -%}
+{% include "trigger.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.functions -%}
+{{ source.section_heading }} Functions
+
+{% for function in source.functions -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}

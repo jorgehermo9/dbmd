@@ -4,9 +4,9 @@ use std::{
     str::FromStr,
 };
 
+use dbmd_backends::sqlite::SqliteSourceError;
+use dbmd_backends::{Source, SourceConfig, SourceConfigResolveError};
 use dbmd_core::SourceId;
-use dbmd_introspect::sqlite::{SqliteSource, SqliteSourceError};
-use dbmd_introspect::{postgres::PostgresSource, Source};
 use dbmd_render::{OutputLayout, RenderOptions, SourceLayout};
 use serde::Deserialize;
 use thiserror::Error;
@@ -17,27 +17,6 @@ struct ParsedProject {
     sources: BTreeMap<String, SourceConfig>,
     output: OutputConfig,
     templates: Option<TemplatesConfig>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(tag = "backend", rename_all = "lowercase", deny_unknown_fields)]
-enum SourceConfig {
-    Sqlite {
-        path: String,
-        display_name: Option<String>,
-        #[serde(default)]
-        attachments: BTreeMap<String, AttachmentConfig>,
-    },
-    Postgres {
-        url: String,
-        display_name: Option<String>,
-    },
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct AttachmentConfig {
-    path: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -235,16 +214,8 @@ fn environment_requirements(
             continue;
         };
         let mut names = BTreeSet::new();
-        match source {
-            SourceConfig::Sqlite {
-                path, attachments, ..
-            } => {
-                names.extend(environment_names(path)?);
-                for attachment in attachments.values() {
-                    names.extend(environment_names(&attachment.path)?);
-                }
-            }
-            SourceConfig::Postgres { url, .. } => names.extend(environment_names(url)?),
+        for value in source.environment_values() {
+            names.extend(environment_names(value)?);
         }
         all.extend(names.iter().cloned());
         by_source.insert(id, names);
@@ -338,44 +309,14 @@ fn resolve_project(
             .get(&selected_id)
             .ok_or_else(|| ConfigError::UnknownSource(selected_id.clone()))?;
         let source_id = SourceId::from_str(&selected_id)?;
-        let source = match source_config {
-            SourceConfig::Sqlite {
-                path,
-                display_name,
-                attachments,
-            } => {
-                let path = resolve_path(
-                    base,
-                    &expand_environment(path, environment, &mut required_environment)?,
-                );
-                let mut source = SqliteSource::new(source_id, path);
-                if let Some(display_name) = display_name {
-                    source = source.with_display_name(display_name);
-                }
-                for (namespace, attachment) in attachments {
-                    let path = resolve_path(
-                        base,
-                        &expand_environment(
-                            &attachment.path,
-                            environment,
-                            &mut required_environment,
-                        )?,
-                    );
-                    source = source.with_attached_database(namespace, path)?;
-                }
-                Source::Sqlite(source)
-            }
-            SourceConfig::Postgres { url, display_name } => {
-                let mut source = PostgresSource::new(
-                    source_id,
-                    expand_environment(url, environment, &mut required_environment)?,
-                );
-                if let Some(display_name) = display_name {
-                    source = source.with_display_name(display_name);
-                }
-                Source::Postgres(source)
-            }
-        };
+        let source = source_config
+            .resolve(source_id, base, |value| {
+                expand_environment(value, environment, &mut required_environment)
+            })
+            .map_err(|error| match error {
+                SourceConfigResolveError::Value(error) => error,
+                SourceConfigResolveError::Sqlite(error) => ConfigError::SqliteSource(error),
+            })?;
         sources.push(source);
     }
 
@@ -740,7 +681,7 @@ sources = ["production", "local"]
         );
         assert!(matches!(
             &plan.sources[0],
-            dbmd_introspect::Source::Postgres(_)
+            dbmd_backends::Source::Postgres(_)
         ));
         assert!(!format!("{:?}", plan.sources[0]).contains("password"));
     }

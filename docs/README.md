@@ -14,7 +14,7 @@ the user-facing command reference, not in status ledgers inside specifications.
 ## Architecture
 
 - [Overview](architecture/overview.md) — design principles, workspace shape, boundaries, and data flow.
-- [Schema model](architecture/schema-model.md) — normalized model, backend extensions, source aggregation, and fact provenance.
+- [Schema model](architecture/schema-model.md) — generic source envelopes, backend-owned catalogs, composition, and deterministic normalization.
 - [Rendering](architecture/rendering.md) — render context, templates, deterministic output, and writing artifacts.
 - [Configuration and CLI](architecture/config-and-cli.md) — configuration resolution, command orchestration, validation, and safety.
 - [Testing](architecture/testing.md) — test layers, fixtures, and backend coverage.

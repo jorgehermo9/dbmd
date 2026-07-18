@@ -8,6 +8,7 @@ ADRs record decisions that are costly to reverse, surprising without context, an
 - [ADR-0002: Use one canonical project artifact](0002-one-canonical-project-artifact.md)
 - [ADR-0003: Keep generated Markdown metadata-free and verify exact output](0003-metadata-free-markdown-and-exact-verification.md)
 - [ADR-0004: Treat custom template roots as complete sets](0004-custom-template-roots-are-complete-sets.md)
+- [ADR-0005: Let backend modules own catalogs and templates](0005-backend-owned-catalogs-and-templates.md)
 
 ## Format
 

@@ -3,8 +3,6 @@ use std::{collections::HashSet, fmt, str::FromStr};
 use serde::Serialize;
 use thiserror::Error;
 
-use crate::{EnumType, Function, Namespace, Table, Trigger, View};
-
 /// The stable, validated identifier of a configured database source.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
 #[serde(transparent)]
@@ -58,81 +56,88 @@ pub enum SourceIdError {
     },
 }
 
-/// A database family whose metadata semantics dbmd understands.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Backend {
-    /// SQLite.
-    Sqlite,
-    /// PostgreSQL.
-    Postgres,
-    /// ClickHouse.
-    ClickHouse,
-}
-
 /// The normalized, point-in-time structural description of one source.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct SourceSnapshot {
+pub struct SourceSnapshot<C> {
     /// Stable source identity used for selection and paths.
-    pub id: SourceId,
+    id: SourceId,
     /// Optional presentation-only source name.
-    pub display_name: Option<String>,
-    /// Database family that produced this snapshot.
-    pub backend: Backend,
-    /// Backend namespaces ordered by normalized name.
-    pub namespaces: Vec<Namespace>,
-    /// Enumerated types ordered by qualified name.
-    pub enums: Vec<EnumType>,
-    /// Tables ordered according to core normalization policy.
-    pub tables: Vec<Table>,
-    /// Views ordered according to core normalization policy.
-    pub views: Vec<View>,
-    /// Triggers ordered according to core normalization policy.
-    pub triggers: Vec<Trigger>,
-    /// Functions ordered according to core normalization policy.
-    pub functions: Vec<Function>,
+    display_name: Option<String>,
+    /// Backend-owned normalized catalog.
+    catalog: C,
 }
 
-impl SourceSnapshot {
-    /// Creates an empty structural snapshot for a source.
+impl<C> SourceSnapshot<C> {
+    /// Wraps one backend-owned normalized catalog with stable source identity.
     #[must_use]
-    pub fn new(id: SourceId, backend: Backend) -> Self {
+    pub fn new(id: SourceId, catalog: C) -> Self {
         Self {
             id,
             display_name: None,
-            backend,
-            namespaces: Vec::new(),
-            enums: Vec::new(),
-            tables: Vec::new(),
-            views: Vec::new(),
-            triggers: Vec::new(),
-            functions: Vec::new(),
+            catalog,
         }
+    }
+
+    /// Adds a presentation-only source name.
+    #[must_use]
+    pub fn with_display_name(mut self, display_name: impl Into<String>) -> Self {
+        self.display_name = Some(display_name.into());
+        self
+    }
+
+    /// Returns stable source identity.
+    #[must_use]
+    pub fn id(&self) -> &SourceId {
+        &self.id
+    }
+
+    /// Returns the optional presentation-only source name.
+    #[must_use]
+    pub fn display_name(&self) -> Option<&str> {
+        self.display_name.as_deref()
+    }
+
+    /// Returns the backend-owned normalized catalog.
+    #[must_use]
+    pub fn catalog(&self) -> &C {
+        &self.catalog
+    }
+
+    /// Returns the backend-owned normalized catalog mutably.
+    #[must_use]
+    pub fn catalog_mut(&mut self) -> &mut C {
+        &mut self.catalog
+    }
+
+    /// Splits the envelope into identity, display name, and catalog.
+    #[must_use]
+    pub fn into_parts(self) -> (SourceId, Option<String>, C) {
+        (self.id, self.display_name, self.catalog)
     }
 }
 
 /// The ordered source snapshots selected for one application operation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct DatabaseContext {
-    sources: Vec<SourceSnapshot>,
+pub struct DatabaseContext<C> {
+    sources: Vec<SourceSnapshot<C>>,
 }
 
-impl DatabaseContext {
+impl<C> DatabaseContext<C> {
     /// Creates a database context while preserving the supplied source order.
     ///
     /// # Errors
     ///
     /// Returns [`DatabaseContextError::Empty`] when no sources are supplied and
     /// [`DatabaseContextError::DuplicateSourceId`] when an identifier occurs more than once.
-    pub fn new(sources: Vec<SourceSnapshot>) -> Result<Self, DatabaseContextError> {
+    pub fn new(sources: Vec<SourceSnapshot<C>>) -> Result<Self, DatabaseContextError> {
         if sources.is_empty() {
             return Err(DatabaseContextError::Empty);
         }
 
         let mut seen = HashSet::with_capacity(sources.len());
         for source in &sources {
-            if !seen.insert(&source.id) {
-                return Err(DatabaseContextError::DuplicateSourceId(source.id.clone()));
+            if !seen.insert(source.id()) {
+                return Err(DatabaseContextError::DuplicateSourceId(source.id().clone()));
             }
         }
 
@@ -141,7 +146,7 @@ impl DatabaseContext {
 
     /// Returns selected sources in their resolved operation order.
     #[must_use]
-    pub fn sources(&self) -> &[SourceSnapshot] {
+    pub fn sources(&self) -> &[SourceSnapshot<C>] {
         &self.sources
     }
 }

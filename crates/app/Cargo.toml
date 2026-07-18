@@ -11,7 +11,7 @@ postgres-tests = ["dep:dbmd-test-support"]
 
 [dependencies]
 dbmd-core = { path = "../core" }
-dbmd-introspect = { path = "../introspect" }
+dbmd-backends = { path = "../backends" }
 dbmd-render = { path = "../render" }
 dbmd-test-support = { path = "../test-support", optional = true }
 serde.workspace = true

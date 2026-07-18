@@ -31,14 +31,19 @@ templates/dbmd/
   agent/
     single_file/
       database.md.j2
+      backends/
+        sqlite/source.md.j2
+        postgres/source.md.j2
     directory/
       root.md.j2
-      index.md.j2
       enum.md.j2
       table.md.j2
       view.md.j2
       trigger.md.j2
       function.md.j2
+      backends/
+        sqlite/source.md.j2
+        postgres/source.md.j2
 ```
 
 dbmd does not fall back from a missing custom entrypoint to an embedded template. This prevents accidental coupling to internal built-in paths.
@@ -46,12 +51,15 @@ dbmd does not fall back from a missing custom entrypoint to an embedded template
 ## Required entrypoints
 
 - `PROFILE/single_file/database.md.j2`.
-- `PROFILE/directory/root.md.j2` and `index.md.j2`.
+- `PROFILE/directory/root.md.j2`.
 - `PROFILE/directory/table.md.j2`, `view.md.j2`, `trigger.md.j2`, and
   `function.md.j2`, plus `enum.md.j2`.
+- `PROFILE/{single_file,directory}/backends/<backend>/source.md.j2` for every
+  backend compiled into dbmd.
 
 The loader requires the complete set before connection, independent of
-the selected layout. `dbmd init-templates` creates exactly this tree.
+the selected layout or selected source. `dbmd init-templates` creates exactly
+this tree for the current binary.
 
 Builtin partial paths are internal implementation details. Custom sets own any partials they reference.
 

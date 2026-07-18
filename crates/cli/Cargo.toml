@@ -11,6 +11,7 @@ clap.workspace = true
 dbmd-app = { path = "../app" }
 
 [dev-dependencies]
+dbmd-backends = { path = "../backends" }
 dbmd-render = { path = "../render" }
 rusqlite.workspace = true
 tempfile.workspace = true

@@ -3,7 +3,7 @@ members = [
     "crates/app",
     "crates/cli",
     "crates/core",
-    "crates/introspect",
+    "crates/backends",
     "crates/render",
     "crates/test-support",
 ]

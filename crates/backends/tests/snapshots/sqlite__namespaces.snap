@@ -1,0 +1,172 @@
+---
+source: crates/backends/tests/sqlite.rs
+expression: snapshot
+---
+id: app
+display_name: ~
+catalog:
+  namespaces:
+    - name: main
+      comment: ~
+    - name: analytics
+      comment: ~
+    - name: archive
+      comment: ~
+  tables:
+    - namespace: main
+      name: shared_name
+      comment: ~
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: value
+          data_type: TEXT
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: ~
+          kind: not_null
+          columns:
+            - value
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+      indexes: []
+      without_rowid: false
+      strict: false
+      definition: "CREATE TABLE shared_name (\n    id INTEGER PRIMARY KEY,\n    value TEXT NOT NULL\n)"
+      kind:
+        kind: ordinary
+    - namespace: analytics
+      name: shared_name
+      comment: ~
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: metric
+          data_type: REAL
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: ~
+          kind: not_null
+          columns:
+            - metric
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+      indexes: []
+      without_rowid: false
+      strict: false
+      definition: "CREATE TABLE shared_name (\n    id INTEGER PRIMARY KEY,\n    metric REAL NOT NULL\n)"
+      kind:
+        kind: ordinary
+    - namespace: archive
+      name: archived_events
+      comment: ~
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: archived_at
+          data_type: TEXT
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: ~
+          kind: not_null
+          columns:
+            - archived_at
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+      indexes: []
+      without_rowid: false
+      strict: false
+      definition: "CREATE TABLE archived_events (\n    id INTEGER PRIMARY KEY,\n    archived_at TEXT NOT NULL\n)"
+      kind:
+        kind: ordinary
+  views:
+    - namespace: analytics
+      name: metric_names
+      definition: "CREATE VIEW metric_names AS\nSELECT id, metric FROM shared_name"
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: ~
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: metric
+          data_type: REAL
+          nullable: ~
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+  triggers: []
