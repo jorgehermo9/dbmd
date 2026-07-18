@@ -1,8 +1,9 @@
 # Testing Strategy
 
-Status: core, complete SQLite introspection fixtures, render-context and layout
-snapshots, deterministic application goldens, atomic file/tree replacement,
-exact verification, and compiled CLI lifecycle tests are implemented.
+Status: core, complete SQLite introspection fixtures, PostgreSQL container
+fixtures, render-context and layout snapshots, deterministic application
+goldens, atomic file/tree replacement, exact verification, and compiled CLI
+lifecycle tests are implemented.
 
 ## Goals
 
@@ -109,12 +110,14 @@ Use Cargo integration-test directories within the owning crate rather than a wor
 crates/core/tests/
 crates/introspect/tests/
   fixtures/sqlite/<case>/schema.sql
+  fixtures/postgres/<case>/schema.sql
   snapshots/
 crates/render/tests/
   snapshots/
 crates/app/tests/
   fixtures/sqlite/<case>/schema.sql
   fixtures/sqlite/<case>/dbmd.toml
+  fixtures/postgres/<case>/schema.sql
   snapshots/
 crates/cli/tests/
 ```
@@ -155,3 +158,18 @@ cargo test --workspace --all-targets
 ```
 
 Backend-container suites may be separate CI jobs, but SQLite and all pure unit/golden tests belong in the default suite.
+
+PostgreSQL suites are opt-in. Each integration-test binary locally owns one
+pinned PostgreSQL 17 container, runs its fixture cases concurrently in isolated
+logical databases, forcibly drops each database through an RAII guard, and then
+drops the container:
+
+```sh
+cargo test -p dbmd-introspect --features postgres-tests --test postgres
+cargo test -p dbmd-app --features postgres-tests --test postgres
+```
+
+The shared lifecycle implementation lives in `crates/test-support`; fixture SQL,
+assertions, and snapshots remain in the crate whose public seam they test.
+Current catalog coverage is documented beside the adapter in
+`crates/introspect/src/postgres/README.md`.

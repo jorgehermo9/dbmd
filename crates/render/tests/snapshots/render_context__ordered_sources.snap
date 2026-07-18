@@ -12,6 +12,8 @@ sources:
     section_heading: "###"
     object_heading: "####"
     detail_heading: "#####"
+    namespaces: []
+    enums: []
     tables:
       - heading: "####"
         detail_heading: "#####"
@@ -44,6 +46,8 @@ sources:
     section_heading: "###"
     object_heading: "####"
     detail_heading: "#####"
+    namespaces: []
+    enums: []
     tables:
       - heading: "####"
         detail_heading: "#####"

@@ -4,6 +4,13 @@ expression: index
 ---
 # Database: `Application Database`
 
+## Namespaces
+
+| Name | Comment |
+|---|---|
+| `main` | - |
+
+
 ## Tables
 
 - [`main.account_search`](tables/main.account_search.md)

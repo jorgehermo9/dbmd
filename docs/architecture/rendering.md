@@ -1,8 +1,9 @@
 # Rendering Architecture
 
-Status: explicit render context, deterministic embedded SQLite rendering,
-layout-neutral artifacts, and atomic single-file/directory output implemented;
-custom template resolution and selectable profiles remain.
+Status: explicit render context, deterministic SQLite and PostgreSQL rendering,
+layout-neutral artifacts, stdout, complete custom template roots, and atomic
+single-file/directory output are implemented. Additional built-in profiles and
+a public compatibility promise for custom contexts remain.
 
 ## Current implementation
 
@@ -15,8 +16,10 @@ complete generated tree.
 
 Current limitations:
 
-- Only the embedded `agent` profile is selectable.
-- Custom template roots are not loaded yet.
+- `agent` is the only embedded profile; arbitrary profile directories are
+  selectable from a complete custom root.
+- A custom root must contain the complete eight-file profile currently emitted
+  by `dbmd init-templates`.
 - The context is explicitly versioned but not yet promised as a stable external
   compatibility contract.
 
@@ -69,7 +72,9 @@ Resolution inputs are:
 
 Backend is context data and can select internal partials; it is not a required top-level entrypoint dimension.
 
-Custom roots are complete sets, not overlays. Only the entrypoints required by the selected layout and emitted artifact kinds are mandatory. Partials are private to each set.
+Custom roots are complete sets, not overlays. The current loader validates the
+complete profile before connection, including both layouts and all supported
+object entrypoints. Partials are private to each set.
 
 See the [template product contract](../product/features/templates.md) for paths and precedence.
 

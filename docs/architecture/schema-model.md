@@ -1,8 +1,8 @@
 # Schema Model
 
 Status: source identity, source aggregation, namespace terminology, backend
-terminology, and SQLite normalization implemented; cross-backend fact provenance
-and a dedicated render context remain.
+terminology, SQLite normalization, PostgreSQL extensions, and a versioned
+dedicated render context are implemented; cross-backend fact provenance remains.
 
 ## Responsibilities
 
@@ -157,6 +157,9 @@ Use `pg_catalog` where `information_schema` loses semantics. Candidate extension
 
 The first PostgreSQL release should be scoped by fixtures rather than by exposing every catalog feature.
 
+The implementation-level [PostgreSQL coverage matrix](../../crates/introspect/src/postgres/README.md)
+records the currently proven catalog and DDL surface.
+
 ### ClickHouse
 
 Candidate extensions include:
@@ -191,9 +194,9 @@ Completed for the first useful SQLite render:
 - Canonicalized backend tags.
 - Defined namespace representation using attached SQLite database fixtures.
 
-Before custom templates become a compatibility surface:
+Completed before custom templates become a compatibility surface:
 
-- Separate internal model serialization from the template context.
+- Internal model serialization is separated from the versioned template context.
 
 Before ClickHouse:
 

@@ -1,7 +1,7 @@
 # Initialize
 
-Status: base SQLite initialization implemented; template, CI, and agent-snippet
-initialization remain planned.
+Status: base SQLite, complete template-tree, and protected GitHub Actions
+initialization are implemented. Agent-instruction snippets remain planned.
 
 ## Purpose
 
@@ -41,7 +41,8 @@ dbmd init ci
 
 Initial support targets GitHub Actions. The generated workflow should install a pinned or explicitly selected dbmd version, make required source credentials available through documented secrets, and run `dbmd verify`.
 
-The command reports files it would replace and requires an explicit overwrite option for conflicting user-maintained workflows.
+The command refuses conflicting user-maintained workflows unless `--force` is
+explicitly supplied.
 
 ## Agent instructions
 

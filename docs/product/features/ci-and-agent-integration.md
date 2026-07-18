@@ -1,6 +1,7 @@
 # CI and Agent Integration
 
-Status: accepted product scope; planned after verify.
+Status: protected GitHub Actions workflow generation is implemented; a reusable
+official action, pre-commit recipe, agent snippets, and skill package remain.
 
 ## GitHub Action
 
@@ -16,12 +17,16 @@ The action must preserve `dbmd verify` exit semantics rather than introducing a 
 
 ## Generated workflow
 
-`dbmd init ci` initially generates a GitHub Actions workflow that:
+`dbmd init ci` generates a GitHub Actions workflow that:
 
 1. Checks out the repository.
 2. Installs the selected dbmd version.
-3. Provides documented source secrets.
+3. Provides an explicit location for source secrets through normal workflow
+   environment configuration.
 4. Runs `dbmd verify`.
+
+The generated install command pins the current dbmd version. Existing workflow
+files are protected unless `--force` is explicit.
 
 Other CI systems follow only in response to demand.
 

@@ -9,14 +9,16 @@ source selection, rendering, output files, or CLI presentation.
 
 ## Interface
 
-Each backend exposes a concrete interface until multiple implementations prove a
-useful shared abstraction. SQLite provides `sqlite::SqliteSource`, ordered
-configured attachments, and `sqlite::introspect`. There is intentionally no
-database-driver trait yet.
+Each backend exposes a concrete source and introspection function. SQLite
+provides `sqlite::SqliteSource` with ordered configured attachments; PostgreSQL
+provides a connection-backed `postgres::PostgresSource`. The second adapter is
+now available to prove a small shared dispatch seam without requiring a driver
+trait.
 
 ## Backend coverage
 
 - [SQLite](src/sqlite/README.md)
+- [PostgreSQL](src/postgres/README.md)
 
 Backend documentation beside its implementation is the live coverage contract:
 it records what the adapter can currently observe, what it preserves in the core
@@ -40,4 +42,11 @@ Run this crate's suite with:
 
 ```sh
 cargo test -p dbmd-introspect
+```
+
+The opt-in PostgreSQL suite starts one shared container and gives each fixture
+an isolated logical database:
+
+```sh
+cargo test -p dbmd-introspect --features postgres-tests --test postgres
 ```

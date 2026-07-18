@@ -5,6 +5,10 @@ expression: snapshot
 id: app
 display_name: ~
 backend: sqlite
+namespaces:
+  - name: main
+    comment: ~
+enums: []
 tables:
   - namespace: main
     name: document_search
@@ -109,7 +113,9 @@ tables:
           - target:
               column: k
             collation: BINARY
+            operator_class: ~
             order: ascending
+            nulls_order: ~
         predicate: ~
         definition: ~
         backend:
@@ -267,11 +273,15 @@ tables:
           - target:
               column: segid
             collation: BINARY
+            operator_class: ~
             order: ascending
+            nulls_order: ~
           - target:
               column: term
             collation: BINARY
+            operator_class: ~
             order: ascending
+            nulls_order: ~
         predicate: ~
         definition: ~
         backend:

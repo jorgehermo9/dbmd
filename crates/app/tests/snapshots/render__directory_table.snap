@@ -32,7 +32,7 @@ expression: table
 
 ## Indexes
 
-| Name | Terms | Unique | Origin | Predicate |
+| Name | Terms | Unique | Origin / details | Predicate |
 |---|---|---|---|---|
 | `accounts_active_email_idx` | `tenant_id` ascending collate `BINARY`, `lower (email)` descending collate `NOCASE` | yes | `create_index` | `balance_cents >= 0` |
 | `sqlite_autoindex_accounts_1` | `email` ascending collate `NOCASE` | yes | `unique_constraint` | - |

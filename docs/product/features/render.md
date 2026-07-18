@@ -1,7 +1,9 @@
 # Render
 
-Status: configured SQLite single-file and directory rendering implemented;
-one-off flags, stdout, custom profiles, and non-SQLite backends remain.
+Status: configured SQLite and PostgreSQL rendering, configless SQLite,
+single-file and directory layouts, ordered source/output/template overrides,
+stdout, custom profiles, and safe atomic output are implemented. ClickHouse and
+additional one-off backends remain.
 
 ## Purpose
 
@@ -22,12 +24,12 @@ Resolution order is:
 
 Output-shaping overrides are permitted for one-off renders. They do not redefine what a later plain `dbmd verify` checks.
 
-Today the only CLI override is `--config`; the remaining overrides in this
-specification are planned behavior.
+Implemented overrides are `--config`, repeated `--source`, `--output`,
+`--stdout`, and `--template-root`.
 
 ## One-off usage
 
-Status: planned.
+Status: implemented for SQLite.
 
 A developer should be able to try dbmd without first creating a config file:
 
@@ -58,8 +60,7 @@ The [multiple-sources specification](multi-source.md#selection) owns source iden
 
 ## Output destinations
 
-Status: configured single-file and directory output implemented; stdout
-planned.
+Status: configured single-file/directory output and stdout implemented.
 
 `--stdout` is valid only when the resolved layout produces one file. It does not change the selected layout.
 

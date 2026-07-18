@@ -9,10 +9,10 @@ use bumpalo::Bump;
 use dbmd_core::{
     Backend, Column, ColumnBackend, Constraint, ConstraintBackend, ConstraintKind,
     ForeignKeyAction, ForeignKeyDeferrability, ForeignKeyInitialTiming, ForeignKeyReference, Index,
-    IndexBackend, IndexSortOrder, IndexTarget, IndexTerm, SourceId, SourceSnapshot, SqliteColumn,
-    SqliteColumnKind, SqliteConflictResolution, SqliteConstraint, SqliteIndex, SqliteIndexOrigin,
-    SqliteTable, SqliteTableKind, Table, TableBackend, Trigger, TriggerEvent as CoreTriggerEvent,
-    TriggerTiming as CoreTriggerTiming, View,
+    IndexBackend, IndexSortOrder, IndexTarget, IndexTerm, Namespace, SourceId, SourceSnapshot,
+    SqliteColumn, SqliteColumnKind, SqliteConflictResolution, SqliteConstraint, SqliteIndex,
+    SqliteIndexOrigin, SqliteTable, SqliteTableKind, Table, TableBackend, Trigger,
+    TriggerEvent as CoreTriggerEvent, TriggerTiming as CoreTriggerTiming, View,
 };
 use fallible_iterator::FallibleIterator;
 use rusqlite::types::Type;
@@ -121,18 +121,18 @@ pub fn introspect(source: &SqliteSource) -> Result<SourceSnapshot, Introspection
             })?;
     }
 
-    let namespaces = std::iter::once("main")
+    let namespaces = std::iter::once("main".to_string())
         .chain(
             source
                 .attachments
                 .iter()
-                .map(|attachment| attachment.namespace.as_str()),
+                .map(|attachment| attachment.namespace.clone()),
         )
         .collect::<Vec<_>>();
     let mut tables = Vec::new();
     let mut views = Vec::new();
     let mut triggers = Vec::new();
-    for namespace in namespaces {
+    for namespace in &namespaces {
         let table_entries = read_table_entries(&connection, namespace).map_err(|error| {
             IntrospectionError::Query {
                 source_id: source.id.clone(),
@@ -165,6 +165,13 @@ pub fn introspect(source: &SqliteSource) -> Result<SourceSnapshot, Introspection
 
     let mut snapshot = SourceSnapshot::new(source.id.clone(), Backend::Sqlite);
     snapshot.display_name.clone_from(&source.display_name);
+    snapshot.namespaces = namespaces
+        .into_iter()
+        .map(|name| Namespace {
+            name,
+            comment: None,
+        })
+        .collect();
     snapshot.tables = tables;
     snapshot.views = views;
     snapshot.triggers = triggers;
@@ -1195,12 +1202,14 @@ fn read_index_terms(
 
             Ok(IndexTerm {
                 target,
-                collation: row.get(4)?,
+                collation: Some(row.get(4)?),
+                operator_class: None,
                 order: if row.get::<_, bool>(3)? {
                     IndexSortOrder::Descending
                 } else {
                     IndexSortOrder::Ascending
                 },
+                nulls_order: None,
             })
         })?
         .collect::<rusqlite::Result<Vec<_>>>()?;

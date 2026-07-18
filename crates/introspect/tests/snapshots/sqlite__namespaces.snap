@@ -5,6 +5,14 @@ expression: snapshot
 id: app
 display_name: ~
 backend: sqlite
+namespaces:
+  - name: main
+    comment: ~
+  - name: analytics
+    comment: ~
+  - name: archive
+    comment: ~
+enums: []
 tables:
   - namespace: main
     name: shared_name

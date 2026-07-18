@@ -8,9 +8,11 @@ pub use context::{
 };
 pub use schema::{
     ClickHouseColumn, ClickHouseIndex, ClickHouseTable, Column, ColumnBackend, Constraint,
-    ConstraintBackend, ConstraintKind, ForeignKeyAction, ForeignKeyDeferrability,
-    ForeignKeyInitialTiming, ForeignKeyReference, Function, Index, IndexBackend, IndexSortOrder,
-    IndexTarget, IndexTerm, PostgresColumn, PostgresIndex, PostgresTable, PostgresTableKind,
+    ConstraintBackend, ConstraintKind, EnumType, ForeignKeyAction, ForeignKeyDeferrability,
+    ForeignKeyInitialTiming, ForeignKeyReference, Function, FunctionBackend, Index, IndexBackend,
+    IndexNullsOrder, IndexSortOrder, IndexTarget, IndexTerm, Namespace, PostgresColumn,
+    PostgresConstraint, PostgresFunction, PostgresFunctionParallel, PostgresFunctionVolatility,
+    PostgresIndex, PostgresPolicy, PostgresPolicyCommand, PostgresTable, PostgresTableKind,
     SqliteColumn, SqliteColumnKind, SqliteConflictResolution, SqliteConstraint, SqliteIndex,
     SqliteIndexOrigin, SqliteTable, SqliteTableKind, Table, TableBackend, Trigger, TriggerEvent,
     TriggerTiming, View,

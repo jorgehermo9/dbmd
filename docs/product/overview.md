@@ -116,11 +116,14 @@ Supporting commands such as `doctor`, `explain`, and `lint` have separate respon
 
 ## Current status
 
-The first useful SQLite render is implemented end to end. `dbmd render` reads
-`dbmd.toml`, expands environment references, selects named SQLite sources in a
-deterministic order, introspects their persistent schema surface, renders the
-embedded Markdown profile, and atomically replaces the configured artifact.
+The first useful SQLite render and the initial PostgreSQL depth slice are
+implemented end to end. `dbmd render` reads `dbmd.toml`, expands environment
+references, selects named SQLite and PostgreSQL sources in deterministic order,
+introspects them through concrete adapters, renders the embedded Markdown
+profile, and atomically replaces the configured artifact.
 
-The active milestone is the canonical lifecycle in [Phase 3](roadmap.md): add
-`init` and `verify`, then complete multi-source presentation and directory
-layouts before exposing custom templates as a compatibility surface.
+The active milestone is closing the remaining canonical-lifecycle edges in
+[Phase 3](roadmap.md). Base/template/CI initialization, exact verification,
+multi-source presentation, directory layout, configless SQLite, stdout, and
+complete custom template roots are implemented. Agent-instruction generation
+and release hardening remain while PostgreSQL depth continues in parallel.

@@ -1,8 +1,9 @@
 # Configuration and CLI Architecture
 
-Status: configured SQLite sources, profile/layout parsing, base initialization,
-single-file/directory rendering, and exact verification are implemented. CLI
-output overrides, custom templates, and non-SQLite source fields remain target
+Status: configured SQLite and PostgreSQL sources, parsed/resolved/render-plan
+config stages, render overrides, configless SQLite, stdout, complete custom
+template roots, lifecycle initialization, single-file/directory rendering, and
+exact verification are implemented. ClickHouse source fields remain target
 architecture.
 
 ## Canonical config
@@ -115,15 +116,22 @@ Render and verify fail fast enough to avoid partial work. Doctor may continue in
 
 ## Introspection dispatch
 
-The first backend uses a concrete SQLite interface in `dbmd-introspect` without committing to an async trait:
+SQLite and PostgreSQL expose concrete adapters in `dbmd-introspect`. Their proven
+shared behavior is represented by a closed source enum and one dispatch
+function, without a driver trait:
 
 ```rust
-pub fn introspect(source: SqliteSource) -> Result<SourceSnapshot, IntrospectionError>;
+pub enum Source { Sqlite(SqliteSource), Postgres(PostgresSource) }
+pub fn introspect(source: &Source) -> Result<SourceSnapshot, IntrospectionError>;
 ```
 
-A generic backend trait is deferred until a second concrete adapter proves a shared interface. The stable behavior is introspection producing a normalized `SourceSnapshot`; dynamic dispatch is not itself a product requirement.
+A generic backend trait remains deferred because application orchestration needs
+closed dispatch, not runtime-extensible drivers. The stable behavior is
+introspection producing a normalized `SourceSnapshot`; dynamic dispatch is not
+itself a product requirement.
 
-Avoid async runtime adoption until PostgreSQL or ClickHouse clients require it. A sync SQLite vertical slice should not pay that cost preemptively.
+The current adapters use synchronous clients. Async runtime adoption remains a
+measured implementation choice rather than part of the public seam.
 
 ## Output-path validation
 
@@ -173,8 +181,13 @@ Use structured internal errors with user-facing context:
 
 Credentials are redacted at construction, not through hopeful formatting discipline at the final display seam.
 
+## Path bases
+
+Configured paths, including CLI output/template overrides, resolve relative to
+the selected config file. Configless SQLite paths resolve relative to the
+process working directory.
+
 ## Open implementation decisions
 
-- Relative path base for explicit `--config` and one-off CLI usage.
 - Async seam timing.
 - Exact atomic directory replacement behavior across operating systems.

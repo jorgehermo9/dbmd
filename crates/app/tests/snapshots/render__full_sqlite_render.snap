@@ -4,6 +4,14 @@ expression: first
 ---
 # Database: `Application Database`
 
+## Namespaces
+
+| Name | Comment |
+|---|---|
+| `main` | - |
+| `analytics` | - |
+
+
 ## Tables
 
 ### `main.account_search`
@@ -45,7 +53,7 @@ CREATE VIRTUAL TABLE account_search USING fts5(email, content='accounts', conten
 
 #### Indexes
 
-| Name | Terms | Unique | Origin | Predicate |
+| Name | Terms | Unique | Origin / details | Predicate |
 |---|---|---|---|---|
 | `sqlite_autoindex_account_search_config_1` | `k` ascending collate `BINARY` | yes | `primary_key` | - |
 
@@ -133,7 +141,7 @@ CREATE TABLE 'account_search_docsize'(id INTEGER PRIMARY KEY, sz BLOB)
 
 #### Indexes
 
-| Name | Terms | Unique | Origin | Predicate |
+| Name | Terms | Unique | Origin / details | Predicate |
 |---|---|---|---|---|
 | `sqlite_autoindex_account_search_idx_1` | `segid` ascending collate `BINARY`, `term` ascending collate `BINARY` | yes | `primary_key` | - |
 
@@ -179,7 +187,7 @@ CREATE TABLE 'account_search_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) W
 
 #### Indexes
 
-| Name | Terms | Unique | Origin | Predicate |
+| Name | Terms | Unique | Origin / details | Predicate |
 |---|---|---|---|---|
 | `accounts_active_email_idx` | `tenant_id` ascending collate `BINARY`, `lower (email)` descending collate `NOCASE` | yes | `create_index` | `balance_cents >= 0` |
 | `sqlite_autoindex_accounts_1` | `email` ascending collate `NOCASE` | yes | `unique_constraint` | - |
@@ -281,7 +289,7 @@ CREATE TABLE "migration_target" (id INTEGER PRIMARY KEY, name TEXT NOT NULL, gen
 
 #### Indexes
 
-| Name | Terms | Unique | Origin | Predicate |
+| Name | Terms | Unique | Origin / details | Predicate |
 |---|---|---|---|---|
 | `sqlite_autoindex_organizations_1` | `tenant_id` ascending collate `BINARY`, `slug` ascending collate `NOCASE` | yes | `primary_key` | - |
 
@@ -324,7 +332,7 @@ CREATE TABLE organizations (
 
 #### Indexes
 
-| Name | Terms | Unique | Origin | Predicate |
+| Name | Terms | Unique | Origin / details | Predicate |
 |---|---|---|---|---|
 | `sqlite_autoindex_daily_metrics_1` | `metric_date` ascending collate `BINARY` | yes | `primary_key` | - |
 

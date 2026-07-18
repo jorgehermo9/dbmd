@@ -5,6 +5,10 @@ expression: snapshot
 id: app
 display_name: ~
 backend: sqlite
+namespaces:
+  - name: main
+    comment: ~
+enums: []
 tables:
   - namespace: main
     name: catalog_items
@@ -123,11 +127,15 @@ tables:
           - target:
               column: category
             collation: BINARY
+            operator_class: ~
             order: ascending
+            nulls_order: ~
           - target:
               expression: lower (name)
             collation: NOCASE
+            operator_class: ~
             order: descending
+            nulls_order: ~
         predicate: price_cents > 0
         definition: "CREATE UNIQUE INDEX a_catalog_items_search_key\n    ON catalog_items (category, lower(name) COLLATE NOCASE DESC)\n    WHERE price_cents > 0"
         backend:
@@ -139,7 +147,9 @@ tables:
           - target:
               column: sku
             collation: NOCASE
+            operator_class: ~
             order: ascending
+            nulls_order: ~
         predicate: ~
         definition: ~
         backend:
@@ -151,11 +161,15 @@ tables:
           - target:
               column: category
             collation: BINARY
+            operator_class: ~
             order: ascending
+            nulls_order: ~
           - target:
               column: name
             collation: RTRIM
+            operator_class: ~
             order: descending
+            nulls_order: ~
         predicate: ~
         definition: "CREATE INDEX z_catalog_items_category_name\n    ON catalog_items (category ASC, name COLLATE RTRIM DESC)"
         backend:

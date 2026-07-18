@@ -5,6 +5,10 @@ expression: snapshot
 id: app
 display_name: ~
 backend: sqlite
+namespaces:
+  - name: main
+    comment: ~
+enums: []
 tables:
   - namespace: main
     name: accounts
@@ -176,7 +180,9 @@ tables:
           - target:
               column: email
             collation: NOCASE
+            operator_class: ~
             order: ascending
+            nulls_order: ~
         predicate: ~
         definition: ~
         backend:
@@ -188,7 +194,9 @@ tables:
           - target:
               column: display_name
             collation: BINARY
+            operator_class: ~
             order: ascending
+            nulls_order: ~
         predicate: ~
         definition: ~
         backend:
@@ -200,11 +208,15 @@ tables:
           - target:
               column: email
             collation: NOCASE
+            operator_class: ~
             order: ascending
+            nulls_order: ~
           - target:
               column: balance_cents
             collation: BINARY
+            operator_class: ~
             order: ascending
+            nulls_order: ~
         predicate: ~
         definition: ~
         backend:
@@ -339,11 +351,15 @@ tables:
           - target:
               column: tenant_id
             collation: BINARY
+            operator_class: ~
             order: ascending
+            nulls_order: ~
           - target:
               column: external_id
             collation: BINARY
+            operator_class: ~
             order: ascending
+            nulls_order: ~
         predicate: ~
         definition: ~
         backend:

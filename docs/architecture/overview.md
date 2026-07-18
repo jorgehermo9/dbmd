@@ -29,7 +29,7 @@ SQLite proves the end-to-end architecture before generalized backend interfaces 
 ```text
 crates/
   core/      normalized schema-model sketch
-  introspect/ concrete SQLite introspection
+  introspect/ concrete SQLite and PostgreSQL introspection
   render/    embedded MiniJinja renderer
   app/       config, orchestration, and atomic single-file output
   cli/       thin command parsing and report presentation
@@ -40,14 +40,15 @@ Package names remain prefixed (`dbmd-core`, `dbmd-render`) while directories sta
 Current implementation:
 
 - `core` contains validated source identity, `SourceSnapshot`, `DatabaseContext`, and common/backend-specific schema-object types.
-- `introspect` covers SQLite's persistent DDL/schema surface through catalog metadata plus stored-definition parsing.
+- `introspect` covers SQLite's persistent DDL/schema surface and a fixture-driven PostgreSQL catalog surface through concrete adapters and a closed dispatch enum.
 - `render` renders tables, constraints, indexes, views, triggers, virtual/shadow tables, and raw definitions with embedded templates.
-- `app` resolves named SQLite sources and environment-backed paths, coordinates rendering, and atomically replaces one Markdown file.
+- `app` resolves named SQLite and PostgreSQL sources with environment-backed connection fields, coordinates rendering, and atomically replaces file or directory artifacts.
 - `cli` maps `render --config` to the application operation and presents its report.
 
-Base `init`, exact `verify`, multi-source presentation, directory layouts, and a
-versioned dedicated presentation context are implemented. Custom templates,
-one-off overrides, CI initialization, and additional backends remain.
+Base `init`, exact `verify`, multi-source presentation, directory layouts, a
+versioned dedicated presentation context, and PostgreSQL source dispatch are
+implemented. Custom templates, one-off overrides, CI initialization, and
+ClickHouse remain.
 
 ## Target workspace
 

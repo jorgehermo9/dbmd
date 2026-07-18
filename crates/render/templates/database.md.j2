@@ -12,6 +12,26 @@
 Backend: `{{ source.backend }}`
 
 {% endif -%}
+{% if source.namespaces -%}
+{{ source.section_heading }} Namespaces
+
+| Name | Comment |
+|---|---|
+{% for namespace in source.namespaces -%}
+| {{ namespace.name }} | {{ namespace.comment or "-" }} |
+{% endfor %}
+
+{% endif -%}
+{% if source.enums -%}
+{{ source.section_heading }} Enum Types
+
+| Type | Values | Comment |
+|---|---|---|
+{% for enum in source.enums -%}
+| {{ enum.qualified_name }} | {{ enum.values }} | {{ enum.comment or "-" }} |
+{% endfor %}
+
+{% endif -%}
 {% if source.tables -%}
 {{ source.section_heading }} Tables
 

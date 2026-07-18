@@ -3,7 +3,7 @@ use std::{collections::HashSet, fmt, str::FromStr};
 use serde::Serialize;
 use thiserror::Error;
 
-use crate::{Function, Table, Trigger, View};
+use crate::{EnumType, Function, Namespace, Table, Trigger, View};
 
 /// The stable, validated identifier of a configured database source.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
@@ -79,6 +79,10 @@ pub struct SourceSnapshot {
     pub display_name: Option<String>,
     /// Database family that produced this snapshot.
     pub backend: Backend,
+    /// Backend namespaces ordered by normalized name.
+    pub namespaces: Vec<Namespace>,
+    /// Enumerated types ordered by qualified name.
+    pub enums: Vec<EnumType>,
     /// Tables ordered according to core normalization policy.
     pub tables: Vec<Table>,
     /// Views ordered according to core normalization policy.
@@ -97,6 +101,8 @@ impl SourceSnapshot {
             id,
             display_name: None,
             backend,
+            namespaces: Vec::new(),
+            enums: Vec::new(),
             tables: Vec::new(),
             views: Vec::new(),
             triggers: Vec::new(),

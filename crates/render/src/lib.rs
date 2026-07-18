@@ -6,6 +6,8 @@ mod context;
 pub use artifact::{ArtifactPath, ArtifactPathError, RenderedArtifact};
 pub use context::RenderContext;
 
+use std::{fs, path::Path, path::PathBuf};
+
 use dbmd_core::{DatabaseContext, SourceSnapshot, Table};
 use minijinja::{context, Environment, UndefinedBehavior};
 use thiserror::Error;
@@ -41,12 +43,71 @@ pub struct RenderOptions {
     pub source_layout: SourceLayout,
 }
 
-/// Embedded template renderer.
-pub struct Renderer<'env> {
-    env: Environment<'env>,
+/// One file in the complete embedded template set.
+#[derive(Debug, Clone, Copy)]
+pub struct EmbeddedTemplateFile {
+    /// Path relative to one profile directory.
+    pub relative_path: &'static str,
+    /// Internal renderer entrypoint name.
+    pub template_name: &'static str,
+    /// Editable template source.
+    pub contents: &'static str,
 }
 
-impl<'env> Renderer<'env> {
+/// Returns the complete built-in profile template set.
+#[must_use]
+pub fn embedded_template_files() -> &'static [EmbeddedTemplateFile] {
+    const FILES: &[EmbeddedTemplateFile] = &[
+        EmbeddedTemplateFile {
+            relative_path: "single_file/database.md.j2",
+            template_name: "database.md.j2",
+            contents: include_str!("../templates/database.md.j2"),
+        },
+        EmbeddedTemplateFile {
+            relative_path: "directory/enum.md.j2",
+            template_name: "enum.md.j2",
+            contents: include_str!("../templates/enum.md.j2"),
+        },
+        EmbeddedTemplateFile {
+            relative_path: "directory/table.md.j2",
+            template_name: "table.md.j2",
+            contents: include_str!("../templates/table.md.j2"),
+        },
+        EmbeddedTemplateFile {
+            relative_path: "directory/view.md.j2",
+            template_name: "view.md.j2",
+            contents: include_str!("../templates/view.md.j2"),
+        },
+        EmbeddedTemplateFile {
+            relative_path: "directory/trigger.md.j2",
+            template_name: "trigger.md.j2",
+            contents: include_str!("../templates/trigger.md.j2"),
+        },
+        EmbeddedTemplateFile {
+            relative_path: "directory/function.md.j2",
+            template_name: "function.md.j2",
+            contents: include_str!("../templates/function.md.j2"),
+        },
+        EmbeddedTemplateFile {
+            relative_path: "directory/root.md.j2",
+            template_name: "directory_root.md.j2",
+            contents: include_str!("../templates/directory_root.md.j2"),
+        },
+        EmbeddedTemplateFile {
+            relative_path: "directory/index.md.j2",
+            template_name: "directory_source.md.j2",
+            contents: include_str!("../templates/directory_source.md.j2"),
+        },
+    ];
+    FILES
+}
+
+/// Strict renderer backed by either the embedded or one complete custom template set.
+pub struct Renderer {
+    env: Environment<'static>,
+}
+
+impl Renderer {
     /// Compiles the built-in template set with strict undefined behavior.
     ///
     /// # Errors
@@ -55,25 +116,37 @@ impl<'env> Renderer<'env> {
     pub fn embedded() -> Result<Self, RenderError> {
         let mut env = Environment::new();
         env.set_undefined_behavior(UndefinedBehavior::Strict);
-        env.add_template(
-            "database.md.j2",
-            include_str!("../templates/database.md.j2"),
-        )?;
-        env.add_template("table.md.j2", include_str!("../templates/table.md.j2"))?;
-        env.add_template("view.md.j2", include_str!("../templates/view.md.j2"))?;
-        env.add_template("trigger.md.j2", include_str!("../templates/trigger.md.j2"))?;
-        env.add_template(
-            "function.md.j2",
-            include_str!("../templates/function.md.j2"),
-        )?;
-        env.add_template(
-            "directory_root.md.j2",
-            include_str!("../templates/directory_root.md.j2"),
-        )?;
-        env.add_template(
-            "directory_source.md.j2",
-            include_str!("../templates/directory_source.md.j2"),
-        )?;
+        for file in embedded_template_files() {
+            env.add_template(file.template_name, file.contents)?;
+        }
+        Ok(Self { env })
+    }
+
+    /// Loads and compiles a complete custom profile from `root/profile`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`RenderError`] when the profile name is unsafe, a required file
+    /// cannot be read, or a template cannot compile.
+    pub fn from_template_root(root: &Path, profile: &str) -> Result<Self, RenderError> {
+        if profile.is_empty()
+            || !profile.chars().all(|character| {
+                character.is_ascii_alphanumeric() || matches!(character, '_' | '-')
+            })
+        {
+            return Err(RenderError::InvalidProfile(profile.to_string()));
+        }
+        let mut env = Environment::new();
+        env.set_undefined_behavior(UndefinedBehavior::Strict);
+        for file in embedded_template_files() {
+            let path = root.join(profile).join(file.relative_path);
+            let contents =
+                fs::read_to_string(&path).map_err(|source| RenderError::ReadTemplate {
+                    path: path.clone(),
+                    source,
+                })?;
+            env.add_template_owned(file.template_name, contents)?;
+        }
         Ok(Self { env })
     }
 
@@ -193,6 +266,15 @@ impl<'env> Renderer<'env> {
         );
         files.insert(index_path.parse()?, source_index.into_bytes());
 
+        let enum_template = self.env.get_template("enum.md.j2")?;
+        for enum_type in &source.enums {
+            let path = artifact_object_path(prefix, "enums", &enum_type.file_name)?;
+            let mut enum_type = enum_type.clone();
+            enum_type.heading = "#";
+            let markdown = enum_template.render(context! { enum_type => enum_type })?;
+            files.insert(path, markdown.into_bytes());
+        }
+
         let table_template = self.env.get_template("table.md.j2")?;
         for table in &source.tables {
             let path = artifact_object_path(prefix, "tables", &table.file_name)?;
@@ -246,6 +328,16 @@ fn artifact_object_path(
 /// Why a database context could not be rendered.
 #[derive(Debug, Error)]
 pub enum RenderError {
+    /// A required custom template could not be read.
+    #[error("failed to read required template `{path}`")]
+    ReadTemplate {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+    /// A profile name could escape or ambiguously address a template root.
+    #[error("invalid template profile `{0}`")]
+    InvalidProfile(String),
     /// Template compilation or execution failed.
     #[error("template error: {0}")]
     Template(#[from] minijinja::Error),

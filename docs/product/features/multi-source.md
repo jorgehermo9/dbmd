@@ -1,8 +1,8 @@
 # Multiple Sources
 
-Status: configured SQLite selection, deterministic ordering, source-aware
-single-file presentation, and directory nesting implemented; cross-backend
-sources and CLI selection overrides remain.
+Status: configured SQLite/PostgreSQL selection, cross-backend dispatch,
+deterministic ordering, repeated CLI selection overrides, source-aware
+single-file presentation, and directory nesting are implemented.
 
 ## Configuration
 
@@ -41,8 +41,8 @@ sources = ["analytics", "app"]
 
 - Omitted selection renders all configured sources sorted by source ID.
 - Configured selection renders only the listed sources in list order.
-- Repeated CLI `--source` flags will replace config selection and preserve flag
-  order; those flags are not implemented yet.
+- Repeated CLI `--source` flags replace config selection and preserve flag
+  order.
 - Empty selection and duplicate source IDs in an explicit order are invalid.
 
 ## Single-file layout

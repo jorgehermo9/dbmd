@@ -1,6 +1,6 @@
 use std::fs;
 
-use dbmd_app::{init, render, InitRequest, RenderRequest};
+use dbmd_app::{init, init_templates, render, InitRequest, InitTemplatesRequest, RenderRequest};
 use rusqlite::Connection;
 
 #[test]
@@ -55,4 +55,45 @@ fn writes_an_editable_example_when_sqlite_discovery_is_ambiguous() {
     assert!(config.contains("path = \"dev.db\""));
     assert!(!config.contains("app.db"));
     assert!(!config.contains("test.db"));
+}
+
+#[test]
+fn initializes_a_complete_project_owned_template_profile() {
+    let project = tempfile::tempdir().expect("temporary project should be created");
+    let root = project.path().join("templates/dbmd");
+
+    let report = init_templates(InitTemplatesRequest::new(&root))
+        .expect("template profile should initialize");
+
+    assert_eq!(report.template_root, root);
+    assert_eq!(
+        report.files.len(),
+        dbmd_render::embedded_template_files().len()
+    );
+    for file in dbmd_render::embedded_template_files() {
+        assert_eq!(
+            fs::read_to_string(root.join("agent").join(file.relative_path))
+                .expect("initialized template should exist"),
+            file.contents
+        );
+    }
+    dbmd_render::Renderer::from_template_root(&root, "agent")
+        .expect("initialized template root should compile");
+}
+
+#[test]
+fn template_initialization_refuses_to_overlay_an_existing_directory() {
+    let project = tempfile::tempdir().expect("temporary project should be created");
+    let root = project.path().join("templates/dbmd");
+    fs::create_dir_all(&root).expect("existing template root should be created");
+    fs::write(root.join("user-owned.txt"), "preserve me\n").expect("marker should be written");
+
+    let error = init_templates(InitTemplatesRequest::new(&root))
+        .expect_err("existing template root must be preserved");
+
+    assert!(error.to_string().contains("already exists"));
+    assert_eq!(
+        fs::read_to_string(root.join("user-owned.txt")).expect("marker should remain"),
+        "preserve me\n"
+    );
 }

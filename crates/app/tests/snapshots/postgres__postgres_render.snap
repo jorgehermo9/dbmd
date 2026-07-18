@@ -1,0 +1,72 @@
+---
+source: crates/app/tests/postgres.rs
+expression: markdown
+---
+# Database: `catalog`
+
+## Namespaces
+
+| Name | Comment |
+|---|---|
+| `catalog` | - |
+| `public` | standard public schema |
+
+
+## Enum Types
+
+| Type | Values | Comment |
+|---|---|---|
+| `catalog.account_state` | `active, suspended` | - |
+
+
+## Tables
+
+### `catalog.accounts`
+
+Application accounts
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | no | - | identity `always` |
+| `email` | `text` | no | - |  |
+| `state` | `catalog.account_state` | no | `'active'::catalog.account_state` | enum values `active, suspended` |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `accounts_pkey` | `primary_key` | `id` | `PRIMARY KEY (id)`; no inherit |
+
+
+#### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `accounts_pkey` | `id` ascending opclass `pg_catalog.int8_ops` nulls `last` | yes | postgres `btree` | - |
+
+
+#### PostgreSQL
+
+**Kind:** `table`
+
+
+
+## Views
+
+### `catalog.active_accounts`
+
+| Column | Type | Nullable |
+|---|---|---|
+| `id` | `bigint` | yes |
+| `email` | `text` | yes |
+
+
+```sql
+ SELECT id,
+    email
+   FROM catalog.accounts
+  WHERE state = 'active'::catalog.account_state;
+```

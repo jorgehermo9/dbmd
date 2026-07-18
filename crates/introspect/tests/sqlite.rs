@@ -1,3 +1,4 @@
+#[path = "support/sqlite.rs"]
 mod support;
 
 use std::str::FromStr;

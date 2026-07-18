@@ -6,25 +6,32 @@ use std::{
 
 use dbmd_core::SourceId;
 use dbmd_introspect::sqlite::{SqliteSource, SqliteSourceError};
+use dbmd_introspect::{postgres::PostgresSource, Source};
 use dbmd_render::{OutputLayout, RenderOptions, SourceLayout};
 use serde::Deserialize;
 use thiserror::Error;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct ProjectConfig {
+struct ParsedProject {
     sources: BTreeMap<String, SourceConfig>,
     output: OutputConfig,
+    templates: Option<TemplatesConfig>,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct SourceConfig {
-    backend: String,
-    path: String,
-    display_name: Option<String>,
-    #[serde(default)]
-    attachments: BTreeMap<String, AttachmentConfig>,
+#[serde(tag = "backend", rename_all = "lowercase", deny_unknown_fields)]
+enum SourceConfig {
+    Sqlite {
+        path: String,
+        display_name: Option<String>,
+        #[serde(default)]
+        attachments: BTreeMap<String, AttachmentConfig>,
+    },
+    Postgres {
+        url: String,
+        display_name: Option<String>,
+    },
 }
 
 #[derive(Debug, Deserialize)]
@@ -40,6 +47,12 @@ struct OutputConfig {
     sources: Option<Vec<String>>,
     profile: Option<String>,
     layout: Option<LayoutConfig>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TemplatesConfig {
+    dir: String,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -69,17 +82,54 @@ enum SourceLayoutConfig {
 
 #[derive(Debug)]
 pub(super) struct RenderPlan {
-    pub sources: Vec<SqliteSource>,
-    pub output_path: PathBuf,
+    pub sources: Vec<Source>,
+    pub project_root: Option<PathBuf>,
+    pub repository_root: Option<PathBuf>,
+    pub output_path: Option<PathBuf>,
+    pub template_root: Option<PathBuf>,
+    pub profile: String,
     pub render_options: RenderOptions,
+}
+
+#[derive(Debug)]
+struct ResolvedProject {
+    sources: Vec<Source>,
+    project_root: Option<PathBuf>,
+    repository_root: Option<PathBuf>,
+    output_path: Option<PathBuf>,
+    template_root: Option<PathBuf>,
+    profile: String,
+    render_options: RenderOptions,
+}
+
+#[derive(Debug, Default)]
+pub(super) struct Overrides {
+    pub source_selection: Option<Vec<String>>,
+    pub output_path: Option<PathBuf>,
+    pub template_root: Option<PathBuf>,
 }
 
 pub(super) fn resolve(
     contents: &str,
     config_path: &Path,
     environment: &BTreeMap<String, String>,
+    overrides: Overrides,
 ) -> Result<RenderPlan, ConfigError> {
-    let config: ProjectConfig = toml::from_str(contents)?;
+    let parsed = parse(contents)?;
+    let resolved = resolve_project(parsed, config_path, environment, overrides)?;
+    RenderPlan::try_from(resolved)
+}
+
+fn parse(contents: &str) -> Result<ParsedProject, ConfigError> {
+    Ok(toml::from_str(contents)?)
+}
+
+fn resolve_project(
+    config: ParsedProject,
+    config_path: &Path,
+    environment: &BTreeMap<String, String>,
+    overrides: Overrides,
+) -> Result<ResolvedProject, ConfigError> {
     if config.sources.is_empty() {
         return Err(ConfigError::NoSources);
     }
@@ -88,9 +138,9 @@ pub(super) fn resolve(
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())
         .unwrap_or_else(|| Path::new("."));
-    let selection = config
-        .output
-        .sources
+    let selection = overrides
+        .source_selection
+        .or(config.output.sources)
         .unwrap_or_else(|| config.sources.keys().cloned().collect());
     if selection.is_empty() {
         return Err(ConfigError::EmptySelection);
@@ -106,31 +156,46 @@ pub(super) fn resolve(
             .sources
             .get(&selected_id)
             .ok_or_else(|| ConfigError::UnknownSource(selected_id.clone()))?;
-        if source_config.backend != "sqlite" {
-            return Err(ConfigError::UnsupportedBackend {
-                source_id: selected_id,
-                backend: source_config.backend.clone(),
-            });
-        }
-
         let source_id = SourceId::from_str(&selected_id)?;
-        let path = resolve_path(base, &expand_environment(&source_config.path, environment)?);
-        let mut source = SqliteSource::new(source_id, path);
-        if let Some(display_name) = &source_config.display_name {
-            source = source.with_display_name(display_name);
-        }
-        for (namespace, attachment) in &source_config.attachments {
-            let path = resolve_path(base, &expand_environment(&attachment.path, environment)?);
-            source = source.with_attached_database(namespace, path)?;
-        }
+        let source = match source_config {
+            SourceConfig::Sqlite {
+                path,
+                display_name,
+                attachments,
+            } => {
+                let path = resolve_path(base, &expand_environment(path, environment)?);
+                let mut source = SqliteSource::new(source_id, path);
+                if let Some(display_name) = display_name {
+                    source = source.with_display_name(display_name);
+                }
+                for (namespace, attachment) in attachments {
+                    let path =
+                        resolve_path(base, &expand_environment(&attachment.path, environment)?);
+                    source = source.with_attached_database(namespace, path)?;
+                }
+                Source::Sqlite(source)
+            }
+            SourceConfig::Postgres { url, display_name } => {
+                let mut source =
+                    PostgresSource::new(source_id, expand_environment(url, environment)?);
+                if let Some(display_name) = display_name {
+                    source = source.with_display_name(display_name);
+                }
+                Source::Postgres(source)
+            }
+        };
         sources.push(source);
     }
 
-    if config.output.profile.as_deref().unwrap_or("agent") != "agent" {
-        return Err(ConfigError::UnsupportedProfile(
-            config.output.profile.unwrap_or_default(),
-        ));
-    }
+    let profile = config.output.profile.unwrap_or_else(|| "agent".to_string());
+    let template_root = match overrides.template_root {
+        Some(path) => Some(resolve_path(base, &path.to_string_lossy())),
+        None => config
+            .templates
+            .map(|templates| expand_environment(&templates.dir, environment))
+            .transpose()?
+            .map(|path| resolve_path(base, &path)),
+    };
     let layout = config.output.layout.unwrap_or_default();
     let render_options = RenderOptions {
         layout: match layout.kind {
@@ -142,12 +207,45 @@ pub(super) fn resolve(
             SourceLayoutConfig::Nested => SourceLayout::Nested,
         },
     };
-    let output_path = resolve_path(base, &expand_environment(&config.output.path, environment)?);
-    Ok(RenderPlan {
+    let output_path = match overrides.output_path {
+        Some(path) => resolve_path(base, &path.to_string_lossy()),
+        None => resolve_path(base, &expand_environment(&config.output.path, environment)?),
+    };
+    Ok(ResolvedProject {
         sources,
-        output_path,
+        project_root: Some(base.to_path_buf()),
+        repository_root: find_repository_root(base),
+        output_path: Some(output_path),
+        template_root,
+        profile,
         render_options,
     })
+}
+
+impl TryFrom<ResolvedProject> for RenderPlan {
+    type Error = ConfigError;
+
+    fn try_from(project: ResolvedProject) -> Result<Self, Self::Error> {
+        if project.template_root.is_none() && project.profile != "agent" {
+            return Err(ConfigError::UnsupportedProfile(project.profile));
+        }
+        Ok(Self {
+            sources: project.sources,
+            project_root: project.project_root,
+            repository_root: project.repository_root,
+            output_path: project.output_path,
+            template_root: project.template_root,
+            profile: project.profile,
+            render_options: project.render_options,
+        })
+    }
+}
+
+fn find_repository_root(start: &Path) -> Option<PathBuf> {
+    start
+        .ancestors()
+        .find(|ancestor| std::fs::symlink_metadata(ancestor.join(".git")).is_ok())
+        .map(Path::to_path_buf)
 }
 
 fn resolve_path(base: &Path, value: &str) -> PathBuf {
@@ -205,8 +303,8 @@ pub enum ConfigError {
     DuplicateSelection(String),
     #[error("output selects unknown source `{0}`")]
     UnknownSource(String),
-    #[error("source `{source_id}` uses unsupported backend `{backend}`")]
-    UnsupportedBackend { source_id: String, backend: String },
+    #[error("source selection overrides require project configuration")]
+    SelectionWithoutConfig,
     #[error(transparent)]
     SourceId(#[from] dbmd_core::SourceIdError),
     #[error(transparent)]
@@ -256,8 +354,13 @@ path = "DATABASE.md"
 sources = ["zeta", "alpha"]
 "#;
 
-        let plan = resolve(config, Path::new("/project/dbmd.toml"), &BTreeMap::new())
-            .expect("selection should resolve");
+        let plan = resolve(
+            config,
+            Path::new("/project/dbmd.toml"),
+            &BTreeMap::new(),
+            Overrides::default(),
+        )
+        .expect("selection should resolve");
 
         assert_eq!(
             plan.sources
@@ -283,8 +386,13 @@ path = "alpha.db"
 path = "DATABASE.md"
 "#;
 
-        let plan = resolve(config, Path::new("/project/dbmd.toml"), &BTreeMap::new())
-            .expect("default selection should resolve");
+        let plan = resolve(
+            config,
+            Path::new("/project/dbmd.toml"),
+            &BTreeMap::new(),
+            Overrides::default(),
+        )
+        .expect("default selection should resolve");
 
         assert_eq!(
             plan.sources
@@ -306,12 +414,132 @@ path = "${DATABASE_PATH}"
 path = "DATABASE.md"
 "#;
 
-        let error = resolve(config, Path::new("/project/dbmd.toml"), &BTreeMap::new())
-            .expect_err("unresolved environment reference should fail");
+        let error = resolve(
+            config,
+            Path::new("/project/dbmd.toml"),
+            &BTreeMap::new(),
+            Overrides::default(),
+        )
+        .expect_err("unresolved environment reference should fail");
 
         assert!(matches!(
             error,
             ConfigError::MissingEnvironment(name) if name == "DATABASE_PATH"
         ));
+    }
+
+    #[test]
+    fn resolves_mixed_backend_sources_without_exposing_postgres_credentials() {
+        let config = r#"
+[sources.local]
+backend = "sqlite"
+path = "local.db"
+
+[sources.production]
+backend = "postgres"
+url = "${DATABASE_URL}"
+display_name = "Production"
+
+[output]
+path = "DATABASE.md"
+sources = ["production", "local"]
+"#;
+        let environment = BTreeMap::from([(
+            "DATABASE_URL".to_string(),
+            "postgres://secret:password@database/app".to_string(),
+        )]);
+
+        let plan = resolve(
+            config,
+            Path::new("/project/dbmd.toml"),
+            &environment,
+            Overrides::default(),
+        )
+        .expect("both concrete backends should resolve");
+
+        assert_eq!(
+            plan.sources
+                .iter()
+                .map(|source| source.id().as_str())
+                .collect::<Vec<_>>(),
+            ["production", "local"]
+        );
+        assert!(matches!(
+            &plan.sources[0],
+            dbmd_introspect::Source::Postgres(_)
+        ));
+        assert!(!format!("{:?}", plan.sources[0]).contains("password"));
+    }
+
+    #[test]
+    fn rejects_empty_duplicate_unknown_and_invalid_source_selections() {
+        let config = r#"
+[sources.app]
+backend = "sqlite"
+path = "app.db"
+
+[sources."bad/id"]
+backend = "sqlite"
+path = "bad.db"
+
+[output]
+path = "DATABASE.md"
+"#;
+        let cases = [
+            (Vec::<String>::new(), "cannot be empty"),
+            (vec!["app".into(), "app".into()], "more than once"),
+            (vec!["missing".into()], "unknown source"),
+            (vec!["bad/id".into()], "invalid character"),
+        ];
+
+        for (selection, expected) in cases {
+            let error = resolve(
+                config,
+                Path::new("/project/dbmd.toml"),
+                &BTreeMap::new(),
+                Overrides {
+                    source_selection: Some(selection),
+                    ..Overrides::default()
+                },
+            )
+            .expect_err("invalid selection should fail");
+            assert!(error.to_string().contains(expected), "{error}");
+        }
+    }
+
+    #[test]
+    fn resolves_cli_output_and_template_overrides_against_the_config_directory() {
+        let config = r#"
+[sources.app]
+backend = "sqlite"
+path = "app.db"
+
+[output]
+path = "DATABASE.md"
+
+[templates]
+dir = "configured-templates"
+"#;
+
+        let plan = resolve(
+            config,
+            Path::new("/project/config/dbmd.toml"),
+            &BTreeMap::new(),
+            Overrides {
+                output_path: Some("alternate/DB.md".into()),
+                template_root: Some("one-off-templates".into()),
+                ..Overrides::default()
+            },
+        )
+        .expect("CLI paths should resolve");
+
+        assert_eq!(
+            plan.output_path.as_deref(),
+            Some(Path::new("/project/config/alternate/DB.md"))
+        );
+        assert_eq!(
+            plan.template_root.as_deref(),
+            Some(Path::new("/project/config/one-off-templates"))
+        );
     }
 }

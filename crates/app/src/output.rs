@@ -4,19 +4,64 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-use dbmd_render::RenderedArtifact;
+use dbmd_render::{OutputLayout, RenderedArtifact};
 use similar::TextDiff;
 use tempfile::{NamedTempFile, TempDir};
 use thiserror::Error;
 
-pub(super) fn replace(path: &Path, artifact: &RenderedArtifact) -> Result<usize, OutputError> {
+pub(super) struct ValidatedOutputPath {
+    path: PathBuf,
+    project_root: Option<PathBuf>,
+    repository_root: Option<PathBuf>,
+}
+
+impl ValidatedOutputPath {
+    pub fn as_path(&self) -> &Path {
+        &self.path
+    }
+
+    pub fn into_path(self) -> PathBuf {
+        self.path
+    }
+}
+
+pub(super) fn validate(
+    path: &Path,
+    layout: OutputLayout,
+    project_root: Option<&Path>,
+    repository_root: Option<&Path>,
+) -> Result<ValidatedOutputPath, OutputError> {
+    match layout {
+        OutputLayout::SingleFile => {
+            validate_ancestor_symlinks(path, repository_root.or(project_root))?;
+            validate_file(path)
+        }
+        OutputLayout::Directory => validate_directory(path, project_root, repository_root),
+    }?;
+    Ok(ValidatedOutputPath {
+        path: path.to_path_buf(),
+        project_root: project_root.map(Path::to_path_buf),
+        repository_root: repository_root.map(Path::to_path_buf),
+    })
+}
+
+pub(super) fn replace(
+    destination: &ValidatedOutputPath,
+    artifact: &RenderedArtifact,
+) -> Result<usize, OutputError> {
+    let path = destination.as_path();
     match artifact {
         RenderedArtifact::SingleFile(contents) => {
             replace_file(path, contents)?;
             Ok(contents.len())
         }
         RenderedArtifact::Directory(files) => {
-            replace_directory(path, files)?;
+            replace_directory(
+                path,
+                files,
+                destination.project_root.as_deref(),
+                destination.repository_root.as_deref(),
+            )?;
             Ok(files.values().map(Vec::len).sum())
         }
     }
@@ -28,13 +73,20 @@ pub(super) struct Comparison {
 }
 
 pub(super) fn compare(
-    path: &Path,
+    destination: &ValidatedOutputPath,
     artifact: &RenderedArtifact,
     include_diff: bool,
 ) -> Result<Comparison, OutputError> {
+    let path = destination.as_path();
     match artifact {
         RenderedArtifact::SingleFile(fresh) => compare_file(path, fresh, include_diff),
-        RenderedArtifact::Directory(fresh) => compare_directory(path, fresh, include_diff),
+        RenderedArtifact::Directory(fresh) => compare_directory(
+            path,
+            fresh,
+            include_diff,
+            destination.project_root.as_deref(),
+            destination.repository_root.as_deref(),
+        ),
     }
 }
 
@@ -84,8 +136,10 @@ fn compare_directory(
     path: &Path,
     fresh: &std::collections::BTreeMap<dbmd_render::ArtifactPath, Vec<u8>>,
     include_diff: bool,
+    project_root: Option<&Path>,
+    repository_root: Option<&Path>,
 ) -> Result<Comparison, OutputError> {
-    validate_directory(path)?;
+    validate_directory(path, project_root, repository_root)?;
     let mut canonical = std::collections::BTreeMap::new();
     match fs::symlink_metadata(path) {
         Ok(_) => read_directory(path, path, &mut canonical)?,
@@ -226,8 +280,10 @@ fn replace_file(path: &Path, contents: &[u8]) -> Result<(), OutputError> {
 fn replace_directory(
     path: &Path,
     files: &std::collections::BTreeMap<dbmd_render::ArtifactPath, Vec<u8>>,
+    project_root: Option<&Path>,
+    repository_root: Option<&Path>,
 ) -> Result<(), OutputError> {
-    validate_directory(path)?;
+    validate_directory(path, project_root, repository_root)?;
     let parent = artifact_parent(path);
     fs::create_dir_all(parent).map_err(|source| OutputError::CreateParent {
         path: parent.to_path_buf(),
@@ -311,8 +367,23 @@ fn validate_file(path: &Path) -> Result<(), OutputError> {
     }
 }
 
-fn validate_directory(path: &Path) -> Result<(), OutputError> {
+fn validate_directory(
+    path: &Path,
+    project_root: Option<&Path>,
+    repository_root: Option<&Path>,
+) -> Result<(), OutputError> {
     validate_common(path)?;
+    let ownership_root = repository_root.or(project_root);
+    if ownership_root.is_some_and(|root| !path.starts_with(root))
+        || project_root.is_some_and(|root| paths_lexically_equal(path, root))
+        || repository_root.is_some_and(|root| paths_lexically_equal(path, root))
+        || std::env::var_os("HOME")
+            .as_deref()
+            .is_some_and(|home| paths_lexically_equal(path, Path::new(home)))
+    {
+        return Err(OutputError::UnsafePath(path.to_path_buf()));
+    }
+    validate_ancestor_symlinks(path, ownership_root)?;
     if path
         .components()
         .any(|component| component.as_os_str() == ".git")
@@ -330,6 +401,37 @@ fn validate_directory(path: &Path) -> Result<(), OutputError> {
             source,
         }),
     }
+}
+
+fn validate_ancestor_symlinks(path: &Path, root: Option<&Path>) -> Result<(), OutputError> {
+    let Some(root) = root.filter(|root| path.starts_with(root)) else {
+        return Ok(());
+    };
+    let relative = path
+        .strip_prefix(root)
+        .map_err(|_| OutputError::UnsafePath(path.to_path_buf()))?;
+    let mut candidate = root.to_path_buf();
+    for component in relative.components() {
+        candidate.push(component);
+        match fs::symlink_metadata(&candidate) {
+            Ok(metadata) if metadata.file_type().is_symlink() => {
+                return Err(OutputError::UnsafePath(path.to_path_buf()));
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() == io::ErrorKind::NotFound => break,
+            Err(source) => {
+                return Err(OutputError::Inspect {
+                    path: candidate,
+                    source,
+                });
+            }
+        }
+    }
+    Ok(())
+}
+
+fn paths_lexically_equal(left: &Path, right: &Path) -> bool {
+    left.components().eq(right.components())
 }
 
 fn validate_common(path: &Path) -> Result<(), OutputError> {

@@ -1,6 +1,9 @@
 # Templates and Profiles
 
-Status: embedded bootstrap implemented; selectable profiles, custom roots, and directory entrypoints are accepted but not implemented.
+Status: embedded `agent`, arbitrary custom profile selection, complete custom
+roots, directory entrypoints, preflight validation, CLI precedence, and
+`init-templates` are implemented. Additional embedded profiles and a stable
+external context-compatibility promise remain.
 
 ## Purpose
 
@@ -34,23 +37,26 @@ templates/dbmd/
     single_file/
       database.md.j2
     directory/
+      root.md.j2
       index.md.j2
+      enum.md.j2
       table.md.j2
       view.md.j2
+      trigger.md.j2
       function.md.j2
-    partials/
-      columns.md.j2
-      clickhouse/
-        table-engine.md.j2
 ```
 
 dbmd does not fall back from a missing custom entrypoint to an embedded template. This prevents accidental coupling to internal built-in paths.
 
 ## Required entrypoints
 
-- `PROFILE/single_file/database.md.j2` for single-file output.
-- `PROFILE/directory/index.md.j2` and `table.md.j2` for directory object output.
-- Additional object entrypoints become required when the selected snapshot contains those artifact types.
+- `PROFILE/single_file/database.md.j2`.
+- `PROFILE/directory/root.md.j2` and `index.md.j2`.
+- `PROFILE/directory/table.md.j2`, `view.md.j2`, `trigger.md.j2`, and
+  `function.md.j2`, plus `enum.md.j2`.
+
+The current loader requires the complete set before connection, independent of
+the selected layout. `dbmd init-templates` creates exactly this tree.
 
 Builtin partial paths are internal implementation details. Custom sets own any partials they reference.
 
@@ -64,9 +70,9 @@ Builtin partial paths are internal implementation details. Custom sets own any p
 
 ## Render-context compatibility
 
-The current bootstrap serializes internal core structs with a few computed additions. That shape is explicitly unstable.
-
-Before custom templates are advertised as a supported compatibility surface, dbmd will introduce and document a dedicated render context. Compatibility can then be versioned independently from internal Rust model changes.
+Custom templates receive the dedicated, versioned render context rather than
+core model structs. The compatibility policy is still pre-release and may
+change until a stable external contract is declared.
 
 An `explain` or diagnostic mode should make the resolved template root, profile, layout, entrypoints, and context version visible. A future context-dump mode may support template authors if it can avoid exposing sensitive data.
 

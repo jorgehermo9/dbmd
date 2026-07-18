@@ -6,6 +6,24 @@ Source: `{{ source.id }}`
 Backend: `{{ source.backend }}`
 
 {% endif -%}
+{% if source.namespaces -%}
+## Namespaces
+
+| Name | Comment |
+|---|---|
+{% for namespace in source.namespaces -%}
+| {{ namespace.name }} | {{ namespace.comment or "-" }} |
+{% endfor %}
+
+{% endif -%}
+{% if source.enums -%}
+## Enum Types
+
+{% for object in source.enums -%}
+- [{{ object.qualified_name }}](enums/{{ object.file_name }})
+{% endfor %}
+
+{% endif -%}
 {% if source.tables -%}
 ## Tables
 

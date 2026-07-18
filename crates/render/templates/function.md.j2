@@ -4,6 +4,10 @@
 {{ function.comment }}
 
 {% endif -%}
+{% for fact in function.facts -%}
+**{{ fact.label }}:** {{ fact.value }}
+
+{% endfor -%}
 {% if function.definition -%}
 {{ function.definition }}
 {% endif -%}

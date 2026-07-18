@@ -74,26 +74,31 @@ Exit criteria:
 
 Status: current.
 
-- `dbmd init` for safe-to-commit configuration. Implemented for base SQLite
-  initialization; template and CI initialization remain.
+- `dbmd init` for safe-to-commit configuration. Base SQLite, complete template
+  tree, and protected GitHub Actions initialization are implemented.
 - `dbmd verify` with byte-for-byte and file-set comparison. Implemented.
 - Compact changed/added/deleted summaries. Implemented.
 - `dbmd verify --diff` with a complete unified diff. Implemented.
-- Multi-source rendering and deterministic selection order. Implemented for
-  configured sources; CLI selection overrides remain.
+- Multi-source rendering and deterministic selection order. Configured and
+  repeated CLI selection are implemented across SQLite and PostgreSQL.
 - Directory object layout for large schemas. Implemented with atomic
   whole-tree replacement.
-- GitHub Action and generated GitHub Actions workflow.
+- Generated GitHub Actions workflow. Implemented; a reusable official action
+  remains a separate release/integration feature.
 
-The render module now owns an explicit versioned presentation context and a
-layout-neutral in-memory artifact. Custom template loading, profile selection,
-one-off output overrides, and CI generation remain before Phase 3 is complete.
+The render module owns an explicit versioned presentation context and a
+layout-neutral in-memory artifact. Complete custom template loading, custom
+profile selection, configless SQLite, stdout/output overrides, and CI generation
+are implemented. Agent snippets and release hardening remain before Phase 3 is
+closed.
 
 Generated Markdown remains free of timestamps, fingerprints, versions, and generated-by headers. Verification compares fresh output rather than trusting embedded metadata.
 
 ## Phase 4 — PostgreSQL depth
 
-Status: planned.
+Status: active; the listed fixture-driven catalog surface is implemented in the
+introspection, core, render, and application layers. Remaining PostgreSQL DDL
+families and operational hardening continue in this phase.
 
 - Catalog introspection through `pg_catalog` where `information_schema` loses detail.
 - Schemas, relations, columns, defaults, identities, generated columns, and comments.

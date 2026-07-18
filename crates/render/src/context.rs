@@ -2,10 +2,12 @@ use std::fmt::Write as _;
 
 use dbmd_core::{
     Backend, ClickHouseTable, Column, ColumnBackend, Constraint, ConstraintBackend, ConstraintKind,
-    DatabaseContext, ForeignKeyAction, ForeignKeyInitialTiming, Function, Index, IndexSortOrder,
-    IndexTarget, PostgresTable, PostgresTableKind, SourceSnapshot, SqliteColumnKind,
-    SqliteConflictResolution, SqliteIndexOrigin, SqliteTable, SqliteTableKind, Table, TableBackend,
-    Trigger, TriggerEvent, TriggerTiming, View,
+    DatabaseContext, EnumType, ForeignKeyAction, ForeignKeyInitialTiming, Function,
+    FunctionBackend, Index, IndexBackend, IndexNullsOrder, IndexSortOrder, IndexTarget, Namespace,
+    PostgresFunctionParallel, PostgresFunctionVolatility, PostgresPolicyCommand, PostgresTable,
+    PostgresTableKind, SourceSnapshot, SqliteColumnKind, SqliteConflictResolution,
+    SqliteIndexOrigin, SqliteTable, SqliteTableKind, Table, TableBackend, Trigger, TriggerEvent,
+    TriggerTiming, View,
 };
 use serde::Serialize;
 
@@ -48,6 +50,8 @@ pub(crate) struct RenderSource {
     pub(crate) section_heading: &'static str,
     pub(crate) object_heading: &'static str,
     pub(crate) detail_heading: &'static str,
+    pub(crate) namespaces: Vec<RenderNamespace>,
+    pub(crate) enums: Vec<RenderEnum>,
     pub(crate) tables: Vec<RenderTable>,
     pub(crate) views: Vec<RenderView>,
     pub(crate) triggers: Vec<RenderTrigger>,
@@ -75,6 +79,12 @@ impl RenderSource {
             section_heading,
             object_heading,
             detail_heading,
+            namespaces: source
+                .namespaces
+                .iter()
+                .map(RenderNamespace::from)
+                .collect(),
+            enums: source.enums.iter().map(RenderEnum::from).collect(),
             tables: source
                 .tables
                 .iter()
@@ -95,6 +105,42 @@ impl RenderSource {
                 .iter()
                 .map(|function| RenderFunction::new(function, object_heading))
                 .collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub(crate) struct RenderNamespace {
+    name: String,
+    comment: Option<String>,
+}
+
+impl From<&Namespace> for RenderNamespace {
+    fn from(namespace: &Namespace) -> Self {
+        Self {
+            name: inline_code(&namespace.name),
+            comment: namespace.comment.as_deref().map(text),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub(crate) struct RenderEnum {
+    pub(crate) heading: &'static str,
+    qualified_name: String,
+    pub(crate) file_name: String,
+    comment: Option<String>,
+    values: String,
+}
+
+impl From<&EnumType> for RenderEnum {
+    fn from(enum_type: &EnumType) -> Self {
+        Self {
+            heading: "###",
+            qualified_name: inline_code(&format!("{}.{}", enum_type.namespace, enum_type.name)),
+            file_name: object_file_name(&enum_type.namespace, &enum_type.name),
+            comment: enum_type.comment.as_deref().map(text),
+            values: inline_code(&enum_type.values.join(", ")),
         }
     }
 }
@@ -148,7 +194,21 @@ impl From<&Column> for RenderColumn {
             notes.push(text(comment));
         }
         match &column.backend {
-            ColumnBackend::Common | ColumnBackend::Postgres(_) => {}
+            ColumnBackend::Common => {}
+            ColumnBackend::Postgres(postgres) => {
+                if let Some(identity) = &postgres.identity {
+                    notes.push(format!("identity {}", inline_code(identity)));
+                }
+                if let Some(generated) = &postgres.generated {
+                    notes.push(format!("generated as {}", inline_code(generated)));
+                }
+                if !postgres.enum_values.is_empty() {
+                    notes.push(format!(
+                        "enum values {}",
+                        inline_code(&postgres.enum_values.join(", "))
+                    ));
+                }
+            }
             ColumnBackend::ClickHouse(clickhouse) => {
                 if let Some(codec) = &clickhouse.codec {
                     notes.push(format!("codec {}", inline_code(codec)));
@@ -226,16 +286,31 @@ impl From<&Constraint> for RenderConstraint {
         } else {
             "-".to_string()
         };
-        if let ConstraintBackend::Sqlite(sqlite) = &constraint.backend {
-            if let Some(conflict) = sqlite.conflict_resolution {
-                let _ = write!(
-                    details,
-                    "; conflict {}",
-                    inline_code(sqlite_conflict(conflict))
-                );
+        match &constraint.backend {
+            ConstraintBackend::Common => {}
+            ConstraintBackend::Postgres(postgres) => {
+                details = inline_code(&postgres.definition);
+                if !postgres.validated {
+                    details.push_str("; not validated");
+                }
+                if !postgres.locally_defined {
+                    details.push_str("; inherited");
+                }
+                if postgres.no_inherit {
+                    details.push_str("; no inherit");
+                }
             }
-            if sqlite.auto_increment {
-                details.push_str("; autoincrement");
+            ConstraintBackend::Sqlite(sqlite) => {
+                if let Some(conflict) = sqlite.conflict_resolution {
+                    let _ = write!(
+                        details,
+                        "; conflict {}",
+                        inline_code(sqlite_conflict(conflict))
+                    );
+                }
+                if sqlite.auto_increment {
+                    details.push_str("; autoincrement");
+                }
             }
         }
         Self {
@@ -271,25 +346,60 @@ impl From<&Index> for RenderIndex {
                     }
                     IndexTarget::RowId => inline_code("rowid"),
                 };
-                format!(
-                    "{target} {} collate {}",
-                    index_order(term.order),
-                    inline_code(&term.collation)
-                )
+                let mut rendered = format!("{target} {}", index_order(term.order));
+                if let Some(collation) = &term.collation {
+                    let _ = write!(rendered, " collate {}", inline_code(collation));
+                }
+                if let Some(operator_class) = &term.operator_class {
+                    let _ = write!(rendered, " opclass {}", inline_code(operator_class));
+                }
+                if let Some(nulls_order) = term.nulls_order {
+                    let nulls_order = match nulls_order {
+                        IndexNullsOrder::First => "first",
+                        IndexNullsOrder::Last => "last",
+                    };
+                    let _ = write!(rendered, " nulls {}", inline_code(nulls_order));
+                }
+                rendered
             })
             .collect::<Vec<_>>()
             .join(", ");
         let origin = match &index.backend {
-            dbmd_core::IndexBackend::Sqlite(sqlite) => sqlite_index_origin(sqlite.origin),
-            dbmd_core::IndexBackend::Postgres(_) => "postgres",
-            dbmd_core::IndexBackend::ClickHouse(_) => "clickhouse",
-            dbmd_core::IndexBackend::Common => "common",
+            IndexBackend::Sqlite(sqlite) => inline_code(sqlite_index_origin(sqlite.origin)),
+            IndexBackend::Postgres(postgres) => {
+                let mut details = format!("postgres {}", inline_code(&postgres.method));
+                if !postgres.included_columns.is_empty() {
+                    let _ = write!(
+                        details,
+                        "; include {}",
+                        inline_code(&postgres.included_columns.join(", "))
+                    );
+                }
+                if postgres.nulls_not_distinct {
+                    details.push_str("; nulls not distinct");
+                }
+                if !postgres.valid {
+                    details.push_str("; invalid");
+                }
+                if !postgres.ready {
+                    details.push_str("; not ready");
+                }
+                if postgres.clustered {
+                    details.push_str("; clustered");
+                }
+                if postgres.replica_identity {
+                    details.push_str("; replica identity");
+                }
+                details
+            }
+            IndexBackend::ClickHouse(_) => inline_code("clickhouse"),
+            IndexBackend::Common => inline_code("common"),
         };
         Self {
             name: inline_code(&index.name),
             terms,
             unique: if index.unique { "yes" } else { "no" },
-            origin: inline_code(origin),
+            origin,
             predicate: index
                 .predicate
                 .as_deref()
@@ -385,17 +495,46 @@ fn postgres_table_details(table: &PostgresTable) -> RenderTableDetails {
             inline_code(&table.inherits.join(", ")),
         ));
     }
-    if let Some(partition) = &table.partition {
-        facts.push(RenderFact::new("Partition", inline_code(partition)));
+    if let Some(partition) = &table.partition_key {
+        facts.push(RenderFact::new("Partition key", inline_code(partition)));
+    }
+    if let Some(parent) = &table.partition_parent {
+        facts.push(RenderFact::new("Partition parent", inline_code(parent)));
+    }
+    if let Some(bound) = &table.partition_bound {
+        facts.push(RenderFact::new("Partition bound", inline_code(bound)));
+    }
+    for policy in &table.policies {
+        let mut value = format!(
+            "{} {} to {} ({})",
+            inline_code(&policy.name),
+            inline_code(postgres_policy_command(policy.command)),
+            inline_code(&policy.roles.join(", ")),
+            if policy.permissive {
+                "permissive"
+            } else {
+                "restrictive"
+            }
+        );
+        if let Some(expression) = &policy.using_expression {
+            let _ = write!(value, "; using {}", inline_code(expression));
+        }
+        if let Some(expression) = &policy.check_expression {
+            let _ = write!(value, "; check {}", inline_code(expression));
+        }
+        facts.push(RenderFact::new("Policy", value));
+    }
+    let mut notices = Vec::new();
+    if table.row_level_security {
+        notices.push("Row-level security enabled.");
+    }
+    if table.force_row_level_security {
+        notices.push("Row-level security forced for the table owner.");
     }
     RenderTableDetails {
         title: "PostgreSQL",
         facts,
-        notices: if table.row_level_security {
-            vec!["Row-level security enabled."]
-        } else {
-            Vec::new()
-        },
+        notices,
         definition: None,
     }
 }
@@ -505,6 +644,7 @@ pub(crate) struct RenderFunction {
     qualified_name: String,
     pub(crate) file_name: String,
     comment: Option<String>,
+    facts: Vec<RenderFact>,
     definition: Option<String>,
 }
 
@@ -516,8 +656,34 @@ impl RenderFunction {
                 "{}.{}{}",
                 function.namespace, function.name, function.signature
             )),
-            file_name: object_file_name(&function.namespace, &function.name),
+            file_name: object_file_name(
+                &function.namespace,
+                &format!("{}{}", function.name, function.signature),
+            ),
             comment: function.comment.as_deref().map(text),
+            facts: match &function.backend {
+                FunctionBackend::Common => Vec::new(),
+                FunctionBackend::Postgres(postgres) => vec![
+                    RenderFact::new("Returns", inline_code(&postgres.return_type)),
+                    RenderFact::new("Language", inline_code(&postgres.language)),
+                    RenderFact::new(
+                        "Volatility",
+                        inline_code(postgres_function_volatility(postgres.volatility)),
+                    ),
+                    RenderFact::new(
+                        "Parallel",
+                        inline_code(postgres_function_parallel(postgres.parallel)),
+                    ),
+                    RenderFact::new(
+                        "Security",
+                        inline_code(if postgres.security_definer {
+                            "definer"
+                        } else {
+                            "invoker"
+                        }),
+                    ),
+                ],
+            },
             definition: function
                 .definition
                 .as_deref()
@@ -600,7 +766,34 @@ fn postgres_table_kind(kind: &PostgresTableKind) -> &'static str {
     match kind {
         PostgresTableKind::Table => "table",
         PostgresTableKind::PartitionedTable => "partitioned_table",
+        PostgresTableKind::Partition => "partition",
         PostgresTableKind::ForeignTable => "foreign_table",
+    }
+}
+
+fn postgres_policy_command(command: PostgresPolicyCommand) -> &'static str {
+    match command {
+        PostgresPolicyCommand::All => "all",
+        PostgresPolicyCommand::Select => "select",
+        PostgresPolicyCommand::Insert => "insert",
+        PostgresPolicyCommand::Update => "update",
+        PostgresPolicyCommand::Delete => "delete",
+    }
+}
+
+fn postgres_function_volatility(volatility: PostgresFunctionVolatility) -> &'static str {
+    match volatility {
+        PostgresFunctionVolatility::Immutable => "immutable",
+        PostgresFunctionVolatility::Stable => "stable",
+        PostgresFunctionVolatility::Volatile => "volatile",
+    }
+}
+
+fn postgres_function_parallel(parallel: PostgresFunctionParallel) -> &'static str {
+    match parallel {
+        PostgresFunctionParallel::Safe => "safe",
+        PostgresFunctionParallel::Restricted => "restricted",
+        PostgresFunctionParallel::Unsafe => "unsafe",
     }
 }
 

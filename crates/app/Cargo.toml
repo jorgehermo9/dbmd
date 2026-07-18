@@ -6,10 +6,14 @@ license.workspace = true
 repository.workspace = true
 readme = "README.md"
 
+[features]
+postgres-tests = ["dep:dbmd-test-support"]
+
 [dependencies]
 dbmd-core = { path = "../core" }
 dbmd-introspect = { path = "../introspect" }
 dbmd-render = { path = "../render" }
+dbmd-test-support = { path = "../test-support", optional = true }
 serde.workspace = true
 similar.workspace = true
 tempfile.workspace = true
@@ -19,3 +23,7 @@ toml.workspace = true
 [dev-dependencies]
 insta.workspace = true
 rusqlite.workspace = true
+
+[[test]]
+name = "postgres"
+required-features = ["postgres-tests"]

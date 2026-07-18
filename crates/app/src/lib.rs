@@ -2,24 +2,40 @@
 
 mod config;
 mod init;
+mod init_ci;
+mod init_templates;
 mod output;
 
 pub use config::ConfigError;
 pub use init::{init, InitError, InitReport, InitRequest};
+pub use init_ci::{init_ci, InitCiError, InitCiReport, InitCiRequest};
+pub use init_templates::{
+    init_templates, InitTemplatesError, InitTemplatesReport, InitTemplatesRequest,
+};
 pub use output::OutputError;
 
-use std::{collections::BTreeMap, fs, path::PathBuf};
+use std::{collections::BTreeMap, fs, path::Path, path::PathBuf, str::FromStr};
 
 use dbmd_core::{DatabaseContext, SourceId};
-use dbmd_introspect::sqlite;
+use dbmd_introspect::{self as introspect, IntrospectionError};
 use dbmd_render::{RenderedArtifact, Renderer};
 use thiserror::Error;
 
 /// Inputs for one configured render operation.
 #[derive(Debug, Clone)]
 pub struct RenderRequest {
-    config_path: PathBuf,
+    input: RenderInput,
     environment: BTreeMap<String, String>,
+    source_selection: Option<Vec<String>>,
+    output_path: Option<PathBuf>,
+    template_root: Option<PathBuf>,
+    stdout: bool,
+}
+
+#[derive(Debug, Clone)]
+enum RenderInput {
+    Config(PathBuf),
+    Sqlite(PathBuf),
 }
 
 impl RenderRequest {
@@ -27,8 +43,12 @@ impl RenderRequest {
     #[must_use]
     pub fn new(config_path: impl Into<PathBuf>) -> Self {
         Self {
-            config_path: config_path.into(),
+            input: RenderInput::Config(config_path.into()),
             environment: std::env::vars().collect(),
+            source_selection: None,
+            output_path: None,
+            template_root: None,
+            stdout: false,
         }
     }
 
@@ -39,18 +59,95 @@ impl RenderRequest {
         environment: BTreeMap<String, String>,
     ) -> Self {
         Self {
-            config_path: config_path.into(),
+            input: RenderInput::Config(config_path.into()),
             environment,
+            source_selection: None,
+            output_path: None,
+            template_root: None,
+            stdout: false,
         }
+    }
+
+    /// Creates a configless one-off request for one SQLite database.
+    #[must_use]
+    pub fn sqlite(path: impl Into<PathBuf>) -> Self {
+        Self {
+            input: RenderInput::Sqlite(path.into()),
+            environment: BTreeMap::new(),
+            source_selection: None,
+            output_path: None,
+            template_root: None,
+            stdout: false,
+        }
+    }
+
+    /// Replaces the configured source selection while preserving the supplied order.
+    #[must_use]
+    pub fn with_sources<I, S>(mut self, sources: I) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        self.source_selection = Some(sources.into_iter().map(Into::into).collect());
+        self
+    }
+
+    /// Replaces the configured output path, or supplies one for a configless request.
+    #[must_use]
+    pub fn with_output_path(mut self, output_path: impl Into<PathBuf>) -> Self {
+        self.output_path = Some(output_path.into());
+        self
+    }
+
+    /// Replaces the configured custom template root for this render.
+    #[must_use]
+    pub fn with_template_root(mut self, template_root: impl Into<PathBuf>) -> Self {
+        self.template_root = Some(template_root.into());
+        self
+    }
+
+    /// Returns a single-file artifact in memory instead of writing an output path.
+    #[must_use]
+    pub fn to_stdout(mut self) -> Self {
+        self.stdout = true;
+        self
     }
 }
 
 /// Observable result of a completed render operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderReport {
-    pub output_path: PathBuf,
     pub sources: Vec<SourceId>,
-    pub bytes_written: usize,
+    pub output: RenderOutput,
+}
+
+/// Destination-specific result of a completed render operation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RenderOutput {
+    /// An artifact was atomically written to a filesystem path.
+    Written { path: PathBuf, bytes_written: usize },
+    /// A single-file artifact was returned to the caller without filesystem output.
+    Stdout(Vec<u8>),
+}
+
+impl RenderOutput {
+    /// Returns the written path, when the render targeted the filesystem.
+    #[must_use]
+    pub fn path(&self) -> Option<&Path> {
+        match self {
+            Self::Written { path, .. } => Some(path),
+            Self::Stdout(_) => None,
+        }
+    }
+
+    /// Returns the number of rendered bytes.
+    #[must_use]
+    pub fn bytes_written(&self) -> usize {
+        match self {
+            Self::Written { bytes_written, .. } => *bytes_written,
+            Self::Stdout(contents) => contents.len(),
+        }
+    }
 }
 
 /// Inputs for one canonical verification operation.
@@ -133,7 +230,7 @@ impl VerifyReport {
 }
 
 struct GeneratedArtifact {
-    output_path: PathBuf,
+    output_path: Option<output::ValidatedOutputPath>,
     source_ids: Vec<SourceId>,
     artifact: RenderedArtifact,
 }
@@ -144,13 +241,44 @@ struct GeneratedArtifact {
 ///
 /// Returns [`RenderError`] when configuration, introspection, rendering, or output replacement fails.
 pub fn render(request: RenderRequest) -> Result<RenderReport, RenderError> {
-    let generated = generate(&request.config_path, &request.environment)?;
-    let bytes_written = output::replace(&generated.output_path, &generated.artifact)?;
+    if request.stdout && request.output_path.is_some() {
+        return Err(RenderError::ConflictingDestination);
+    }
+    let generated = generate(
+        &request.input,
+        &request.environment,
+        config::Overrides {
+            source_selection: request.source_selection,
+            output_path: request.output_path,
+            template_root: request.template_root,
+        },
+        if request.stdout {
+            BuildDestination::Stdout
+        } else {
+            BuildDestination::Filesystem
+        },
+    )?;
+    let output = if request.stdout {
+        match generated.artifact {
+            RenderedArtifact::SingleFile(contents) => RenderOutput::Stdout(contents),
+            RenderedArtifact::Directory(_) => {
+                unreachable!("stdout layout is validated before introspection")
+            }
+        }
+    } else {
+        let destination = generated
+            .output_path
+            .expect("filesystem destination is validated before introspection");
+        let bytes_written = output::replace(&destination, &generated.artifact)?;
+        RenderOutput::Written {
+            path: destination.into_path(),
+            bytes_written,
+        }
+    };
 
     Ok(RenderReport {
-        output_path: generated.output_path,
         sources: generated.source_ids,
-        bytes_written,
+        output,
     })
 }
 
@@ -164,34 +292,89 @@ pub fn render(request: RenderRequest) -> Result<RenderReport, RenderError> {
 /// reading the canonical artifact fails. Drift is returned as a successful
 /// [`VerifyReport`].
 pub fn verify(request: VerifyRequest) -> Result<VerifyReport, VerifyError> {
-    let generated = generate(&request.config_path, &request.environment)?;
-    let comparison = output::compare(
-        &generated.output_path,
-        &generated.artifact,
-        request.include_diff,
+    let generated = generate(
+        &RenderInput::Config(request.config_path),
+        &request.environment,
+        config::Overrides::default(),
+        BuildDestination::Filesystem,
     )?;
+    let destination = generated
+        .output_path
+        .expect("configured verification plans always have an output path");
+    let comparison = output::compare(&destination, &generated.artifact, request.include_diff)?;
     Ok(VerifyReport {
-        output_path: generated.output_path,
+        output_path: destination.into_path(),
         changes: comparison.changes,
         diff: comparison.diff,
     })
 }
 
 fn generate(
-    config_path: &std::path::Path,
+    input: &RenderInput,
     environment: &BTreeMap<String, String>,
+    overrides: config::Overrides,
+    destination: BuildDestination,
 ) -> Result<GeneratedArtifact, ArtifactBuildError> {
-    let contents =
-        fs::read_to_string(config_path).map_err(|source| ArtifactBuildError::ReadConfig {
-            path: config_path.to_path_buf(),
-            source,
-        })?;
-    let plan = config::resolve(&contents, config_path, environment)?;
-    let renderer = Renderer::embedded()?;
+    let plan = match input {
+        RenderInput::Config(config_path) => {
+            let contents = fs::read_to_string(config_path).map_err(|source| {
+                ArtifactBuildError::ReadConfig {
+                    path: config_path.to_path_buf(),
+                    source,
+                }
+            })?;
+            config::resolve(&contents, config_path, environment, overrides)?
+        }
+        RenderInput::Sqlite(path) => {
+            if overrides.source_selection.is_some() {
+                return Err(ArtifactBuildError::Config(
+                    ConfigError::SelectionWithoutConfig,
+                ));
+            }
+            config::RenderPlan {
+                sources: vec![dbmd_introspect::sqlite::SqliteSource::new(
+                    SourceId::from_str("local")
+                        .expect("the built-in one-off source ID is always valid"),
+                    path,
+                )
+                .into()],
+                project_root: None,
+                repository_root: None,
+                output_path: overrides.output_path,
+                template_root: overrides.template_root,
+                profile: "agent".to_string(),
+                render_options: dbmd_render::RenderOptions::default(),
+            }
+        }
+    };
+    let output_path = match destination {
+        BuildDestination::Stdout => {
+            if plan.render_options.layout != dbmd_render::OutputLayout::SingleFile {
+                return Err(ArtifactBuildError::StdoutRequiresSingleFile);
+            }
+            None
+        }
+        BuildDestination::Filesystem => {
+            let output_path = plan
+                .output_path
+                .as_deref()
+                .ok_or(ArtifactBuildError::MissingOutputPath)?;
+            Some(output::validate(
+                output_path,
+                plan.render_options.layout,
+                plan.project_root.as_deref(),
+                plan.repository_root.as_deref(),
+            )?)
+        }
+    };
+    let renderer = match &plan.template_root {
+        Some(root) => Renderer::from_template_root(root, &plan.profile)?,
+        None => Renderer::embedded()?,
+    };
     let snapshots = plan
         .sources
         .iter()
-        .map(sqlite::introspect)
+        .map(introspect::introspect)
         .collect::<Result<Vec<_>, _>>()?;
     let context = DatabaseContext::new(snapshots)?;
     let source_ids = context
@@ -201,10 +384,16 @@ fn generate(
         .collect::<Vec<_>>();
     let artifact = renderer.render_with_options(&context, plan.render_options)?;
     Ok(GeneratedArtifact {
-        output_path: plan.output_path,
+        output_path,
         source_ids,
         artifact,
     })
+}
+
+#[derive(Debug, Clone, Copy)]
+enum BuildDestination {
+    Filesystem,
+    Stdout,
 }
 
 /// Why a canonical artifact could not be built in memory.
@@ -219,11 +408,17 @@ pub enum ArtifactBuildError {
     #[error(transparent)]
     Config(#[from] ConfigError),
     #[error(transparent)]
-    Introspection(#[from] sqlite::IntrospectionError),
+    Introspection(#[from] IntrospectionError),
     #[error(transparent)]
     Context(#[from] dbmd_core::DatabaseContextError),
     #[error(transparent)]
     Rendering(#[from] dbmd_render::RenderError),
+    #[error(transparent)]
+    OutputPreflight(#[from] OutputError),
+    #[error("one-off rendering requires `--output` unless `--stdout` is selected")]
+    MissingOutputPath,
+    #[error("stdout is available only for single-file layout")]
+    StdoutRequiresSingleFile,
 }
 
 /// Why a configured render operation failed.
@@ -233,6 +428,8 @@ pub enum RenderError {
     Build(#[from] ArtifactBuildError),
     #[error(transparent)]
     Output(#[from] OutputError),
+    #[error("stdout cannot be combined with an output path")]
+    ConflictingDestination,
 }
 
 /// Why canonical verification could not produce a trustworthy comparison.

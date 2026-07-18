@@ -1,0 +1,204 @@
+---
+source: crates/introspect/tests/postgres.rs
+expression: snapshot
+---
+id: tenancy
+display_name: ~
+backend: postgres
+namespaces:
+  - name: public
+    comment: standard public schema
+  - name: tenancy
+    comment: ~
+enums: []
+tables:
+  - namespace: tenancy
+    name: base_events
+    comment: ~
+    columns:
+      - name: tenant_id
+        data_type: bigint
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: postgres
+          enum_values: []
+          identity: ~
+          generated: ~
+      - name: payload
+        data_type: jsonb
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: postgres
+          enum_values: []
+          identity: ~
+          generated: ~
+    constraints: []
+    indexes: []
+    backend:
+      backend: postgres
+      table_kind: table
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: true
+      force_row_level_security: true
+      policies:
+        - name: tenant_events
+          permissive: false
+          command: select
+          roles:
+            - PUBLIC
+          using_expression: "tenant_id = current_setting('app.tenant_id'::text)::bigint"
+          check_expression: ~
+  - namespace: tenancy
+    name: events
+    comment: ~
+    columns:
+      - name: tenant_id
+        data_type: bigint
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: postgres
+          enum_values: []
+          identity: ~
+          generated: ~
+      - name: created_at
+        data_type: date
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: postgres
+          enum_values: []
+          identity: ~
+          generated: ~
+      - name: payload
+        data_type: jsonb
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: postgres
+          enum_values: []
+          identity: ~
+          generated: ~
+    constraints: []
+    indexes: []
+    backend:
+      backend: postgres
+      table_kind: partitioned_table
+      tablespace: ~
+      inherits: []
+      partition_key: RANGE (created_at)
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+  - namespace: tenancy
+    name: events_2025
+    comment: ~
+    columns:
+      - name: tenant_id
+        data_type: bigint
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: postgres
+          enum_values: []
+          identity: ~
+          generated: ~
+      - name: created_at
+        data_type: date
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: postgres
+          enum_values: []
+          identity: ~
+          generated: ~
+      - name: payload
+        data_type: jsonb
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: postgres
+          enum_values: []
+          identity: ~
+          generated: ~
+    constraints: []
+    indexes: []
+    backend:
+      backend: postgres
+      table_kind: partition
+      tablespace: ~
+      inherits:
+        - tenancy.events
+      partition_key: ~
+      partition_parent: tenancy.events
+      partition_bound: "FOR VALUES FROM ('2025-01-01') TO ('2026-01-01')"
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+  - namespace: tenancy
+    name: special_events
+    comment: ~
+    columns:
+      - name: tenant_id
+        data_type: bigint
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: postgres
+          enum_values: []
+          identity: ~
+          generated: ~
+      - name: payload
+        data_type: jsonb
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: postgres
+          enum_values: []
+          identity: ~
+          generated: ~
+      - name: category
+        data_type: text
+        nullable: false
+        default: ~
+        comment: ~
+        backend:
+          backend: postgres
+          enum_values: []
+          identity: ~
+          generated: ~
+    constraints: []
+    indexes: []
+    backend:
+      backend: postgres
+      table_kind: table
+      tablespace: ~
+      inherits:
+        - tenancy.base_events
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+views: []
+triggers: []
+functions: []

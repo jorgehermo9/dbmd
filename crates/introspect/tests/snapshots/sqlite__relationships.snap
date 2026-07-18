@@ -5,6 +5,10 @@ expression: snapshot
 id: app
 display_name: ~
 backend: sqlite
+namespaces:
+  - name: main
+    comment: ~
+enums: []
 tables:
   - namespace: main
     name: albums
@@ -72,11 +76,15 @@ tables:
           - target:
               column: artist
             collation: BINARY
+            operator_class: ~
             order: ascending
+            nulls_order: ~
           - target:
               column: title
             collation: BINARY
+            operator_class: ~
             order: ascending
+            nulls_order: ~
         predicate: ~
         definition: ~
         backend:
