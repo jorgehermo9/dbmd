@@ -25,11 +25,15 @@ templates, output paths, or backend registration.
 ## Backend-owned catalogs
 
 There is no universal `TableBackend`, `ColumnBackend`, or equivalent extension
-enum in core. SQLite and PostgreSQL own independent aggregate types:
+enum in core. Each database family owns an independent aggregate type:
 
 ```rust
 sqlite::Catalog { tables: Vec<sqlite::Table>, /* ... */ }
 postgres::Catalog { tables: Vec<postgres::Table>, /* ... */ }
+clickhouse::Catalog { tables: Vec<clickhouse::Table>, /* ... */ }
+mysql::Catalog { tables: Vec<mysql::Table>, /* ... */ }
+mariadb::Catalog { tables: Vec<mariadb::Table>, /* ... */ }
+duckdb::Catalog { tables: Vec<duckdb::Table>, /* ... */ }
 ```
 
 This permits SQLite `Trigger` to contain its single grammar event while
@@ -53,6 +57,10 @@ Application operations need a heterogeneous ordered source collection. The
 
 ```rust
 pub enum Catalog {
+    Clickhouse(clickhouse::Catalog),
+    Duckdb(duckdb::Catalog),
+    Mariadb(mariadb::Catalog),
+    Mysql(mysql::Catalog),
     Sqlite(sqlite::Catalog),
     Postgres(postgres::Catalog),
 }
@@ -93,6 +101,10 @@ The durable implementation coverage matrices live beside the owning backend:
 
 - [SQLite](../../crates/backends/sqlite/README.md)
 - [PostgreSQL](../../crates/backends/postgres/README.md)
+- [ClickHouse](../../crates/backends/clickhouse/README.md)
+- [MySQL](../../crates/backends/mysql/README.md)
+- [MariaDB](../../crates/backends/mariadb/README.md)
+- [DuckDB](../../crates/backends/duckdb/README.md)
 
 Product documentation states user-visible contracts; these module documents
 state which backend schema facts are implemented and fixture-proven.

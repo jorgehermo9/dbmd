@@ -1,0 +1,26 @@
+[package]
+name = "dbmd-backend-mariadb"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[features]
+mariadb-tests = ["dep:dbmd-test-support"]
+
+[dependencies]
+dbmd-core = { path = "../../core" }
+dbmd-relational = { path = "../relational" }
+dbmd-render = { path = "../../render" }
+mysql.workspace = true
+serde.workspace = true
+dbmd-test-support = { path = "../../test-support", optional = true }
+thiserror.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+
+[[test]]
+name = "mariadb"
+required-features = ["mariadb-tests"]

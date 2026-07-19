@@ -17,6 +17,14 @@ path = "./dev.db"
 [sources.local.attachments.analytics]
 path = "./analytics.db"
 
+[sources.warehouse]
+backend = "duckdb"
+path = "./warehouse.duckdb"
+
+[sources.warehouse.attachments.archive]
+path = "./archive.duckdb"
+read_only = true
+
 [output]
 path = "DATABASE.md"
 profile = "agent"
@@ -105,12 +113,20 @@ Render and verify fail fast enough to avoid partial work. Doctor may continue in
 
 ## Introspection dispatch
 
-SQLite and PostgreSQL expose concrete vertical crates under `crates/backends/`.
+Each supported database family exposes a concrete vertical crate under
+`crates/backends/`.
 The `dbmd-backends` composition crate provides a closed source enum and dispatch
 function, without a driver trait:
 
 ```rust
-pub enum Source { Sqlite(SqliteSource), Postgres(PostgresSource) }
+pub enum Source {
+    Clickhouse(ClickHouseSource),
+    Duckdb(DuckDbSource),
+    Mariadb(MariaDbSource),
+    Mysql(MySqlSource),
+    Postgres(PostgresSource),
+    Sqlite(SqliteSource),
+}
 pub fn introspect(source: &Source) -> Result<SourceSnapshot<Catalog>, IntrospectionError>;
 ```
 
@@ -123,7 +139,7 @@ The same composition root owns the internally tagged `SourceConfig` enum while
 each backend module owns its committed field struct and concrete source
 construction. App supplies project-relative path bases and a value-expansion
 closure, so environment policy and required-variable reporting remain
-project-level concerns without App destructuring SQLite or PostgreSQL fields.
+project-level concerns without App destructuring concrete backend fields.
 
 Adapters use synchronous clients. Runtime choice is internal and not part of
 the public seam.
@@ -185,6 +201,7 @@ Credentials are redacted at construction, not through hopeful formatting discipl
 
 ## Path bases
 
-Configured paths, including CLI output/template overrides, resolve relative to
-the selected config file. Configless SQLite paths resolve relative to the
-process working directory.
+Configured paths, including SQLite and DuckDB database/attachment paths and CLI
+output/template overrides, resolve relative to the selected config file.
+Configless SQLite and DuckDB paths resolve relative to the process working
+directory.

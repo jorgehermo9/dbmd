@@ -63,6 +63,7 @@ impl std::fmt::Debug for RenderRequest {
 #[derive(Debug, Clone)]
 enum RenderInput {
     Config(PathBuf),
+    Duckdb(PathBuf),
     Sqlite(PathBuf),
 }
 
@@ -101,6 +102,19 @@ impl RenderRequest {
     pub fn sqlite(path: impl Into<PathBuf>) -> Self {
         Self {
             input: RenderInput::Sqlite(path.into()),
+            environment: BTreeMap::new(),
+            source_selection: None,
+            output_path: None,
+            template_root: None,
+            stdout: false,
+        }
+    }
+
+    /// Creates a configless one-off request for one DuckDB database.
+    #[must_use]
+    pub fn duckdb(path: impl Into<PathBuf>) -> Self {
+        Self {
+            input: RenderInput::Duckdb(path.into()),
             environment: BTreeMap::new(),
             source_selection: None,
             output_path: None,
@@ -367,6 +381,32 @@ fn generate(
                 }
             })?;
             config::resolve(&contents, config_path, environment, overrides)?
+        }
+        RenderInput::Duckdb(path) => {
+            if overrides.source_selection.is_some() {
+                return Err(ArtifactBuildError::Config(
+                    ConfigError::SelectionWithoutConfig,
+                ));
+            }
+            config::RenderPlan {
+                sources: vec![backends::Source::duckdb(
+                    SourceId::from_str("local")
+                        .expect("the built-in one-off source ID is always valid"),
+                    path,
+                )
+                .map_err(backends::SourceValidationError::from)
+                .map_err(ConfigError::BackendSource)?],
+                project_root: None,
+                repository_root: None,
+                output_path: overrides.output_path,
+                canonical_output_path: None,
+                canonical_output_display_path: None,
+                template_root: overrides.template_root,
+                template_display_root: None,
+                profile: "agent".to_string(),
+                render_options: dbmd_render::RenderOptions::default(),
+                required_environment: Vec::new(),
+            }
         }
         RenderInput::Sqlite(path) => {
             if overrides.source_selection.is_some() {

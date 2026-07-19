@@ -1,0 +1,456 @@
+---
+source: crates/backends/mysql/tests/mysql.rs
+expression: first
+---
+id: commerce
+display_name: ~
+catalog:
+  schemas:
+    - name: test
+      default_character_set: utf8mb4
+      default_collation: utf8mb4_0900_ai_ci
+  tables:
+    - schema: test
+      name: accounts
+      engine: InnoDB
+      row_format: Dynamic
+      collation: utf8mb4_0900_ai_ci
+      comment: User accounts
+      create_options: row_format=DYNAMIC
+      columns:
+        - name: tenant_id
+          position: 1
+          data_type: bigint
+          column_type: bigint unsigned
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+        - name: account_id
+          position: 2
+          data_type: bigint
+          column_type: bigint unsigned
+          nullable: false
+          default: ~
+          extra: auto_increment
+          generation_expression: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+        - name: email
+          position: 3
+          data_type: varchar
+          column_type: varchar(255)
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          comment: ~
+          visible: true
+        - name: normalized_email
+          position: 4
+          data_type: varchar
+          column_type: varchar(255)
+          nullable: true
+          default: ~
+          extra: STORED GENERATED
+          generation_expression: "lower(`email`)"
+          character_set: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          comment: ~
+          visible: true
+        - name: secret_token
+          position: 5
+          data_type: varchar
+          column_type: varchar(64)
+          nullable: true
+          default: ~
+          extra: INVISIBLE
+          generation_expression: ~
+          character_set: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          comment: ~
+          visible: false
+        - name: status
+          position: 6
+          data_type: enum
+          column_type: "enum('active','disabled')"
+          nullable: false
+          default: active
+          extra: ""
+          generation_expression: ~
+          character_set: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          comment: ~
+          visible: true
+        - name: updated_at
+          position: 7
+          data_type: timestamp
+          column_type: timestamp
+          nullable: false
+          default: CURRENT_TIMESTAMP
+          extra: DEFAULT_GENERATED on update CURRENT_TIMESTAMP
+          generation_expression: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+      constraints:
+        - name: PRIMARY
+          kind: primary_key
+          columns:
+            - account_id
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_option: ~
+          update_rule: ~
+          delete_rule: ~
+          expression: ~
+          enforced: true
+        - name: accounts_email_check
+          kind: check
+          columns: []
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_option: ~
+          update_rule: ~
+          delete_rule: ~
+          expression: "(`email` <> _latin1\\'\\')"
+          enforced: true
+        - name: accounts_tenant_email_uq
+          kind: unique
+          columns:
+            - tenant_id
+            - email
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_option: ~
+          update_rule: ~
+          delete_rule: ~
+          expression: ~
+          enforced: true
+        - name: accounts_tenant_fk
+          kind: foreign_key
+          columns:
+            - tenant_id
+          referenced_schema: test
+          referenced_table: tenants
+          referenced_columns:
+            - tenant_id
+          match_option: NONE
+          update_rule: CASCADE
+          delete_rule: RESTRICT
+          expression: ~
+          enforced: true
+      indexes:
+        - name: PRIMARY
+          unique: true
+          index_type: BTREE
+          visible: true
+          comment: ~
+          terms:
+            - position: 1
+              column: account_id
+              expression: ~
+              prefix_length: ~
+              descending: false
+        - name: accounts_email_desc_idx
+          unique: false
+          index_type: BTREE
+          visible: false
+          comment: ~
+          terms:
+            - position: 1
+              column: email
+              expression: ~
+              prefix_length: ~
+              descending: true
+        - name: accounts_normalized_idx
+          unique: false
+          index_type: BTREE
+          visible: true
+          comment: ~
+          terms:
+            - position: 1
+              column: ~
+              expression: "lower(`email`)"
+              prefix_length: ~
+              descending: false
+        - name: accounts_tenant_email_uq
+          unique: true
+          index_type: BTREE
+          visible: true
+          comment: ~
+          terms:
+            - position: 1
+              column: tenant_id
+              expression: ~
+              prefix_length: ~
+              descending: false
+            - position: 2
+              column: email
+              expression: ~
+              prefix_length: 120
+              descending: false
+      partitions: []
+      definition: "CREATE TABLE `accounts` (\n  `tenant_id` bigint unsigned NOT NULL,\n  `account_id` bigint unsigned NOT NULL AUTO_INCREMENT,\n  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,\n  `normalized_email` varchar(255) GENERATED ALWAYS AS (lower(`email`)) STORED,\n  `secret_token` varchar(64) DEFAULT NULL /*!80023 INVISIBLE */,\n  `status` enum('active','disabled') NOT NULL DEFAULT 'active',\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`account_id`),\n  UNIQUE KEY `accounts_tenant_email_uq` (`tenant_id`,`email`(120)),\n  KEY `accounts_email_desc_idx` (`email` DESC) /*!80000 INVISIBLE */,\n  KEY `accounts_normalized_idx` ((lower(`email`))),\n  CONSTRAINT `accounts_tenant_fk` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`) ON DELETE RESTRICT ON UPDATE CASCADE,\n  CONSTRAINT `accounts_email_check` CHECK ((`email` <> _latin1''))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='User accounts'"
+    - schema: test
+      name: monthly_metrics
+      engine: InnoDB
+      row_format: Dynamic
+      collation: utf8mb4_0900_ai_ci
+      comment: ~
+      create_options: partitioned
+      columns:
+        - name: occurred_on
+          position: 1
+          data_type: date
+          column_type: date
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+        - name: metric
+          position: 2
+          data_type: varchar
+          column_type: varchar(64)
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          comment: ~
+          visible: true
+        - name: value
+          position: 3
+          data_type: bigint
+          column_type: bigint
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+      constraints:
+        - name: PRIMARY
+          kind: primary_key
+          columns:
+            - occurred_on
+            - metric
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_option: ~
+          update_rule: ~
+          delete_rule: ~
+          expression: ~
+          enforced: true
+      indexes:
+        - name: PRIMARY
+          unique: true
+          index_type: BTREE
+          visible: true
+          comment: ~
+          terms:
+            - position: 1
+              column: occurred_on
+              expression: ~
+              prefix_length: ~
+              descending: false
+            - position: 2
+              column: metric
+              expression: ~
+              prefix_length: ~
+              descending: false
+      partitions:
+        - name: p2025
+          subpartition: ~
+          method: RANGE
+          expression: "year(`occurred_on`)"
+          description: "2026"
+          ordinal: 1
+        - name: pmax
+          subpartition: ~
+          method: RANGE
+          expression: "year(`occurred_on`)"
+          description: MAXVALUE
+          ordinal: 2
+      definition: "CREATE TABLE `monthly_metrics` (\n  `occurred_on` date NOT NULL,\n  `metric` varchar(64) NOT NULL,\n  `value` bigint NOT NULL,\n  PRIMARY KEY (`occurred_on`,`metric`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n/*!50100 PARTITION BY RANGE (year(`occurred_on`))\n(PARTITION p2025 VALUES LESS THAN (2026) ENGINE = InnoDB,\n PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = InnoDB) */"
+    - schema: test
+      name: tenants
+      engine: InnoDB
+      row_format: Dynamic
+      collation: utf8mb4_0900_ai_ci
+      comment: Application tenants
+      create_options: ~
+      columns:
+        - name: tenant_id
+          position: 1
+          data_type: bigint
+          column_type: bigint unsigned
+          nullable: false
+          default: ~
+          extra: auto_increment
+          generation_expression: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+        - name: name
+          position: 2
+          data_type: varchar
+          column_type: varchar(120)
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          comment: Tenant display name
+          visible: true
+      constraints:
+        - name: PRIMARY
+          kind: primary_key
+          columns:
+            - tenant_id
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_option: ~
+          update_rule: ~
+          delete_rule: ~
+          expression: ~
+          enforced: true
+        - name: tenants_name_uq
+          kind: unique
+          columns:
+            - name
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_option: ~
+          update_rule: ~
+          delete_rule: ~
+          expression: ~
+          enforced: true
+      indexes:
+        - name: PRIMARY
+          unique: true
+          index_type: BTREE
+          visible: true
+          comment: ~
+          terms:
+            - position: 1
+              column: tenant_id
+              expression: ~
+              prefix_length: ~
+              descending: false
+        - name: tenants_name_uq
+          unique: true
+          index_type: BTREE
+          visible: true
+          comment: ~
+          terms:
+            - position: 1
+              column: name
+              expression: ~
+              prefix_length: ~
+              descending: false
+      partitions: []
+      definition: "CREATE TABLE `tenants` (\n  `tenant_id` bigint unsigned NOT NULL AUTO_INCREMENT,\n  `name` varchar(120) NOT NULL COMMENT 'Tenant display name',\n  PRIMARY KEY (`tenant_id`),\n  UNIQUE KEY `tenants_name_uq` (`name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Application tenants'"
+  views:
+    - schema: test
+      name: active_accounts
+      definition: "select `test`.`accounts`.`tenant_id` AS `tenant_id`,`test`.`accounts`.`account_id` AS `account_id`,`test`.`accounts`.`email` AS `email` from `test`.`accounts` where (`test`.`accounts`.`status` = 'active')"
+      check_option: CASCADED
+      updatable: true
+      security_type: INVOKER
+      definer: root@localhost
+      character_set: latin1
+      collation: latin1_swedish_ci
+      create_statement: "CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `active_accounts` AS select `accounts`.`tenant_id` AS `tenant_id`,`accounts`.`account_id` AS `account_id`,`accounts`.`email` AS `email` from `accounts` where (`accounts`.`status` = 'active') WITH CASCADED CHECK OPTION"
+  routines:
+    - schema: test
+      name: disable_account
+      kind: PROCEDURE
+      return_type: ~
+      body: SQL
+      definition: "UPDATE accounts SET status = 'disabled' WHERE account_id = target_id"
+      deterministic: false
+      sql_data_access: MODIFIES SQL DATA
+      security_type: DEFINER
+      definer: root@localhost
+      comment: ~
+      parameters:
+        - position: 1
+          mode: IN
+          name: target_id
+          data_type: bigint
+          dtd_identifier: bigint unsigned
+    - schema: test
+      name: normalize_email
+      kind: FUNCTION
+      return_type: varchar(255)
+      body: SQL
+      definition: RETURN lower(value)
+      deterministic: true
+      sql_data_access: NO SQL
+      security_type: DEFINER
+      definer: root@localhost
+      comment: ~
+      parameters:
+        - position: 0
+          mode: ~
+          name: ~
+          data_type: varchar
+          dtd_identifier: varchar(255)
+        - position: 1
+          mode: IN
+          name: value
+          data_type: varchar
+          dtd_identifier: varchar(255)
+  triggers:
+    - schema: test
+      name: accounts_updated
+      table: accounts
+      event: UPDATE
+      timing: BEFORE
+      orientation: ROW
+      statement: SET NEW.updated_at = CURRENT_TIMESTAMP
+      action_order: 1
+      sql_mode: "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+      definer: root@localhost
+      character_set: latin1
+      collation: latin1_swedish_ci
+  events:
+    - schema: test
+      name: purge_disabled_accounts
+      definer: root@localhost
+      time_zone: SYSTEM
+      event_type: RECURRING
+      execute_at: ~
+      interval_value: "1"
+      interval_field: DAY
+      starts: "2030-01-01 00:00:00"
+      ends: ~
+      status: DISABLED
+      on_completion: PRESERVE
+      comment: Remove old disabled accounts
+      definition: "DELETE FROM accounts WHERE status = 'disabled' AND updated_at < CURRENT_TIMESTAMP - INTERVAL 365 DAY"

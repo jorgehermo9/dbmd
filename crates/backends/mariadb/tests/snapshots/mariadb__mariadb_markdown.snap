@@ -1,0 +1,266 @@
+---
+source: crates/backends/mariadb/tests/mariadb.rs
+expression: markdown
+---
+# Database: `commerce`
+
+## Schemas
+
+| Name | Details |
+|---|---|
+| `test` | Default character set `utf8mb4`; collation `utf8mb4_uca1400_ai_ci`. |
+
+
+## Tables
+
+### `test.accounts`
+
+Versioned user accounts
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `tenant_id` | `bigint(20) unsigned` | no | - |  |
+| `account_id` | `bigint(20) unsigned` | no | - | `auto_increment` |
+| `email` | `varchar(255)` | no | - |  |
+| `normalized_email` | `varchar(255)` | yes | `NULL` | `STORED GENERATED`; generated as ``lcase(`email`)`` |
+| `status` | `enum('active','disabled')` | no | `'active'` |  |
+| `row_start` | `timestamp(6)` | no | - | `STORED GENERATED`; generated as `ROW START` |
+| `row_end` | `timestamp(6)` | no | - | `STORED GENERATED`; generated as `ROW END` |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `PRIMARY` | `primary_key` | `account_id, row_end` | - |
+| `accounts_email_check` | `check` | `` | `` `email` <> '' `` |
+| `accounts_tenant_email_uq` | `unique` | `tenant_id, email, row_end` | - |
+| `accounts_tenant_fk` | `foreign_key` | `tenant_id` | references `test`.`tenants` (`tenant_id`) |
+
+
+#### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `PRIMARY` | `account_id, row_end` | yes | BTREE | - |
+| `accounts_email_ignored_idx` | `email` | no | BTREE; ignored | - |
+| `accounts_tenant_email_uq` | `tenant_id, email(120), row_end` | yes | BTREE | - |
+
+
+#### MariaDB
+
+**Engine:** `InnoDB`
+
+**Row format:** `Dynamic`
+
+**Collation:** `utf8mb4_uca1400_ai_ci`
+
+**System versioning:** enabled
+
+**System-time period:** `row_start, row_end`
+
+```sql
+CREATE TABLE `accounts` (
+  `tenant_id` bigint(20) unsigned NOT NULL,
+  `account_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `email` varchar(255) NOT NULL,
+  `normalized_email` varchar(255) GENERATED ALWAYS AS (lcase(`email`)) STORED,
+  `status` enum('active','disabled') NOT NULL DEFAULT 'active',
+  `row_start` timestamp(6) GENERATED ALWAYS AS ROW START,
+  `row_end` timestamp(6) GENERATED ALWAYS AS ROW END,
+  PRIMARY KEY (`account_id`,`row_end`),
+  UNIQUE KEY `accounts_tenant_email_uq` (`tenant_id`,`email`(120),`row_end`),
+  KEY `accounts_email_ignored_idx` (`email`) IGNORED,
+  PERIOD FOR SYSTEM_TIME (`row_start`, `row_end`),
+  CONSTRAINT `accounts_tenant_fk` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`) ON UPDATE CASCADE,
+  CONSTRAINT `accounts_email_check` CHECK (`email` <> '')
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci COMMENT='Versioned user accounts' WITH SYSTEM VERSIONING
+```
+
+
+### `test.monthly_metrics`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `occurred_on` | `date` | no | - |  |
+| `metric` | `varchar(64)` | no | - |  |
+| `value` | `bigint(20)` | no | - |  |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `PRIMARY` | `primary_key` | `occurred_on, metric` | - |
+
+
+#### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `PRIMARY` | `occurred_on, metric` | yes | BTREE | - |
+
+
+#### MariaDB
+
+**Engine:** `InnoDB`
+
+**Row format:** `Dynamic`
+
+**Collation:** `utf8mb4_uca1400_ai_ci`
+
+**Create options:** `partitioned`
+
+**Partition:** `p2025`: `RANGE` `2026`
+
+**Partition:** `pmax`: `RANGE` `MAXVALUE`
+
+```sql
+CREATE TABLE `monthly_metrics` (
+  `occurred_on` date NOT NULL,
+  `metric` varchar(64) NOT NULL,
+  `value` bigint(20) NOT NULL,
+  PRIMARY KEY (`occurred_on`,`metric`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci
+ PARTITION BY RANGE (year(`occurred_on`))
+(PARTITION `p2025` VALUES LESS THAN (2026) ENGINE = InnoDB,
+ PARTITION `pmax` VALUES LESS THAN MAXVALUE ENGINE = InnoDB)
+```
+
+
+### `test.tenants`
+
+Application tenants
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `tenant_id` | `bigint(20) unsigned` | no | - | `auto_increment` |
+| `name` | `varchar(120)` | no | - | Tenant display name |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `PRIMARY` | `primary_key` | `tenant_id` | - |
+| `tenants_name_uq` | `unique` | `name` | - |
+
+
+#### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `PRIMARY` | `tenant_id` | yes | BTREE | - |
+| `tenants_name_uq` | `name` | yes | BTREE | - |
+
+
+#### MariaDB
+
+**Engine:** `InnoDB`
+
+**Row format:** `Dynamic`
+
+**Collation:** `utf8mb4_uca1400_ai_ci`
+
+```sql
+CREATE TABLE `tenants` (
+  `tenant_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(120) NOT NULL COMMENT 'Tenant display name',
+  PRIMARY KEY (`tenant_id`),
+  UNIQUE KEY `tenants_name_uq` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci COMMENT='Application tenants'
+```
+
+
+## Views
+
+### `test.active_accounts`
+
+**Check option:** `CASCADED`
+
+**Updatable:** yes
+
+**Security:** `INVOKER`
+
+| Column | Type | Nullable |
+|---|---|---|
+
+
+```sql
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `active_accounts` AS select `accounts`.`tenant_id` AS `tenant_id`,`accounts`.`account_id` AS `account_id`,`accounts`.`email` AS `email` from `accounts` where `accounts`.`status` = 'active' WITH CASCADED CHECK OPTION
+```
+
+## Triggers
+
+### `test.accounts_updated`
+
+**`BEFORE` `UPDATE`** on `test.accounts`.
+
+**Orientation:** `ROW`
+
+**Order:** 1
+
+```sql
+SET NEW.status = COALESCE(NEW.status, OLD.status)
+```
+
+## Routines, Sequences, and Events
+
+### `test.disable_account`
+
+**Kind:** `PROCEDURE`
+
+**Data access:** `MODIFIES SQL DATA`
+
+**Deterministic:** no
+
+**Parameters:** `target_id bigint(20) unsigned`
+
+```sql
+UPDATE accounts SET status = 'disabled' WHERE account_id = target_id
+```
+
+
+### `test.normalize_email`
+
+**Kind:** `FUNCTION`
+
+**Data access:** `NO SQL`
+
+**Deterministic:** yes
+
+**Parameters:** `return varchar(255), value varchar(255)`
+
+```sql
+RETURN lower(value)
+```
+
+
+### `test.order_number_seq`
+
+**Kind:** `sequence`
+
+```sql
+CREATE SEQUENCE `order_number_seq` start with 1000 minvalue 1 maxvalue 9223372036854775806 increment by 10 cache 20 nocycle ENGINE=InnoDB
+```
+
+
+### `test.purge_disabled_accounts`
+
+Remove old disabled accounts
+
+**Kind:** `event`
+
+**Status:** `DISABLED`
+
+**Schedule:** `RECURRING`
+
+```sql
+DELETE FROM accounts WHERE status = 'disabled' AND row_end < CURRENT_TIMESTAMP - INTERVAL 365 DAY
+```

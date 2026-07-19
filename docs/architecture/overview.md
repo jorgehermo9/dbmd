@@ -4,7 +4,7 @@
 
 ### Preserve backend semantics
 
-SQLite and PostgreSQL may use the same noun for concepts with different
+Database families may use the same noun for concepts with different
 catalog shape and behavior. Backend modules normalize those facts into their
 own typed catalogs instead of flattening them into one universal relational
 model. Raw SQL definitions remain a fidelity backstop where structured catalog
@@ -39,6 +39,10 @@ crates/
     relational/      equivalent relational leaf and presentation values
     sqlite/          SQLite vertical backend implementation
     postgres/        PostgreSQL vertical backend implementation
+    clickhouse/       ClickHouse vertical backend implementation
+    mysql/            MySQL vertical backend implementation
+    mariadb/          MariaDB vertical backend implementation
+    duckdb/           DuckDB vertical backend implementation
   render/            presentation engine, common templates, and artifact assembly
   app/               config resolution, operations, verification, and safe output
   cli/               argument parsing and report/error presentation
@@ -49,9 +53,8 @@ The dependency direction is:
 ```text
 cli → app
 app → backends/composition, core, render
-backends/composition → backend-sqlite, backend-postgres, core, render
-backend-sqlite → core, relational, render
-backend-postgres → core, relational, render
+backends/composition → concrete backend crates, core, render
+concrete backend → core, relational where applicable, render, its database client
 relational → render
 ```
 
@@ -80,6 +83,10 @@ backends/
     src/render.rs
     src/templates/
     README.md
+  clickhouse/        same vertical ownership, using ClickHouse HTTP catalogs
+  mysql/             same vertical ownership, using MySQL catalogs
+  mariadb/           same vertical ownership, using MariaDB catalogs
+  duckdb/            same vertical ownership, using embedded DuckDB catalogs
 ```
 
 Adding a compiled-in backend adds one sibling crate and wires it into the closed
@@ -153,4 +160,8 @@ code nor application orchestration reaches into concrete catalog fields.
 - [Testing](testing.md)
 - [SQLite backend coverage](../../crates/backends/sqlite/README.md)
 - [PostgreSQL backend coverage](../../crates/backends/postgres/README.md)
+- [ClickHouse backend coverage](../../crates/backends/clickhouse/README.md)
+- [MySQL backend coverage](../../crates/backends/mysql/README.md)
+- [MariaDB backend coverage](../../crates/backends/mariadb/README.md)
+- [DuckDB backend coverage](../../crates/backends/duckdb/README.md)
 - [ADR-0005](../adr/0005-backend-owned-catalogs-and-templates.md)

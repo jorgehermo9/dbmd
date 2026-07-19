@@ -18,10 +18,29 @@ url = "${DATABASE_URL}"
 [sources.local]
 backend = "sqlite"
 path = "./dev.db"
+
+[sources.embedded_analytics]
+backend = "duckdb"
+path = "./analytics.duckdb"
 ```
 
 There is no singular `[source]` shorthand. Backend fields live directly inside
 each source table while all supported sources are connection-backed.
+
+Supported backend tags and committed connection fields are:
+
+| Backend | Required fields | Optional fields |
+| --- | --- | --- |
+| `clickhouse` | `url` | `database`, `username`, `password`, `display_name` |
+| `duckdb` | `path` | `display_name`, named `attachments` with `path` and `read_only` |
+| `mariadb` | `url` | `schema`, `display_name` |
+| `mysql` | `url` | `schema`, `display_name` |
+| `postgres` | `url` | `display_name` |
+| `sqlite` | `path` | `display_name`, named attachments with `path` |
+
+MySQL and MariaDB are distinct backends even though their connection URL
+syntax overlaps. Their catalogs and rendered facts preserve their different
+schema features.
 
 ## Identity
 

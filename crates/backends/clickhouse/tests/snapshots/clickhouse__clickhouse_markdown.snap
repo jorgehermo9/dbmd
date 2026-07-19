@@ -1,0 +1,186 @@
+---
+source: crates/backends/clickhouse/tests/clickhouse.rs
+expression: markdown
+---
+# Database: `analytics`
+
+## Databases
+
+| Name | Comment |
+|---|---|
+| `analytics` | Engine `Atomic`; Analytical application data |
+
+
+## Tables
+
+### `analytics.country_names`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `country_id` | `UInt64` | no | - |  |
+| `country_name` | `String` | no | - |  |
+
+
+#### ClickHouse
+
+**Kind:** `dictionary`
+
+```sql
+CREATE DICTIONARY analytics.country_names (`country_id` UInt64, `country_name` String) PRIMARY KEY country_id SOURCE(CLICKHOUSE(HOST 'localhost' PORT 9000 USER 'default' DB 'analytics' TABLE 'country_source')) LIFETIME(MIN 0 MAX 0) LAYOUT(HASHED())
+```
+
+
+### `analytics.country_source`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `country_id` | `UInt64` | no | - | keys `primary, sorting` |
+| `country_name` | `String` | no | - |  |
+
+
+#### ClickHouse
+
+**Kind:** `table`
+
+**Engine:** `MergeTree ORDER BY country_id SETTINGS index_granularity = 8192`
+
+**Primary key:** `country_id`
+
+**Sorting key:** `country_id`
+
+**Storage policy:** `default`
+
+```sql
+CREATE TABLE analytics.country_source (`country_id` UInt64, `country_name` String) ENGINE = MergeTree ORDER BY country_id SETTINGS index_granularity = 8192
+```
+
+
+### `analytics.event_counts`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `event_type` | `LowCardinality(String)` | no | - | keys `primary, sorting` |
+| `total` | `AggregateFunction(count)` | no | - |  |
+
+
+#### ClickHouse
+
+**Kind:** `table`
+
+**Engine:** `AggregatingMergeTree ORDER BY event_type SETTINGS index_granularity = 8192`
+
+**Primary key:** `event_type`
+
+**Sorting key:** `event_type`
+
+**Storage policy:** `default`
+
+```sql
+CREATE TABLE analytics.event_counts (`event_type` LowCardinality(String), `total` AggregateFunction(count)) ENGINE = AggregatingMergeTree ORDER BY event_type SETTINGS index_granularity = 8192
+```
+
+
+### `analytics.events`
+
+Immutable analytical events
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `tenant_id` | `UInt32` | no | - | Owning tenant; keys `primary, sorting` |
+| `event_id` | `UUID` | no | - | keys `primary, sorting` |
+| `occurred_at` | `DateTime64(3, 'UTC')` | no | - | codec `CODEC(DoubleDelta, ZSTD(1))`; keys `partition, sorting` |
+| `event_type` | `LowCardinality(String)` | no | `'unknown'` | `default` expression |
+| `payload` | `String` | no | - | codec `CODEC(ZSTD(3))` |
+| `expires_at` | `DateTime` | no | `toDateTime(occurred_at) + toIntervalDay(30)` | `materialized` expression |
+| `version` | `UInt64` | no | - |  |
+| `deleted` | `UInt8` | no | `0` | `default` expression |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `valid_deleted` | `CHECK` | - | `deleted IN (0, 1)` |
+
+
+#### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `payload_tokens` | `lower(payload)` | no | clickhouse `tokenbf_v1(1024, 3, 0)` granularity 4; creation origin unknown | - |
+
+
+#### ClickHouse
+
+**Kind:** `table`
+
+**Engine:** `ReplacingMergeTree(version, deleted) PARTITION BY toYYYYMM(occurred_at) PRIMARY KEY (tenant_id, event_id) ORDER BY (tenant_id, event_id, occurred_at) TTL toDateTime(occurred_at) + toIntervalDay(365) SETTINGS index_granularity = 4096, deduplicate_merge_projection_mode = 'drop'`
+
+**Partition key:** `toYYYYMM(occurred_at)`
+
+**Primary key:** `tenant_id, event_id`
+
+**Sorting key:** `tenant_id, event_id, occurred_at`
+
+**Storage policy:** `default`
+
+**Projection:** `by_event_type` `Aggregate` sorted by `event_type`: `SELECT event_type, count() GROUP BY event_type`
+
+```sql
+CREATE TABLE analytics.events (`tenant_id` UInt32 COMMENT 'Owning tenant', `event_id` UUID, `occurred_at` DateTime64(3, 'UTC') CODEC(DoubleDelta, ZSTD(1)), `event_type` LowCardinality(String) DEFAULT 'unknown', `payload` String CODEC(ZSTD(3)), `expires_at` DateTime MATERIALIZED toDateTime(occurred_at) + toIntervalDay(30), `version` UInt64, `deleted` UInt8 DEFAULT 0, INDEX payload_tokens lower(payload) TYPE tokenbf_v1(1024, 3, 0) GRANULARITY 4, CONSTRAINT valid_deleted CHECK deleted IN (0, 1), PROJECTION by_event_type (SELECT event_type, count() GROUP BY event_type)) ENGINE = ReplacingMergeTree(version, deleted) PARTITION BY toYYYYMM(occurred_at) PRIMARY KEY (tenant_id, event_id) ORDER BY (tenant_id, event_id, occurred_at) TTL toDateTime(occurred_at) + toIntervalDay(365) SETTINGS index_granularity = 4096, deduplicate_merge_projection_mode = 'drop' COMMENT 'Immutable analytical events'
+```
+
+
+## Views
+
+### `analytics.active_events`
+
+Non-deleted events
+
+**Kind:** `view`
+
+| Column | Type | Nullable |
+|---|---|---|
+| `tenant_id` | `UInt32` | no |
+| `event_id` | `UUID` | no |
+| `occurred_at` | `DateTime64(3, 'UTC')` | no |
+| `event_type` | `LowCardinality(String)` | no |
+
+
+```sql
+CREATE VIEW analytics.active_events (`tenant_id` UInt32, `event_id` UUID, `occurred_at` DateTime64(3, 'UTC'), `event_type` LowCardinality(String)) AS (SELECT tenant_id, event_id, occurred_at, event_type FROM analytics.events WHERE deleted = 0) COMMENT 'Non-deleted events'
+```
+
+### `analytics.event_counts_mv`
+
+**Kind:** `materialized_view`
+
+**Target:** `analytics.event_counts`
+
+| Column | Type | Nullable |
+|---|---|---|
+| `event_type` | `LowCardinality(String)` | no |
+| `total` | `AggregateFunction(count)` | no |
+
+
+```sql
+CREATE MATERIALIZED VIEW analytics.event_counts_mv TO analytics.event_counts (`event_type` LowCardinality(String), `total` AggregateFunction(count)) AS SELECT event_type, countState() AS total FROM analytics.events GROUP BY event_type
+```
+
+## Functions
+
+### `analytics_normalize`
+
+**Kind:** `sql_user_defined`
+
+```sql
+CREATE FUNCTION analytics_normalize AS value -> lowerUTF8(value)
+```

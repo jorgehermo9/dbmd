@@ -13,5 +13,6 @@ dbmd-app = { path = "../app" }
 [dev-dependencies]
 dbmd-backends = { path = "../backends/composition" }
 dbmd-render = { path = "../render" }
+duckdb.workspace = true
 rusqlite.workspace = true
 tempfile.workspace = true

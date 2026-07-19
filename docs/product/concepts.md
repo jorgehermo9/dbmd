@@ -62,6 +62,9 @@ A source snapshot represents database structure, not operational history. It is 
 - PostgreSQL schema: `public.users`.
 - SQLite attached database: `main.users`.
 - ClickHouse database: `analytics.events`.
+- MySQL schema: `app.users`.
+- MariaDB database/schema: `app.users`.
+- DuckDB catalog and schema: `warehouse.analytics.events`.
 
 Rendered qualification should preserve backend meaning. The normalized model may share a namespace field, but dbmd must not invent equivalence between backend capabilities.
 

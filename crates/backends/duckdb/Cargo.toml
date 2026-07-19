@@ -1,0 +1,19 @@
+[package]
+name = "dbmd-backend-duckdb"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+dbmd-core = { path = "../../core" }
+dbmd-relational = { path = "../relational" }
+dbmd-render = { path = "../../render" }
+duckdb.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+tempfile.workspace = true

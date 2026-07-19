@@ -7,5 +7,7 @@ repository.workspace = true
 publish = false
 
 [dependencies]
+mysql.workspace = true
 postgres.workspace = true
+reqwest.workspace = true
 testcontainers-modules.workspace = true

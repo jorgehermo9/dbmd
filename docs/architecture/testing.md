@@ -39,8 +39,9 @@ Table-driven tests cover:
 Introspection uses real databases where practical:
 
 - SQLite temporary files in normal test runs.
-- PostgreSQL containers in integration CI.
-- ClickHouse containers in integration CI.
+- DuckDB temporary files in normal test runs.
+- PostgreSQL, ClickHouse, MySQL, and MariaDB containers in opt-in contract
+  suites.
 
 Mock catalog rows may isolate normalization edge cases, but they do not replace real catalog compatibility tests. SQLite integration tests execute `.sql` fixtures against temporary databases and snapshot the normalized `SourceSnapshot`, independently of Markdown rendering.
 
@@ -120,6 +121,18 @@ crates/backends/sqlite/tests/
 crates/backends/postgres/tests/
   fixtures/<case>/schema.sql
   snapshots/
+crates/backends/clickhouse/tests/
+  fixtures/
+  snapshots/
+crates/backends/mysql/tests/
+  fixtures/
+  snapshots/
+crates/backends/mariadb/tests/
+  fixtures/
+  snapshots/
+crates/backends/duckdb/tests/
+  fixtures/
+  snapshots/
 crates/backends/composition/tests/
 crates/render/tests/
   snapshots/
@@ -168,17 +181,22 @@ cargo test --workspace --all-targets
 
 Backend-container suites may be separate CI jobs, but SQLite and all pure unit/golden tests belong in the default suite.
 
-PostgreSQL suites are opt-in. Each integration-test binary locally owns one
-pinned PostgreSQL 17 container, runs its fixture cases concurrently in isolated
-logical databases, forcibly drops each database through an RAII guard, and then
-drops the container:
+Server-backed suites are opt-in. Their integration-test binaries own pinned
+containers and execute real DDL fixtures against the database family whose
+public adapter seam they test:
 
 ```sh
 cargo test -p dbmd-backend-postgres --features postgres-tests --test postgres
 cargo test -p dbmd-app --features postgres-tests --test postgres
+cargo test -p dbmd-backend-clickhouse --features clickhouse-tests --test clickhouse
+cargo test -p dbmd-backend-mysql --features mysql-tests --test mysql
+cargo test -p dbmd-backend-mariadb --features mariadb-tests --test mariadb
+cargo test -p dbmd-backend-duckdb --test duckdb
+cargo test -p dbmd-app --features clickhouse-tests --test clickhouse
+cargo test -p dbmd-app --features mysql-tests --test mysql
+cargo test -p dbmd-app --features mariadb-tests --test mariadb
 ```
 
 The shared lifecycle implementation lives in `crates/test-support`; fixture SQL,
 assertions, and snapshots remain in the crate whose public seam they test.
-Catalog coverage is documented beside the adapter in
-`crates/backends/postgres/README.md`.
+Catalog coverage is documented beside every adapter in its `README.md`.

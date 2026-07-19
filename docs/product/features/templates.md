@@ -34,6 +34,10 @@ templates/dbmd/
       backends/
         sqlite/source.md.j2
         postgres/source.md.j2
+        clickhouse/source.md.j2
+        mysql/source.md.j2
+        mariadb/source.md.j2
+        duckdb/source.md.j2
     directory/
       root.md.j2
       enum.md.j2
@@ -44,6 +48,10 @@ templates/dbmd/
       backends/
         sqlite/source.md.j2
         postgres/source.md.j2
+        clickhouse/source.md.j2
+        mysql/source.md.j2
+        mariadb/source.md.j2
+        duckdb/source.md.j2
 ```
 
 dbmd does not fall back from a missing custom entrypoint to an embedded template. This prevents accidental coupling to internal built-in paths.
@@ -88,7 +96,7 @@ Every source value has this common envelope:
 | `id` | Stable source ID used for selection and nested paths. |
 | `name` | Markdown-ready display name, falling back to the source ID. |
 | `has_display_name` | Whether `name` came from an explicit configured display name. |
-| `backend` | Stable backend tag such as `sqlite` or `postgres`. |
+| `backend` | Stable backend tag: `clickhouse`, `duckdb`, `mariadb`, `mysql`, `postgres`, or `sqlite`. |
 | `single_file_template` | Backend-owned entrypoint included by `single_file/database.md.j2`. |
 | `directory_template` | Backend-owned source-index entrypoint selected internally by the renderer; available to templates for inspection but normally not dispatched manually. |
 | `nested` | Whether source headings/directories are explicit for this render. |
@@ -104,6 +112,10 @@ Backend payload references:
 
 - [SQLite template context](../../../crates/backends/sqlite/README.md#template-context)
 - [PostgreSQL template context](../../../crates/backends/postgres/README.md#template-context)
+- [ClickHouse template context](../../../crates/backends/clickhouse/README.md#template-context)
+- [MySQL template context](../../../crates/backends/mysql/README.md#template-context)
+- [MariaDB template context](../../../crates/backends/mariadb/README.md#template-context)
+- [DuckDB template context](../../../crates/backends/duckdb/README.md#template-context)
 
 All catalog-derived strings in these payloads are already Markdown-ready.
 Collections retain deterministic catalog order. Optional values are either a

@@ -120,6 +120,7 @@ enum InitCommand {
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
 enum OneOffBackend {
+    Duckdb,
     Sqlite,
 }
 
@@ -197,6 +198,7 @@ fn run(cli: Cli) -> Result<ExitCode> {
             template_root,
         } => {
             let request = match (backend, path) {
+                (Some(OneOffBackend::Duckdb), Some(path)) => RenderRequest::duckdb(path),
                 (Some(OneOffBackend::Sqlite), Some(path)) => RenderRequest::sqlite(path),
                 (None, None) => RenderRequest::new(config.unwrap_or_else(|| "dbmd.toml".into())),
                 _ => unreachable!("clap validates one-off backend and path together"),

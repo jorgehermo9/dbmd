@@ -5,13 +5,155 @@ use std::{
     process,
     sync::atomic::{AtomicU64, Ordering},
     thread,
+    time::Duration,
 };
 
 use postgres::{Client, NoTls};
 use testcontainers_modules::{
+    clickhouse::ClickHouse,
+    mariadb::Mariadb,
+    mysql::Mysql,
     postgres::Postgres,
     testcontainers::{runners::SyncRunner, Container, ImageExt},
 };
+
+/// One locally owned MySQL 8.4 fixture container.
+pub struct MysqlServer {
+    _container: Container<Mysql>,
+    url: String,
+}
+
+impl MysqlServer {
+    /// Starts MySQL, executes `sql`, and waits until client connections succeed.
+    pub fn start(sql: &str) -> Result<Self, TestError> {
+        let container = Mysql::default()
+            .with_init_sql(sql.as_bytes().to_vec())
+            .with_tag("8.4")
+            .start()?;
+        let url = mysql_family_url(&container)?;
+        wait_for_mysql_family(&url)?;
+        Ok(Self {
+            _container: container,
+            url,
+        })
+    }
+
+    /// Returns the root fixture URL for the `test` schema.
+    #[must_use]
+    pub fn url(&self) -> &str {
+        &self.url
+    }
+}
+
+/// One locally owned MariaDB 11.8 fixture container.
+pub struct MariaDbServer {
+    _container: Container<Mariadb>,
+    url: String,
+}
+
+impl MariaDbServer {
+    /// Starts MariaDB, executes `sql`, and waits until client connections succeed.
+    pub fn start(sql: &str) -> Result<Self, TestError> {
+        let container = Mariadb::default()
+            .with_init_sql(sql.as_bytes().to_vec())
+            .with_tag("11.8")
+            .start()?;
+        let url = mysql_family_url(&container)?;
+        wait_for_mysql_family(&url)?;
+        Ok(Self {
+            _container: container,
+            url,
+        })
+    }
+
+    /// Returns the root fixture URL for the `test` schema.
+    #[must_use]
+    pub fn url(&self) -> &str {
+        &self.url
+    }
+}
+
+fn mysql_family_url<I>(container: &Container<I>) -> Result<String, TestError>
+where
+    I: testcontainers_modules::testcontainers::Image,
+{
+    let host = container.get_host()?.to_string();
+    let host = if host == "localhost" {
+        "127.0.0.1"
+    } else {
+        &host
+    };
+    Ok(format!(
+        "mysql://root@{host}:{}/test",
+        container.get_host_port_ipv4(3306)?
+    ))
+}
+
+fn wait_for_mysql_family(url: &str) -> Result<(), TestError> {
+    let options = mysql::Opts::from_url(url)?;
+    let options =
+        mysql::OptsBuilder::from_opts(options).tcp_connect_timeout(Some(Duration::from_secs(1)));
+    for _ in 0..60 {
+        if mysql::Conn::new(options.clone()).is_ok() {
+            return Ok(());
+        }
+        thread::sleep(Duration::from_millis(500));
+    }
+    Err("database fixture did not accept MySQL-protocol connections".into())
+}
+
+/// One locally owned ClickHouse 25.8 fixture container.
+pub struct ClickHouseServer {
+    _container: Container<ClickHouse>,
+    endpoint: String,
+}
+
+impl ClickHouseServer {
+    /// Starts ClickHouse and executes semicolon-delimited fixture statements.
+    pub fn start(sql: &str) -> Result<Self, TestError> {
+        let container = ClickHouse::default()
+            .with_tag("25.8")
+            .with_env_var("CLICKHOUSE_SKIP_USER_SETUP", "1")
+            .start()?;
+        let endpoint = format!(
+            "http://{}:{}",
+            container.get_host()?,
+            container.get_host_port_ipv4(8123)?
+        );
+        let server = Self {
+            _container: container,
+            endpoint,
+        };
+        server.execute(sql)?;
+        Ok(server)
+    }
+
+    /// Returns the fixture HTTP endpoint.
+    #[must_use]
+    pub fn endpoint(&self) -> &str {
+        &self.endpoint
+    }
+
+    fn execute(&self, sql: &str) -> Result<(), TestError> {
+        let client = reqwest::blocking::Client::new();
+        for statement in sql
+            .split(";\n")
+            .map(str::trim)
+            .filter(|statement| !statement.is_empty())
+        {
+            let response = client
+                .post(&self.endpoint)
+                .body(statement.to_string())
+                .send()?;
+            let status = response.status();
+            let body = response.text()?;
+            if !status.is_success() {
+                return Err(format!("ClickHouse fixture failed: {body}").into());
+            }
+        }
+        Ok(())
+    }
+}
 
 /// Thread-safe erased error returned by shared integration-test helpers.
 pub type TestError = Box<dyn Error + Send + Sync>;

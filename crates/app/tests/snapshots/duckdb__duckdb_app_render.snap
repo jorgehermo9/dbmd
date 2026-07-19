@@ -1,0 +1,208 @@
+---
+source: crates/app/tests/duckdb.rs
+expression: first_markdown
+---
+# Database: `Analytical warehouse`
+
+## Schemas
+
+| Name | Comment |
+|---|---|
+| `app.analytics` | `duckdb` catalog; read-only |
+
+
+## Tables
+
+### `app.analytics.accounts`
+
+User accounts
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `tenant_id` | `BIGINT` | no | - |  |
+| `account_id` | `BIGINT` | no | `nextval('analytics.account_id_seq')` |  |
+| `email` | `VARCHAR` | no | - | Canonical email address |
+| `normalized_email` | `VARCHAR` | yes | - | generated as `CAST(lower(email) AS VARCHAR)` |
+| `status` | `ENUM('active', 'disabled')` | no | `'active'` |  |
+| `balance` | `DECIMAL(18,2)` | no | `0` |  |
+| `metadata` | `STRUCT("source" VARCHAR, tags VARCHAR[])` | yes | - |  |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| - | `NOT NULL` | `tenant_id` | `NOT NULL` |
+| - | `FOREIGN KEY` | `tenant_id` | `FOREIGN KEY (tenant_id) REFERENCES analytics.tenants(tenant_id)` |
+| - | `PRIMARY KEY` | `account_id` | `PRIMARY KEY(account_id)` |
+| - | `NOT NULL` | `email` | `NOT NULL` |
+| - | `NOT NULL` | `status` | `NOT NULL` |
+| - | `NOT NULL` | `balance` | `NOT NULL` |
+| - | `UNIQUE` | `tenant_id, email` | `UNIQUE(tenant_id, email)` |
+| - | `CHECK` | `balance` | `CHECK((balance >= 0))` |
+| - | `NOT NULL` | `account_id` | `NOT NULL` |
+
+
+#### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `accounts_email_idx` | `[email]` | no | duckdb | - |
+
+
+#### DuckDB
+
+**Temporary:** no
+
+```sql
+CREATE TABLE analytics.accounts(tenant_id BIGINT NOT NULL, account_id BIGINT DEFAULT(nextval('analytics.account_id_seq')) PRIMARY KEY, email VARCHAR NOT NULL, normalized_email VARCHAR GENERATED ALWAYS AS(lower(email)), status ENUM('active', 'disabled') DEFAULT('active') NOT NULL, balance DECIMAL(18,2) DEFAULT(0) NOT NULL, metadata STRUCT("source" VARCHAR, tags VARCHAR[]), FOREIGN KEY (tenant_id) REFERENCES analytics.tenants(tenant_id), UNIQUE(tenant_id, email), CHECK((balance >= 0)));
+```
+
+
+### `app.analytics.tenants`
+
+Application tenants
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `tenant_id` | `BIGINT` | no | - |  |
+| `name` | `VARCHAR` | no | - |  |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| - | `PRIMARY KEY` | `tenant_id` | `PRIMARY KEY(tenant_id)` |
+| - | `NOT NULL` | `name` | `NOT NULL` |
+| - | `UNIQUE` | `name` | `UNIQUE("name")` |
+| - | `NOT NULL` | `tenant_id` | `NOT NULL` |
+
+
+#### DuckDB
+
+**Temporary:** no
+
+```sql
+CREATE TABLE analytics.tenants(tenant_id BIGINT PRIMARY KEY, "name" VARCHAR NOT NULL UNIQUE);
+```
+
+
+### `warehouse.main.facts`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `BIGINT` | no | - |  |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| - | `PRIMARY KEY` | `id` | `PRIMARY KEY(id)` |
+| - | `NOT NULL` | `id` | `NOT NULL` |
+
+
+#### DuckDB
+
+**Temporary:** no
+
+```sql
+CREATE TABLE facts(id BIGINT PRIMARY KEY);
+```
+
+
+## Views
+
+### `app.analytics.active_accounts`
+
+Active accounts only
+
+**Temporary:** no
+
+| Column | Type | Nullable |
+|---|---|---|
+
+
+```sql
+CREATE VIEW analytics.active_accounts AS SELECT tenant_id, account_id, email FROM analytics.accounts WHERE (status = 'active');
+```
+
+## Types, Sequences, Functions, and Extensions
+
+### `app.analytics.account_status`
+
+Account lifecycle
+
+**Kind:** `type`
+
+**Logical type:** `ENUM`
+
+**Labels:** `active, disabled`
+
+
+
+### `app.analytics.account_id_seq`
+
+Account identifiers
+
+**Kind:** `sequence`
+
+**Start:** 1000
+
+**Increment:** 10
+
+**Cycle:** no
+
+```sql
+CREATE SEQUENCE account_id_seq INCREMENT BY 10 MINVALUE 1 MAXVALUE 9223372036854775807 START 1000 NO CYCLE;
+```
+
+
+### `app.analytics.accounts_for_tenant`
+
+**Kind:** `table_macro`
+
+**Return type:** `-`
+
+**Parameters:** `owner_id`
+
+**Side effects:** unknown
+
+```sql
+SELECT * FROM analytics.accounts WHERE (tenant_id = owner_id)
+```
+
+
+### `app.analytics.normalize_email`
+
+**Kind:** `macro`
+
+**Return type:** `-`
+
+**Parameters:** `value`
+
+**Side effects:** unknown
+
+```sql
+lower("value")
+```
+
+
+### `core_functions`
+
+Core function library
+
+**Kind:** `extension`
+
+**Loaded:** yes
+
+**Installed:** yes
+
+**Version:** `-`

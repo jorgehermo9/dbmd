@@ -2,6 +2,8 @@ use std::{fs, process::Command};
 
 use rusqlite::Connection;
 
+const DUCKDB_SCHEMA: &str = include_str!("../../backends/duckdb/tests/fixtures/schema_surface.sql");
+
 #[test]
 fn render_help_exposes_configured_and_one_off_application_inputs() {
     let output = Command::new(env!("CARGO_BIN_EXE_dbmd"))
@@ -50,6 +52,37 @@ fn configless_sqlite_render_writes_the_requested_output() {
     assert!(fs::read_to_string(project.path().join("ONE_OFF.md"))
         .expect("one-off output should exist")
         .contains("`main.users`"));
+    assert!(!project.path().join("dbmd.toml").exists());
+}
+
+#[test]
+fn configless_duckdb_render_stays_a_thin_cli_path() {
+    let project = tempfile::tempdir().expect("temporary CLI project should be created");
+    duckdb::Connection::open(project.path().join("app.duckdb"))
+        .expect("DuckDB fixture should open")
+        .execute_batch(DUCKDB_SCHEMA)
+        .expect("DuckDB fixture should execute");
+
+    let render = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+        .current_dir(project.path())
+        .args([
+            "render",
+            "--backend",
+            "duckdb",
+            "--path",
+            "app.duckdb",
+            "--stdout",
+        ])
+        .output()
+        .expect("DuckDB render should execute");
+
+    assert!(
+        render.status.success(),
+        "{}",
+        String::from_utf8_lossy(&render.stderr)
+    );
+    let markdown = String::from_utf8(render.stdout).expect("CLI Markdown should be UTF-8");
+    assert!(markdown.contains("app.analytics.accounts"));
     assert!(!project.path().join("dbmd.toml").exists());
 }
 

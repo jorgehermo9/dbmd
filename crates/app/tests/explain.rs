@@ -56,6 +56,81 @@ sources = ["production", "local"]
 }
 
 #[test]
+fn explains_every_composed_backend_without_connecting() {
+    let project = tempfile::tempdir().expect("temporary project should exist");
+    let config = project.path().join("dbmd.toml");
+    fs::write(
+        &config,
+        r#"
+[sources.clicks]
+backend = "clickhouse"
+url = "${CLICKHOUSE_URL}"
+database = "analytics"
+
+[sources.duck]
+backend = "duckdb"
+path = "warehouse.duckdb"
+
+[sources.maria]
+backend = "mariadb"
+url = "${MARIADB_URL}"
+schema = "${MARIADB_SCHEMA}"
+
+[sources.mysql]
+backend = "mysql"
+url = "${MYSQL_URL}"
+schema = "${MYSQL_SCHEMA}"
+
+[output]
+path = "DATABASE.md"
+sources = ["clicks", "duck", "maria", "mysql"]
+"#,
+    )
+    .expect("config should be written");
+    let report = explain(ExplainRequest::with_environment(
+        &config,
+        BTreeMap::from([
+            (
+                "CLICKHOUSE_URL".to_string(),
+                "http://database:8123".to_string(),
+            ),
+            (
+                "MARIADB_URL".to_string(),
+                "mysql://database/app".to_string(),
+            ),
+            ("MARIADB_SCHEMA".to_string(), "app".to_string()),
+            ("MYSQL_URL".to_string(), "mysql://database/app".to_string()),
+            ("MYSQL_SCHEMA".to_string(), "app".to_string()),
+        ]),
+    ))
+    .expect("every backend config should resolve locally");
+
+    assert_eq!(
+        report
+            .sources
+            .iter()
+            .map(|source| (source.id.as_str(), source.backend))
+            .collect::<Vec<_>>(),
+        [
+            ("clicks", Backend::Clickhouse),
+            ("duck", Backend::Duckdb),
+            ("maria", Backend::Mariadb),
+            ("mysql", Backend::Mysql),
+        ]
+    );
+    assert_eq!(
+        report.required_environment,
+        [
+            "CLICKHOUSE_URL",
+            "MARIADB_SCHEMA",
+            "MARIADB_URL",
+            "MYSQL_SCHEMA",
+            "MYSQL_URL",
+        ]
+    );
+}
+
+#[test]
 fn explains_render_overrides_and_known_single_file_output() {
     let project = tempfile::tempdir().expect("temporary project should exist");
     let config = project.path().join("dbmd.toml");

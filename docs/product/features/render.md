@@ -29,9 +29,14 @@ A developer should be able to try dbmd without first creating a config file:
 
 ```sh
 dbmd render --backend sqlite --path ./dev.db --output DATABASE.md
+dbmd render --backend duckdb --path ./warehouse.duckdb --stdout
 ```
 
-Backend-specific connection arguments are mutually exclusive with conflicting configured source selection. Validation occurs before opening a database connection.
+Configless one-off rendering is available for file-backed SQLite and DuckDB.
+Server-backed sources use named project configuration so credentials and
+backend-specific fields have one canonical shape. Backend-specific connection
+arguments are mutually exclusive with conflicting configured source selection.
+Validation occurs before opening a database connection.
 
 ## Preflight
 
@@ -94,7 +99,11 @@ The default `agent` profile includes supported instances of:
 - Fully qualified foreign-key targets and actions.
 - Backend facts that affect query shape or performance.
 
-Examples include SQLite generated columns and `WITHOUT ROWID`, PostgreSQL index predicates and row-level security, and ClickHouse engines, keys, TTLs, codecs, and settings.
+Examples include SQLite generated columns and `WITHOUT ROWID`; PostgreSQL index
+predicates and row-level security; ClickHouse engines, keys, TTLs, codecs, and
+settings; MySQL functional/invisible indexes and generated columns; MariaDB
+sequences and system-versioned tables; and DuckDB attached catalogs, macros,
+types, sequences, and extensions.
 
 Committed Markdown excludes timestamps, hashes, dbmd versions, and generated-by headers by default. Source identity appears as schema context when multiple sources require disambiguation.
 

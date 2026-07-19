@@ -1,0 +1,370 @@
+---
+source: crates/backends/clickhouse/tests/clickhouse.rs
+expression: first
+---
+id: analytics
+display_name: ~
+catalog:
+  databases:
+    - name: analytics
+      engine: Atomic
+      comment: Analytical application data
+  tables:
+    - database: analytics
+      name: active_events
+      kind: view
+      engine: View
+      engine_full: ""
+      partition_key: ""
+      sorting_key: ""
+      primary_key: ""
+      sampling_key: ""
+      storage_policy: ""
+      target: ~
+      comment: Non-deleted events
+      columns:
+        - name: tenant_id
+          data_type: UInt32
+          position: 1
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: event_id
+          data_type: UUID
+          position: 2
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: occurred_at
+          data_type: "DateTime64(3, 'UTC')"
+          position: 3
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: event_type
+          data_type: LowCardinality(String)
+          position: 4
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      definition: "CREATE VIEW analytics.active_events (`tenant_id` UInt32, `event_id` UUID, `occurred_at` DateTime64(3, 'UTC'), `event_type` LowCardinality(String)) AS (SELECT tenant_id, event_id, occurred_at, event_type FROM analytics.events WHERE deleted = 0) COMMENT 'Non-deleted events'"
+    - database: analytics
+      name: country_names
+      kind: dictionary
+      engine: Dictionary
+      engine_full: ""
+      partition_key: ""
+      sorting_key: ""
+      primary_key: ""
+      sampling_key: ""
+      storage_policy: ""
+      target: ~
+      comment: ~
+      columns:
+        - name: country_id
+          data_type: UInt64
+          position: 1
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: country_name
+          data_type: String
+          position: 2
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      definition: "CREATE DICTIONARY analytics.country_names (`country_id` UInt64, `country_name` String) PRIMARY KEY country_id SOURCE(CLICKHOUSE(HOST 'localhost' PORT 9000 USER 'default' DB 'analytics' TABLE 'country_source')) LIFETIME(MIN 0 MAX 0) LAYOUT(HASHED())"
+    - database: analytics
+      name: country_source
+      kind: table
+      engine: MergeTree
+      engine_full: MergeTree ORDER BY country_id SETTINGS index_granularity = 8192
+      partition_key: ""
+      sorting_key: country_id
+      primary_key: country_id
+      sampling_key: ""
+      storage_policy: default
+      target: ~
+      comment: ~
+      columns:
+        - name: country_id
+          data_type: UInt64
+          position: 1
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: true
+          in_primary_key: true
+          in_sampling_key: false
+        - name: country_name
+          data_type: String
+          position: 2
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      definition: "CREATE TABLE analytics.country_source (`country_id` UInt64, `country_name` String) ENGINE = MergeTree ORDER BY country_id SETTINGS index_granularity = 8192"
+    - database: analytics
+      name: event_counts
+      kind: table
+      engine: AggregatingMergeTree
+      engine_full: AggregatingMergeTree ORDER BY event_type SETTINGS index_granularity = 8192
+      partition_key: ""
+      sorting_key: event_type
+      primary_key: event_type
+      sampling_key: ""
+      storage_policy: default
+      target: ~
+      comment: ~
+      columns:
+        - name: event_type
+          data_type: LowCardinality(String)
+          position: 1
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: true
+          in_primary_key: true
+          in_sampling_key: false
+        - name: total
+          data_type: AggregateFunction(count)
+          position: 2
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      definition: "CREATE TABLE analytics.event_counts (`event_type` LowCardinality(String), `total` AggregateFunction(count)) ENGINE = AggregatingMergeTree ORDER BY event_type SETTINGS index_granularity = 8192"
+    - database: analytics
+      name: event_counts_mv
+      kind: materialized_view
+      engine: MaterializedView
+      engine_full: ""
+      partition_key: ""
+      sorting_key: ""
+      primary_key: ""
+      sampling_key: ""
+      storage_policy: ""
+      target: analytics.event_counts
+      comment: ~
+      columns:
+        - name: event_type
+          data_type: LowCardinality(String)
+          position: 1
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: total
+          data_type: AggregateFunction(count)
+          position: 2
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      definition: "CREATE MATERIALIZED VIEW analytics.event_counts_mv TO analytics.event_counts (`event_type` LowCardinality(String), `total` AggregateFunction(count)) AS SELECT event_type, countState() AS total FROM analytics.events GROUP BY event_type"
+    - database: analytics
+      name: events
+      kind: table
+      engine: ReplacingMergeTree
+      engine_full: "ReplacingMergeTree(version, deleted) PARTITION BY toYYYYMM(occurred_at) PRIMARY KEY (tenant_id, event_id) ORDER BY (tenant_id, event_id, occurred_at) TTL toDateTime(occurred_at) + toIntervalDay(365) SETTINGS index_granularity = 4096, deduplicate_merge_projection_mode = 'drop'"
+      partition_key: toYYYYMM(occurred_at)
+      sorting_key: "tenant_id, event_id, occurred_at"
+      primary_key: "tenant_id, event_id"
+      sampling_key: ""
+      storage_policy: default
+      target: ~
+      comment: Immutable analytical events
+      columns:
+        - name: tenant_id
+          data_type: UInt32
+          position: 1
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: Owning tenant
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: true
+          in_primary_key: true
+          in_sampling_key: false
+        - name: event_id
+          data_type: UUID
+          position: 2
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: true
+          in_primary_key: true
+          in_sampling_key: false
+        - name: occurred_at
+          data_type: "DateTime64(3, 'UTC')"
+          position: 3
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: "CODEC(DoubleDelta, ZSTD(1))"
+          in_partition_key: true
+          in_sorting_key: true
+          in_primary_key: false
+          in_sampling_key: false
+        - name: event_type
+          data_type: LowCardinality(String)
+          position: 4
+          default_kind:
+            kind: default
+          default_expression: "'unknown'"
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: payload
+          data_type: String
+          position: 5
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: CODEC(ZSTD(3))
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: expires_at
+          data_type: DateTime
+          position: 6
+          default_kind:
+            kind: materialized
+          default_expression: toDateTime(occurred_at) + toIntervalDay(30)
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: version
+          data_type: UInt64
+          position: 7
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: deleted
+          data_type: UInt8
+          position: 8
+          default_kind:
+            kind: default
+          default_expression: "0"
+          comment: ~
+          compression_codec: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes:
+        - name: payload_tokens
+          expression: lower(payload)
+          index_type: tokenbf_v1
+          type_full: "tokenbf_v1(1024, 3, 0)"
+          implicit: ~
+          granularity: 4
+      projections:
+        - name: by_event_type
+          projection_type: Aggregate
+          sorting_key: event_type
+          query: "SELECT event_type, count() GROUP BY event_type"
+      constraints:
+        - name: valid_deleted
+          constraint_type: CHECK
+          expression: "deleted IN (0, 1)"
+      definition: "CREATE TABLE analytics.events (`tenant_id` UInt32 COMMENT 'Owning tenant', `event_id` UUID, `occurred_at` DateTime64(3, 'UTC') CODEC(DoubleDelta, ZSTD(1)), `event_type` LowCardinality(String) DEFAULT 'unknown', `payload` String CODEC(ZSTD(3)), `expires_at` DateTime MATERIALIZED toDateTime(occurred_at) + toIntervalDay(30), `version` UInt64, `deleted` UInt8 DEFAULT 0, INDEX payload_tokens lower(payload) TYPE tokenbf_v1(1024, 3, 0) GRANULARITY 4, CONSTRAINT valid_deleted CHECK deleted IN (0, 1), PROJECTION by_event_type (SELECT event_type, count() GROUP BY event_type)) ENGINE = ReplacingMergeTree(version, deleted) PARTITION BY toYYYYMM(occurred_at) PRIMARY KEY (tenant_id, event_id) ORDER BY (tenant_id, event_id, occurred_at) TTL toDateTime(occurred_at) + toIntervalDay(365) SETTINGS index_granularity = 4096, deduplicate_merge_projection_mode = 'drop' COMMENT 'Immutable analytical events'"
+  functions:
+    - name: analytics_normalize
+      definition: CREATE FUNCTION analytics_normalize AS value -> lowerUTF8(value)
