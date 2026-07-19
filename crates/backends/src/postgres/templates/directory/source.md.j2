@@ -6,17 +6,17 @@ Source: `{{ source.id }}`
 Backend: `{{ source.backend }}`
 
 {% endif -%}
-{% if source.namespaces -%}
+{% if source.data.namespaces -%}
 ## Namespaces
 
 | Name | Comment |
 |---|---|
-{% for namespace in source.namespaces -%}
+{% for namespace in source.data.namespaces -%}
 | {{ namespace.name }} | {{ namespace.comment or "-" }} |
 {% endfor %}
 
 {% endif -%}
-{% for pair in [("Enum Types", "enums", source.enums), ("Tables", "tables", source.tables), ("Views", "views", source.views), ("Triggers", "triggers", source.triggers), ("Functions", "functions", source.functions)] -%}
+{% for pair in [("Enum Types", "enums", source.data.enums), ("Tables", "tables", source.data.tables), ("Views", "views", source.data.views), ("Triggers", "triggers", source.data.triggers), ("Functions", "functions", source.data.functions)] -%}
 {% if pair[2] -%}
 ## {{ pair[0] }}
 

@@ -1,0 +1,291 @@
+---
+source: crates/backends/tests/render.rs
+expression: context
+---
+version: 2
+sources:
+  - id: app
+    name: "`app`"
+    has_display_name: false
+    backend: sqlite
+    single_file_template: backends/sqlite/single_file/source.md.j2
+    directory_template: backends/sqlite/directory/source.md.j2
+    nested: false
+    data:
+      detail_heading: "####"
+      namespaces:
+        - comment: ~
+          name: "`main`"
+      object_heading: "###"
+      section_heading: "##"
+      tables:
+        - backend:
+            definition: "```sql\nCREATE VIRTUAL TABLE document_search USING fts5(\n    title,\n    body,\n    content='documents',\n    content_rowid='id',\n    tokenize='porter unicode61'\n)\n```"
+            facts:
+              - label: Kind
+                value: "`virtual` using `fts5` with arguments `title, body, content='documents', content_rowid='id', tokenize='porter unicode61'`"
+            notices: []
+            title: SQLite
+          columns:
+            - data_type: "``"
+              default: "-"
+              name: "`title`"
+              notes: ""
+              nullable: "yes"
+            - data_type: "``"
+              default: "-"
+              name: "`body`"
+              notes: ""
+              nullable: "yes"
+            - data_type: "``"
+              default: "-"
+              name: "`document_search`"
+              notes: virtual_table_hidden
+              nullable: "yes"
+            - data_type: "``"
+              default: "-"
+              name: "`rank`"
+              notes: virtual_table_hidden
+              nullable: "yes"
+          comment: ~
+          constraints: []
+          file_name: main.document_search.md
+          indexes: []
+          qualified_name: "`main.document_search`"
+        - backend:
+            definition: "```sql\nCREATE TABLE 'document_search_config'(k PRIMARY KEY, v) WITHOUT ROWID\n```"
+            facts:
+              - label: Kind
+                value: "`shadow` owned by `document_search`"
+            notices:
+              - Without rowid.
+            title: SQLite
+          columns:
+            - data_type: "``"
+              default: "-"
+              name: "`k`"
+              notes: ""
+              nullable: "no"
+            - data_type: "``"
+              default: "-"
+              name: "`v`"
+              notes: ""
+              nullable: "yes"
+          comment: ~
+          constraints:
+            - columns: "`k`"
+              details: "-"
+              kind: "`primary_key`"
+              name: "-"
+          file_name: main.document_search_config.md
+          indexes:
+            - name: "`sqlite_autoindex_document_search_config_1`"
+              origin: "`primary_key`"
+              predicate: "-"
+              terms: "`k` ascending collate `BINARY`"
+              unique: "yes"
+          qualified_name: "`main.document_search_config`"
+        - backend:
+            definition: "```sql\nCREATE TABLE 'document_search_data'(id INTEGER PRIMARY KEY, block BLOB)\n```"
+            facts:
+              - label: Kind
+                value: "`shadow` owned by `document_search`"
+            notices: []
+            title: SQLite
+          columns:
+            - data_type: "`INTEGER`"
+              default: "-"
+              name: "`id`"
+              notes: ""
+              nullable: "no"
+            - data_type: "`BLOB`"
+              default: "-"
+              name: "`block`"
+              notes: ""
+              nullable: "yes"
+          comment: ~
+          constraints:
+            - columns: "`id`"
+              details: "-"
+              kind: "`primary_key`"
+              name: "-"
+          file_name: main.document_search_data.md
+          indexes: []
+          qualified_name: "`main.document_search_data`"
+        - backend:
+            definition: "```sql\nCREATE TABLE 'document_search_docsize'(id INTEGER PRIMARY KEY, sz BLOB)\n```"
+            facts:
+              - label: Kind
+                value: "`shadow` owned by `document_search`"
+            notices: []
+            title: SQLite
+          columns:
+            - data_type: "`INTEGER`"
+              default: "-"
+              name: "`id`"
+              notes: ""
+              nullable: "no"
+            - data_type: "`BLOB`"
+              default: "-"
+              name: "`sz`"
+              notes: ""
+              nullable: "yes"
+          comment: ~
+          constraints:
+            - columns: "`id`"
+              details: "-"
+              kind: "`primary_key`"
+              name: "-"
+          file_name: main.document_search_docsize.md
+          indexes: []
+          qualified_name: "`main.document_search_docsize`"
+        - backend:
+            definition: "```sql\nCREATE TABLE 'document_search_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID\n```"
+            facts:
+              - label: Kind
+                value: "`shadow` owned by `document_search`"
+            notices:
+              - Without rowid.
+            title: SQLite
+          columns:
+            - data_type: "``"
+              default: "-"
+              name: "`segid`"
+              notes: ""
+              nullable: "no"
+            - data_type: "``"
+              default: "-"
+              name: "`term`"
+              notes: ""
+              nullable: "no"
+            - data_type: "``"
+              default: "-"
+              name: "`pgno`"
+              notes: ""
+              nullable: "yes"
+          comment: ~
+          constraints:
+            - columns: "`segid, term`"
+              details: "-"
+              kind: "`primary_key`"
+              name: "-"
+          file_name: main.document_search_idx.md
+          indexes:
+            - name: "`sqlite_autoindex_document_search_idx_1`"
+              origin: "`primary_key`"
+              predicate: "-"
+              terms: "`segid` ascending collate `BINARY`, `term` ascending collate `BINARY`"
+              unique: "yes"
+          qualified_name: "`main.document_search_idx`"
+        - backend:
+            definition: "```sql\nCREATE TABLE documents (\n    id INTEGER PRIMARY KEY,\n    title TEXT NOT NULL,\n    body TEXT NOT NULL,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n)\n```"
+            facts:
+              - label: Kind
+                value: "`ordinary`"
+            notices: []
+            title: SQLite
+          columns:
+            - data_type: "`INTEGER`"
+              default: "-"
+              name: "`id`"
+              notes: ""
+              nullable: "no"
+            - data_type: "`TEXT`"
+              default: "-"
+              name: "`title`"
+              notes: ""
+              nullable: "no"
+            - data_type: "`TEXT`"
+              default: "-"
+              name: "`body`"
+              notes: ""
+              nullable: "no"
+            - data_type: "`TEXT`"
+              default: "`CURRENT_TIMESTAMP`"
+              name: "`updated_at`"
+              notes: ""
+              nullable: "no"
+          comment: ~
+          constraints:
+            - columns: "`id`"
+              details: "-"
+              kind: "`primary_key`"
+              name: "-"
+            - columns: "`title`"
+              details: "-"
+              kind: "`not_null`"
+              name: "-"
+            - columns: "`body`"
+              details: "-"
+              kind: "`not_null`"
+              name: "-"
+            - columns: "`updated_at`"
+              details: "-"
+              kind: "`not_null`"
+              name: "-"
+          file_name: main.documents.md
+          indexes: []
+          qualified_name: "`main.documents`"
+      triggers:
+        - comment: ~
+          definition: "```sql\nCREATE TRIGGER document_summaries_insert\nINSTEAD OF INSERT ON document_summaries\nBEGIN\n    INSERT INTO documents (id, title, body)\n    VALUES (NEW.document_id, NEW.heading, '');\nEND\n```"
+          event: INSTEAD OF INSERT
+          facts: []
+          file_name: main.document_summaries%2Edocument_summaries_insert.md
+          qualified_name: "`main.document_summaries.document_summaries_insert`"
+          target: "`main.document_summaries`"
+          when_expression: ~
+        - comment: ~
+          definition: "```sql\nCREATE TRIGGER documents_prevent_root_delete\nBEFORE DELETE ON documents\nWHEN OLD.id = 0\nBEGIN\n    SELECT RAISE(IGNORE);\nEND\n```"
+          event: BEFORE DELETE
+          facts: []
+          file_name: main.documents%2Edocuments_prevent_root_delete.md
+          qualified_name: "`main.documents.documents_prevent_root_delete`"
+          target: "`main.documents`"
+          when_expression: "`OLD.id = 0`"
+        - comment: ~
+          definition: "```sql\nCREATE TRIGGER documents_touch_updated_at\nAFTER UPDATE OF title, body ON documents\nFOR EACH ROW\nWHEN NEW.updated_at = OLD.updated_at\nBEGIN\n    UPDATE documents\n    SET updated_at = CURRENT_TIMESTAMP\n    WHERE id = NEW.id;\nEND\n```"
+          event: "AFTER UPDATE OF title, body"
+          facts: []
+          file_name: main.documents%2Edocuments_touch_updated_at.md
+          qualified_name: "`main.documents.documents_touch_updated_at`"
+          target: "`main.documents`"
+          when_expression: "`NEW.updated_at = OLD.updated_at`"
+      views:
+        - columns:
+            - data_type: "`INTEGER`"
+              default: "-"
+              name: "`document_id`"
+              notes: ""
+              nullable: unknown
+            - data_type: "`TEXT`"
+              default: "-"
+              name: "`heading`"
+              notes: ""
+              nullable: unknown
+          comment: ~
+          definition: "```sql\nCREATE VIEW document_summaries (document_id, heading) AS\nSELECT id, title FROM documents\n```"
+          facts: []
+          file_name: main.document_summaries.md
+          qualified_name: "`main.document_summaries`"
+        - columns:
+            - data_type: "`INTEGER`"
+              default: "-"
+              name: "`id`"
+              notes: ""
+              nullable: unknown
+            - data_type: "`TEXT`"
+              default: "-"
+              name: "`title`"
+              notes: ""
+              nullable: unknown
+            - data_type: "``"
+              default: "-"
+              name: "`body_length`"
+              notes: ""
+              nullable: unknown
+          comment: ~
+          definition: "```sql\nCREATE VIEW document_titles AS\nSELECT id, title, length(body) AS body_length FROM documents\n```"
+          facts: []
+          file_name: main.document_titles.md
+          qualified_name: "`main.document_titles`"

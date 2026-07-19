@@ -4,8 +4,7 @@ use std::{
     str::FromStr,
 };
 
-use dbmd_backends::sqlite::SqliteSourceError;
-use dbmd_backends::{Source, SourceConfig, SourceConfigResolveError};
+use dbmd_backends::{Source, SourceConfig, SourceConfigResolveError, SourceValidationError};
 use dbmd_core::SourceId;
 use dbmd_render::{OutputLayout, RenderOptions, SourceLayout};
 use serde::Deserialize;
@@ -315,7 +314,7 @@ fn resolve_project(
             })
             .map_err(|error| match error {
                 SourceConfigResolveError::Value(error) => error,
-                SourceConfigResolveError::Sqlite(error) => ConfigError::SqliteSource(error),
+                SourceConfigResolveError::Backend(error) => ConfigError::BackendSource(error),
             })?;
         sources.push(source);
     }
@@ -475,7 +474,7 @@ pub enum ConfigError {
     #[error(transparent)]
     SourceId(#[from] dbmd_core::SourceIdError),
     #[error(transparent)]
-    SqliteSource(#[from] SqliteSourceError),
+    BackendSource(#[from] SourceValidationError),
     #[error("environment reference is missing a closing brace")]
     UnclosedEnvironment,
     #[error("invalid environment variable name `{0}`")]

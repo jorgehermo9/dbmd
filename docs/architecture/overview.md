@@ -91,7 +91,8 @@ CLI + dbmd.toml
   → backend introspection
   → SourceSnapshot<backend Catalog>
   → composition DatabaseContext<Catalog enum>
-  → backend-owned RenderSource mapping
+  → backend-owned presentation data + object manifest
+  → RenderSource envelope
   → versioned RenderContext
   → common + selected backend template manifests
   → in-memory RenderedArtifact
@@ -120,10 +121,11 @@ closed composition catalog for application use.
 
 ### Render
 
-`dbmd-render` owns the versioned presentation structs, Markdown escaping and
+`dbmd-render` owns the versioned presentation envelope, Markdown escaping and
 code fencing, strict MiniJinja execution, safe artifact-relative paths, and the
 single-file/directory in-memory artifact. It receives already-prepared
-`RenderSource` values and template manifests.
+`RenderSource` values containing opaque backend data and generic object
+manifests. It has no table/view/trigger/function branches.
 
 ### Application and CLI
 

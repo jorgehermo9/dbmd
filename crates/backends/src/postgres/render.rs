@@ -1,49 +1,62 @@
 use std::fmt::Write as _;
 
-use dbmd_render::{
-    code_block, inline_code, object_file_name, text, RenderColumn, RenderConstraint, RenderEnum,
-    RenderFact, RenderFunction, RenderIndex, RenderSource, RenderTable, RenderTableDetails,
-    RenderTrigger, RenderView, TemplateFile,
-};
+use dbmd_render::{code_block, inline_code, object_file_name, text, RenderSource, TemplateFile};
+use serde::Serialize;
 
 use super::catalog::{
-    Column, Constraint, Function, FunctionParallel, FunctionVolatility, Index, PolicyCommand,
-    Snapshot, Table, TableKind, Trigger, TriggerEnabled, TriggerEvent, TriggerOrientation,
+    Catalog, Column, Constraint, Function, FunctionParallel, FunctionVolatility, Index,
+    PolicyCommand, Table, TableKind, Trigger, TriggerEnabled, TriggerEvent, TriggerOrientation,
     TriggerTiming, View,
 };
-use crate::render_support;
+use crate::render_support::{
+    self, ColumnView as RenderColumn, ConstraintView as RenderConstraint, EnumView as RenderEnum,
+    FactView as RenderFact, FunctionView as RenderFunction, IndexView as RenderIndex,
+    NamespaceView, TableDetailsView as RenderTableDetails, TableView as RenderTable,
+    TriggerView as RenderTrigger, ViewPresentation as RenderView,
+};
+use dbmd_core::SourceId;
 
 pub(super) const SINGLE_FILE_TEMPLATE: &str = "backends/postgres/single_file/source.md.j2";
 pub(super) const DIRECTORY_TEMPLATE: &str = "backends/postgres/directory/source.md.j2";
 
 pub(crate) const TEMPLATES: &[TemplateFile] = &[
-    TemplateFile {
-        relative_path: "single_file/backends/postgres/source.md.j2",
-        template_name: SINGLE_FILE_TEMPLATE,
-        contents: include_str!("templates/single_file/source.md.j2"),
-    },
-    TemplateFile {
-        relative_path: "directory/backends/postgres/source.md.j2",
-        template_name: DIRECTORY_TEMPLATE,
-        contents: include_str!("templates/directory/source.md.j2"),
-    },
+    TemplateFile::new(
+        "single_file/backends/postgres/source.md.j2",
+        SINGLE_FILE_TEMPLATE,
+        include_str!("templates/single_file/source.md.j2"),
+    ),
+    TemplateFile::new(
+        "directory/backends/postgres/source.md.j2",
+        DIRECTORY_TEMPLATE,
+        include_str!("templates/directory/source.md.j2"),
+    ),
 ];
 
-pub(crate) fn source(snapshot: &Snapshot, nested: bool) -> RenderSource {
-    let catalog = snapshot.catalog();
+#[derive(Serialize)]
+struct SourceData {
+    section_heading: &'static str,
+    object_heading: &'static str,
+    detail_heading: &'static str,
+    namespaces: Vec<NamespaceView>,
+    enums: Vec<RenderEnum>,
+    tables: Vec<RenderTable>,
+    views: Vec<RenderView>,
+    triggers: Vec<RenderTrigger>,
+    functions: Vec<RenderFunction>,
+}
+
+pub(crate) fn source(
+    id: &SourceId,
+    display_name: Option<&str>,
+    catalog: &Catalog,
+    nested: bool,
+) -> RenderSource {
     let (section_heading, object_heading, detail_heading) = if nested {
         ("###", "####", "#####")
     } else {
         ("##", "###", "####")
     };
-    RenderSource {
-        id: snapshot.id().as_str().to_string(),
-        name: inline_code(snapshot.display_name().unwrap_or(snapshot.id().as_str())),
-        has_display_name: snapshot.display_name().is_some(),
-        backend: "postgres",
-        single_file_template: SINGLE_FILE_TEMPLATE,
-        directory_template: DIRECTORY_TEMPLATE,
-        nested,
+    let data = SourceData {
         section_heading,
         object_heading,
         detail_heading,
@@ -52,37 +65,54 @@ pub(crate) fn source(snapshot: &Snapshot, nested: bool) -> RenderSource {
             .enums
             .iter()
             .map(|enum_type| RenderEnum {
-                heading: object_heading,
                 qualified_name: inline_code(&format!("{}.{}", enum_type.namespace, enum_type.name)),
                 file_name: object_file_name(&enum_type.namespace, &enum_type.name),
                 comment: enum_type.comment.as_deref().map(text),
                 values: inline_code(&enum_type.values.join(", ")),
             })
             .collect(),
-        tables: catalog
-            .tables
-            .iter()
-            .map(|table| render_table(table, object_heading, detail_heading))
-            .collect(),
-        views: catalog
-            .views
-            .iter()
-            .map(|view| render_view(view, object_heading))
-            .collect(),
-        triggers: catalog
-            .triggers
-            .iter()
-            .map(|trigger| render_trigger(trigger, object_heading))
-            .collect(),
-        functions: catalog
-            .functions
-            .iter()
-            .map(|function| render_function(function, object_heading))
-            .collect(),
-    }
+        tables: catalog.tables.iter().map(render_table).collect(),
+        views: catalog.views.iter().map(render_view).collect(),
+        triggers: catalog.triggers.iter().map(render_trigger).collect(),
+        functions: catalog.functions.iter().map(render_function).collect(),
+    };
+    let objects = data
+        .enums
+        .iter()
+        .map(|object| {
+            render_support::directory_object("enums", "enum.md.j2", &object.file_name, object)
+        })
+        .chain(data.tables.iter().map(|object| {
+            render_support::directory_object("tables", "table.md.j2", &object.file_name, object)
+        }))
+        .chain(data.views.iter().map(|object| {
+            render_support::directory_object("views", "view.md.j2", &object.file_name, object)
+        }))
+        .chain(data.triggers.iter().map(|object| {
+            render_support::directory_object("triggers", "trigger.md.j2", &object.file_name, object)
+        }))
+        .chain(data.functions.iter().map(|object| {
+            render_support::directory_object(
+                "functions",
+                "function.md.j2",
+                &object.file_name,
+                object,
+            )
+        }))
+        .collect();
+    RenderSource::builder(
+        id.as_str(),
+        "postgres",
+        (SINGLE_FILE_TEMPLATE, DIRECTORY_TEMPLATE),
+        &data,
+    )
+    .display_name(display_name.map(inline_code))
+    .nested(nested)
+    .objects(objects)
+    .build()
 }
 
-fn render_table(table: &Table, heading: &'static str, detail_heading: &'static str) -> RenderTable {
+fn render_table(table: &Table) -> RenderTable {
     let mut facts = vec![RenderFact::new(
         "Kind",
         inline_code(match table.kind {
@@ -144,8 +174,6 @@ fn render_table(table: &Table, heading: &'static str, detail_heading: &'static s
         notices.push("Row-level security forced for the table owner.");
     }
     RenderTable {
-        heading,
-        detail_heading,
         qualified_name: inline_code(&table.qualified_name()),
         file_name: object_file_name(&table.namespace, &table.name),
         comment: table.comment.as_deref().map(text),
@@ -250,17 +278,26 @@ fn render_index(index: &Index) -> RenderIndex {
     }
 }
 
-fn render_view(view: &View, heading: &'static str) -> RenderView {
+fn render_view(view: &View) -> RenderView {
     RenderView {
-        heading,
         qualified_name: inline_code(&format!("{}.{}", view.namespace, view.name)),
         file_name: object_file_name(&view.namespace, &view.name),
+        comment: view.comment.as_deref().map(text),
+        facts: vec![RenderFact::new(
+            "Kind",
+            inline_code(if view.materialized {
+                "materialized_view"
+            } else {
+                "view"
+            }),
+        )],
         columns: view.columns.iter().map(render_column).collect(),
         definition: code_block("sql", &view.definition),
     }
 }
 
-fn render_trigger(trigger: &Trigger, heading: &'static str) -> RenderTrigger {
+fn render_trigger(trigger: &Trigger) -> RenderTrigger {
+    let identity = format!("{}.{}.{}", trigger.namespace, trigger.target, trigger.name);
     let events = trigger
         .events
         .iter()
@@ -323,9 +360,12 @@ fn render_trigger(trigger: &Trigger, heading: &'static str) -> RenderTrigger {
         facts.push(RenderFact::new("Parent trigger", inline_code(value)));
     }
     RenderTrigger {
-        heading,
-        qualified_name: inline_code(&format!("{}.{}", trigger.namespace, trigger.name)),
-        file_name: object_file_name(&trigger.namespace, &trigger.name),
+        qualified_name: inline_code(&identity),
+        file_name: object_file_name(
+            &trigger.namespace,
+            &format!("{}.{}", trigger.target, trigger.name),
+        ),
+        comment: trigger.comment.as_deref().map(text),
         event: format!(
             "{} {events}",
             match trigger.timing {
@@ -341,9 +381,8 @@ fn render_trigger(trigger: &Trigger, heading: &'static str) -> RenderTrigger {
     }
 }
 
-fn render_function(function: &Function, heading: &'static str) -> RenderFunction {
+fn render_function(function: &Function) -> RenderFunction {
     RenderFunction {
-        heading,
         qualified_name: inline_code(&format!(
             "{}.{}{}",
             function.namespace, function.name, function.signature

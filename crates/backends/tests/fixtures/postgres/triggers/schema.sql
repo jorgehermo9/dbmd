@@ -15,6 +15,17 @@ CREATE VIEW audit.account_emails AS
 SELECT id, email
 FROM audit.accounts;
 
+COMMENT ON VIEW audit.account_emails IS 'Writable account email projection';
+
+CREATE TABLE audit.partitioned_events (
+    id bigint NOT NULL,
+    occurred_on date NOT NULL
+) PARTITION BY RANGE (occurred_on);
+
+CREATE TABLE audit.partitioned_events_2026
+PARTITION OF audit.partitioned_events
+FOR VALUES FROM ('2026-01-01') TO ('2027-01-01');
+
 CREATE FUNCTION audit.capture_row_change()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -71,3 +82,8 @@ CREATE TRIGGER account_emails_write
 INSTEAD OF INSERT OR UPDATE OR DELETE ON audit.account_emails
 FOR EACH ROW
 EXECUTE FUNCTION audit.capture_row_change('view');
+
+CREATE TRIGGER partitioned_events_change
+BEFORE INSERT OR UPDATE ON audit.partitioned_events
+FOR EACH ROW
+EXECUTE FUNCTION audit.capture_row_change('partition');

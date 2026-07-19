@@ -1,7 +1,7 @@
-{{ enum_type.heading }} {{ enum_type.qualified_name }}
+{{ heading }} {{ object.qualified_name }}
 
-{% if enum_type.comment -%}
-{{ enum_type.comment }}
+{% if object.comment -%}
+{{ object.comment }}
 
 {% endif -%}
-Values: {{ enum_type.values }}
+Values: {{ object.values }}

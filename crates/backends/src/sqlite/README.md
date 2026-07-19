@@ -12,8 +12,9 @@ migration history or the sequence of DDL statements that created it.
   attachment namespaces through application-supplied value expansion.
 - `introspect` opens that path read-only and returns a deterministically ordered
   snapshot or a source-scoped error.
-- `render` maps the SQLite catalog to backend-neutral presentation types and
-  owns the SQLite source templates for both output layouts.
+- `render` maps the SQLite catalog to SQLite-owned presentation data and a
+  generic object manifest, and owns the SQLite source templates for both output
+  layouts.
 
 The adapter reads `main` followed by configured attached namespaces. Within a
 namespace, objects use binary name order; columns use catalog ordinal order;
@@ -47,6 +48,54 @@ The status values mean:
 | `ALTER TABLE` | Supported as resulting schema | Rename table/column, add/drop column, and SQLite 3.53 `SET/DROP NOT NULL` are proved through the rewritten stored definition; [schema-evolution fixture](../../tests/fixtures/sqlite/schema_evolution/schema.sql). |
 | `DROP TABLE/INDEX/VIEW/TRIGGER` | Supported as resulting absence | Dropped objects are absent from the snapshot; [schema-evolution fixture](../../tests/fixtures/sqlite/schema_evolution/schema.sql). |
 | TEMP schema objects | Intentionally excluded | TEMP objects belong to one connection and disappear before a persistent source can be reopened. The schema-evolution fixture creates TEMP table/view/trigger objects and proves they do not enter the persistent snapshot. |
+
+## Template context
+
+SQLite source entrypoints receive the common `source` envelope documented by
+the [template product contract](../../../../docs/product/features/templates.md).
+`source.data` has this SQLite-owned shape:
+
+| Field | Type | Meaning and order |
+| --- | --- | --- |
+| `section_heading` | string | `##` without source nesting, `###` with nesting. |
+| `object_heading` | string | Heading used by single-file object templates. |
+| `detail_heading` | string | Heading used for table subsections in a single file. |
+| `namespaces` | namespace[] | `main`, then configured attachments in resolved attachment order. |
+| `tables` | table[] | Tables in namespace/name order, including represented virtual and shadow tables. |
+| `views` | view[] | Views in namespace/name order. |
+| `triggers` | trigger[] | Triggers in namespace and trigger-name order. |
+
+SQLite directory objects are declared in tables, views, then triggers order.
+Their paths are `tables/<file_name>`, `views/<file_name>`, and
+`triggers/<file_name>`. Trigger identity and filenames include the target so
+equal trigger names on different targets cannot collide.
+
+Presentation object fields are:
+
+- Namespace: `name`, nullable `comment`.
+- Table: `qualified_name`, `file_name`, nullable `comment`, `columns`,
+  `constraints`, `indexes`, and `backend`. `backend.title` is `SQLite`;
+  `backend.facts` contains the table kind; `backend.notices` identifies
+  `STRICT` and `WITHOUT ROWID`; nullable `backend.definition` is fenced SQL.
+- Column: `name`, `data_type`, `nullable` (`yes`, `no`, or `unknown`),
+  `default` (`-` when absent), and `notes` for comments, generated/hidden kind,
+  collation, and generated expression.
+- Constraint: `name`, `kind`, `columns`, and `details`; absent display values
+  use `-`. Details preserve references, actions, match/deferral, conflict
+  policy, and autoincrement when present.
+- Index: `name`, `terms`, `unique`, `origin`, and `predicate`; absent predicates
+  use `-`.
+- View: `qualified_name`, `file_name`, nullable `comment` (currently null),
+  `facts` (currently empty), `columns`, and fenced `definition`.
+- Trigger: `qualified_name`, `file_name`, nullable `comment` (currently null),
+  `event`, `target`, `facts` (currently empty), nullable `when_expression`, and
+  fenced `definition`.
+
+In a directory object template the selected table/view/trigger is `object`;
+`heading`, `detail_heading`, and `source` are also available. In a single-file
+source template the same objects are under `source.data` and the backend
+entrypoint chooses how to iterate or include them. Values are Markdown-ready;
+templates must not re-derive SQLite catalog semantics.
 
 Other SQL statements such as `ALTER TABLE` and `DROP TABLE` change schema history
 but do not create additional kinds of final schema objects. The target is complete

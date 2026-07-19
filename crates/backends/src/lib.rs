@@ -13,8 +13,11 @@ use thiserror::Error;
 /// The built-in database families composed into this binary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum Backend {
+    /// SQLite.
     Sqlite,
+    /// PostgreSQL.
     Postgres,
 }
 
@@ -30,8 +33,11 @@ impl Backend {
 
 /// One resolved concrete database source.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Source {
+    /// Resolved SQLite source.
     Sqlite(sqlite::SqliteSource),
+    /// Resolved PostgreSQL source.
     Postgres(postgres::PostgresSource),
 }
 
@@ -68,8 +74,11 @@ impl From<postgres::PostgresSource> for Source {
 /// Backend-owned committed fields for one named source.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(tag = "backend", rename_all = "lowercase", deny_unknown_fields)]
+#[non_exhaustive]
 pub enum SourceConfig {
+    /// SQLite-specific committed source fields.
     Sqlite(sqlite::Config),
+    /// PostgreSQL-specific committed source fields.
     Postgres(postgres::Config),
 }
 
@@ -97,16 +106,10 @@ impl SourceConfig {
     ) -> Result<Source, SourceConfigResolveError<E>> {
         match self {
             Self::Sqlite(config) => config
-                .resolve(id, base, resolve_value)
-                .map(Source::Sqlite)
-                .map_err(|error| match error {
-                    sqlite::ConfigResolveError::Value(error) => {
-                        SourceConfigResolveError::Value(error)
-                    }
-                    sqlite::ConfigResolveError::Source(error) => {
-                        SourceConfigResolveError::Sqlite(error)
-                    }
-                }),
+                .resolve(id, base, |value| {
+                    resolve_value(value).map_err(SourceConfigResolveError::Value)
+                })
+                .map(Source::Sqlite),
             Self::Postgres(config) => config
                 .resolve(id, &mut resolve_value)
                 .map(Source::Postgres)
@@ -118,21 +121,42 @@ impl SourceConfig {
 /// Why one backend-owned source configuration could not be resolved.
 #[derive(Debug, Error)]
 pub enum SourceConfigResolveError<E> {
+    /// Application-supplied value resolution failed.
     #[error(transparent)]
     Value(E),
+    /// Backend-owned source validation failed.
     #[error(transparent)]
-    Sqlite(sqlite::SqliteSourceError),
+    Backend(#[from] SourceValidationError),
+}
+
+impl<E> From<sqlite::SqliteSourceError> for SourceConfigResolveError<E> {
+    fn from(error: sqlite::SqliteSourceError) -> Self {
+        Self::Backend(SourceValidationError::Sqlite(error))
+    }
+}
+
+/// Why backend-owned source fields could not form a concrete source.
+#[derive(Debug, Error)]
+#[non_exhaustive]
+pub enum SourceValidationError {
+    /// SQLite source validation failed.
+    #[error(transparent)]
+    Sqlite(#[from] sqlite::SqliteSourceError),
 }
 
 /// The closed composition boundary for backend-owned catalogs.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "backend", content = "catalog", rename_all = "snake_case")]
+#[non_exhaustive]
 pub enum Catalog {
+    /// SQLite-owned catalog.
     Sqlite(sqlite::Catalog),
+    /// PostgreSQL-owned catalog.
     Postgres(postgres::Catalog),
 }
 
 impl Catalog {
+    /// Returns the backend family implied by the catalog variant.
     #[must_use]
     pub const fn backend(&self) -> Backend {
         match self {
@@ -142,7 +166,9 @@ impl Catalog {
     }
 }
 
+/// Heterogeneous built-in source snapshot used by application orchestration.
 pub type Snapshot = SourceSnapshot<Catalog>;
+/// Ordered heterogeneous built-in database context.
 pub type DatabaseContext = dbmd_core::DatabaseContext<Catalog>;
 
 /// Introspects one resolved source through its concrete backend module.
@@ -182,24 +208,17 @@ pub fn render_context(database: &DatabaseContext, nested: bool) -> RenderContext
             .iter()
             .map(|snapshot| match snapshot.catalog() {
                 Catalog::Sqlite(catalog) => {
-                    let concrete = concrete_snapshot(snapshot, catalog.clone());
-                    sqlite::render::source(&concrete, nested)
+                    sqlite::render::source(snapshot.id(), snapshot.display_name(), catalog, nested)
                 }
-                Catalog::Postgres(catalog) => {
-                    let concrete = concrete_snapshot(snapshot, catalog.clone());
-                    postgres::render::source(&concrete, nested)
-                }
+                Catalog::Postgres(catalog) => postgres::render::source(
+                    snapshot.id(),
+                    snapshot.display_name(),
+                    catalog,
+                    nested,
+                ),
             })
             .collect(),
     )
-}
-
-fn concrete_snapshot<C: Clone>(snapshot: &Snapshot, catalog: C) -> SourceSnapshot<C> {
-    let concrete = SourceSnapshot::new(snapshot.id().clone(), catalog);
-    match snapshot.display_name() {
-        Some(name) => concrete.with_display_name(name),
-        None => concrete,
-    }
 }
 
 /// Returns all backend templates compiled into this composition root.
@@ -214,9 +233,12 @@ pub fn all_template_files() -> Vec<TemplateFile> {
 
 /// Why a resolved database source could not be introspected.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum IntrospectionError {
+    /// SQLite introspection failed.
     #[error(transparent)]
     Sqlite(#[from] sqlite::IntrospectionError),
+    /// PostgreSQL introspection failed.
     #[error(transparent)]
     Postgres(#[from] postgres::IntrospectionError),
 }

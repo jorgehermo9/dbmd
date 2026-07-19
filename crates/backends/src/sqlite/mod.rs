@@ -9,5 +9,5 @@ pub use catalog::{
     Catalog, Column, ColumnKind, ConflictResolution, Constraint, Index, IndexOrigin, Snapshot,
     Table, TableKind, Trigger, TriggerEvent, TriggerTiming, View,
 };
-pub use config::{Config, ConfigResolveError};
+pub use config::Config;
 pub use introspect::{introspect, IntrospectionError, SqliteSource, SqliteSourceError};

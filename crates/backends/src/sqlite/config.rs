@@ -45,7 +45,10 @@ impl Config {
         id: SourceId,
         base: &Path,
         mut resolve_value: impl FnMut(&str) -> Result<String, E>,
-    ) -> Result<SqliteSource, ConfigResolveError<E>> {
+    ) -> Result<SqliteSource, E>
+    where
+        E: From<SqliteSourceError>,
+    {
         let mut source = SqliteSource::new(id, resolve_path(base, &resolve_value(&self.path)?));
         if let Some(display_name) = &self.display_name {
             source = source.with_display_name(display_name);
@@ -54,7 +57,7 @@ impl Config {
             let path = resolve_path(base, &resolve_value(&attachment.path)?);
             source = source
                 .with_attached_database(namespace, path)
-                .map_err(ConfigResolveError::Source)?;
+                .map_err(E::from)?;
         }
         Ok(source)
     }
@@ -67,13 +70,4 @@ fn resolve_path(base: &Path, value: &str) -> std::path::PathBuf {
     } else {
         base.join(path)
     }
-}
-
-/// Why SQLite-specific source configuration could not be resolved.
-#[derive(Debug, thiserror::Error)]
-pub enum ConfigResolveError<E> {
-    #[error(transparent)]
-    Value(#[from] E),
-    #[error(transparent)]
-    Source(SqliteSourceError),
 }

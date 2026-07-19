@@ -1,47 +1,47 @@
-{{ table.heading }} {{ table.qualified_name }}
+{{ heading }} {{ object.qualified_name }}
 
-{% if table.comment -%}
-{{ table.comment }}
+{% if object.comment -%}
+{{ object.comment }}
 
 {% endif -%}
-{{ table.detail_heading }} Columns
+{{ detail_heading }} Columns
 
 | Column | Type | Nullable | Default | Notes |
 |---|---|---|---|---|
-{% for column in table.columns -%}
+{% for column in object.columns -%}
 | {{ column.name }} | {{ column.data_type }} | {{ column.nullable }} | {{ column.default }} | {{ column.notes }} |
 {% endfor %}
 
-{% if table.constraints -%}
-{{ table.detail_heading }} Constraints
+{% if object.constraints -%}
+{{ detail_heading }} Constraints
 
 | Name | Kind | Columns | Details |
 |---|---|---|---|
-{% for constraint in table.constraints -%}
+{% for constraint in object.constraints -%}
 | {{ constraint.name }} | {{ constraint.kind }} | {{ constraint.columns }} | {{ constraint.details }} |
 {% endfor %}
 
 {% endif -%}
-{% if table.indexes -%}
-{{ table.detail_heading }} Indexes
+{% if object.indexes -%}
+{{ detail_heading }} Indexes
 
 | Name | Terms | Unique | Origin / details | Predicate |
 |---|---|---|---|---|
-{% for index in table.indexes -%}
+{% for index in object.indexes -%}
 | {{ index.name }} | {{ index.terms }} | {{ index.unique }} | {{ index.origin }} | {{ index.predicate }} |
 {% endfor %}
 
 {% endif -%}
-{{ table.detail_heading }} {{ table.backend.title }}
+{{ detail_heading }} {{ object.backend.title }}
 
-{% for fact in table.backend.facts -%}
+{% for fact in object.backend.facts -%}
 **{{ fact.label }}:** {{ fact.value }}
 
 {% endfor -%}
-{% for notice in table.backend.notices -%}
+{% for notice in object.backend.notices -%}
 {{ notice }}
 
 {% endfor -%}
-{% if table.backend.definition -%}
-{{ table.backend.definition }}
+{% if object.backend.definition -%}
+{{ object.backend.definition }}
 {% endif -%}

@@ -111,10 +111,7 @@ impl ExplainedSource {
     /// Returns the stable configuration spelling for this backend.
     #[must_use]
     pub fn backend_name(&self) -> &'static str {
-        match self.backend {
-            Backend::Sqlite => "sqlite",
-            Backend::Postgres => "postgres",
-        }
+        self.backend.as_str()
     }
 }
 

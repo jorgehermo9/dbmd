@@ -396,7 +396,7 @@ SELECT metric_date, active_accounts FROM daily_metrics ORDER BY metric_date DESC
 
 ## Triggers
 
-### `main.account_directory_insert`
+### `main.account_directory.account_directory_insert`
 
 **INSTEAD OF INSERT** on `main.account_directory`.
 
@@ -409,7 +409,7 @@ BEGIN
 END
 ```
 
-### `main.accounts_normalize_email`
+### `main.accounts.accounts_normalize_email`
 
 **AFTER UPDATE OF email** on `main.accounts`.
 
@@ -424,7 +424,7 @@ BEGIN
 END
 ```
 
-### `main.accounts_prevent_root_delete`
+### `main.accounts.accounts_prevent_root_delete`
 
 **BEFORE DELETE** on `main.accounts`.
 

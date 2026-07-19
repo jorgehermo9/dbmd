@@ -227,7 +227,7 @@ ORDER BY namespace.nspname COLLATE "C", relation.relname COLLATE "C"
             columns: Vec::new(),
             constraints: Vec::new(),
             indexes: Vec::new(),
-            kind: table_kind(row.get::<_, String>(3).as_str(), row.get(9)),
+            kind: table_kind(source_id, row.get::<_, String>(3).as_str(), row.get(9))?,
             tablespace: row.get(5),
             inherits: row.get(12),
             partition_key: row.get(8),
@@ -505,7 +505,7 @@ LEFT JOIN pg_catalog.pg_class AS parent_relation
   ON parent_relation.oid = parent_trigger.tgrelid
 LEFT JOIN pg_catalog.pg_namespace AS parent_namespace
   ON parent_namespace.oid = parent_relation.relnamespace
-WHERE NOT trigger_record.tgisinternal
+WHERE (NOT trigger_record.tgisinternal OR trigger_record.tgparentid <> 0)
   AND namespace.nspname <> 'information_schema'
   AND namespace.nspname !~ '^pg_'
 ORDER BY namespace.nspname COLLATE "C",
@@ -535,11 +535,19 @@ ORDER BY namespace.nspname COLLATE "C",
             deferrable: row.get(20),
             initially_deferred: row.get(21),
         });
+        let namespace = row.get::<_, String>(0);
+        let name = row.get::<_, String>(1);
         let definition = row.get::<_, String>(14);
-        let when_expression = trigger_when_expression(&definition, row.get(13));
+        let when_expression =
+            trigger_when_expression(&definition, row.get(13)).ok_or_else(|| {
+                IntrospectionError::TriggerDefinition {
+                    source_id: source_id.clone(),
+                    trigger: format!("{namespace}.{name}"),
+                }
+            })?;
         Ok(Trigger {
-            namespace: row.get(0),
-            name: row.get(1),
+            namespace,
+            name,
             target_namespace: row.get(2),
             target: row.get(3),
             timing: if row.get(4) {
@@ -560,7 +568,7 @@ ORDER BY namespace.nspname COLLATE "C",
             definition,
             function: row.get(15),
             arguments: row.get(16),
-            enabled: trigger_enabled(&row.get::<_, String>(17)),
+            enabled: trigger_enabled(source_id, &row.get::<_, String>(17))?,
             constraint,
             old_transition_table: row.get(22),
             new_transition_table: row.get(23),
@@ -612,24 +620,142 @@ ORDER BY namespace.nspname COLLATE "C",
             comment: row.get(4),
             return_type: row.get(5),
             language: row.get(6),
-            volatility: function_volatility(&row.get::<_, String>(7)),
-            parallel: function_parallel(&row.get::<_, String>(8)),
+            volatility: function_volatility(source_id, &row.get::<_, String>(7))?,
+            parallel: function_parallel(source_id, &row.get::<_, String>(8))?,
             security_definer: row.get(9),
         })
     })
     .collect()
 }
 
-fn trigger_when_expression(definition: &str, has_when_expression: bool) -> Option<String> {
+fn trigger_when_expression(definition: &str, has_when_expression: bool) -> Option<Option<String>> {
     if !has_when_expression {
+        return Some(None);
+    }
+    let closing = definition.rfind(") EXECUTE FUNCTION ")?;
+    let opening = matching_opening_parenthesis(definition, closing)?;
+    if !definition[..opening].ends_with(" WHEN ") {
         return None;
     }
-    let expression = definition
-        .split_once(" WHEN (")?
-        .1
-        .rsplit_once(") EXECUTE FUNCTION ")?
-        .0;
-    Some(expression.to_string())
+    Some(Some(definition[opening + 1..closing].to_string()))
+}
+
+fn matching_opening_parenthesis(value: &str, closing: usize) -> Option<usize> {
+    #[derive(Debug)]
+    enum State {
+        Normal,
+        SingleQuoted,
+        DoubleQuoted,
+        DollarQuoted(Vec<u8>),
+        LineComment,
+        BlockComment,
+    }
+
+    let bytes = value.as_bytes();
+    let mut state = State::Normal;
+    let mut stack = Vec::new();
+    let mut index = 0;
+    while index <= closing && index < bytes.len() {
+        match &state {
+            State::Normal => match bytes[index] {
+                b'\'' => {
+                    state = State::SingleQuoted;
+                    index += 1;
+                }
+                b'"' => {
+                    state = State::DoubleQuoted;
+                    index += 1;
+                }
+                b'$' => {
+                    if let Some(delimiter) = dollar_quote_delimiter(bytes, index) {
+                        index += delimiter.len();
+                        state = State::DollarQuoted(delimiter.to_vec());
+                    } else {
+                        index += 1;
+                    }
+                }
+                b'-' if bytes.get(index + 1) == Some(&b'-') => {
+                    state = State::LineComment;
+                    index += 2;
+                }
+                b'/' if bytes.get(index + 1) == Some(&b'*') => {
+                    state = State::BlockComment;
+                    index += 2;
+                }
+                b'(' => {
+                    stack.push(index);
+                    index += 1;
+                }
+                b')' => {
+                    let opening = stack.pop()?;
+                    if index == closing {
+                        return Some(opening);
+                    }
+                    index += 1;
+                }
+                _ => index += 1,
+            },
+            State::SingleQuoted => {
+                if bytes[index] == b'\'' {
+                    if bytes.get(index + 1) == Some(&b'\'') {
+                        index += 2;
+                    } else {
+                        state = State::Normal;
+                        index += 1;
+                    }
+                } else {
+                    index += 1;
+                }
+            }
+            State::DoubleQuoted => {
+                if bytes[index] == b'"' {
+                    if bytes.get(index + 1) == Some(&b'"') {
+                        index += 2;
+                    } else {
+                        state = State::Normal;
+                        index += 1;
+                    }
+                } else {
+                    index += 1;
+                }
+            }
+            State::DollarQuoted(delimiter) => {
+                if bytes[index..].starts_with(delimiter) {
+                    index += delimiter.len();
+                    state = State::Normal;
+                } else {
+                    index += 1;
+                }
+            }
+            State::LineComment => {
+                if matches!(bytes[index], b'\n' | b'\r') {
+                    state = State::Normal;
+                }
+                index += 1;
+            }
+            State::BlockComment => {
+                if bytes[index] == b'*' && bytes.get(index + 1) == Some(&b'/') {
+                    state = State::Normal;
+                    index += 2;
+                } else {
+                    index += 1;
+                }
+            }
+        }
+    }
+    None
+}
+
+fn dollar_quote_delimiter(bytes: &[u8], start: usize) -> Option<&[u8]> {
+    let tail = bytes.get(start + 1..)?;
+    let end = tail
+        .iter()
+        .position(|byte| *byte == b'$')?
+        .checked_add(start + 1)?;
+    bytes[start + 1..end]
+        .iter()
+        .all(|byte| byte.is_ascii_alphanumeric() || *byte == b'_')
+        .then(|| &bytes[start..=end])
 }
 
 fn load_constraints(
@@ -701,23 +827,29 @@ ORDER BY namespace.nspname COLLATE "C",
             continue;
         };
         let constraint_code = row.get::<_, String>(2);
-        let kind = constraint_kind(&constraint_code);
-        let references = (kind == ConstraintKind::ForeignKey).then(|| ForeignKeyReference {
-            namespace: row.get::<_, Option<String>>(5).unwrap_or_default(),
-            table: row.get::<_, Option<String>>(6).unwrap_or_default(),
-            columns: row.get(7),
-            on_update: foreign_key_action(&row.get::<_, String>(8)),
-            on_delete: foreign_key_action(&row.get::<_, String>(9)),
-            match_name: Some(foreign_key_match(&row.get::<_, String>(10)).to_string()),
-            deferrability: ForeignKeyDeferrability {
-                deferrable: row.get(11),
-                initially: if row.get(12) {
-                    ForeignKeyInitialTiming::Deferred
-                } else {
-                    ForeignKeyInitialTiming::Immediate
+        let kind = constraint_kind(source_id, &constraint_code)?;
+        let references = if kind == ConstraintKind::ForeignKey {
+            Some(ForeignKeyReference {
+                namespace: row.get::<_, Option<String>>(5).unwrap_or_default(),
+                table: row.get::<_, Option<String>>(6).unwrap_or_default(),
+                columns: row.get(7),
+                on_update: foreign_key_action(source_id, &row.get::<_, String>(8))?,
+                on_delete: foreign_key_action(source_id, &row.get::<_, String>(9))?,
+                match_name: Some(
+                    foreign_key_match(source_id, &row.get::<_, String>(10))?.to_string(),
+                ),
+                deferrability: ForeignKeyDeferrability {
+                    deferrable: row.get(11),
+                    initially: if row.get(12) {
+                        ForeignKeyInitialTiming::Deferred
+                    } else {
+                        ForeignKeyInitialTiming::Immediate
+                    },
                 },
-            },
-        });
+            })
+        } else {
+            None
+        };
         tables[table_index].constraints.push(Constraint {
             name: Some(row.get(1)),
             kind,
@@ -939,7 +1071,7 @@ ORDER BY namespace.nspname COLLATE "C",
         tables[table_index].policies.push(Policy {
             name: row.get(1),
             permissive: row.get(2),
-            command: policy_command(&row.get::<_, String>(3)),
+            command: policy_command(source_id, &row.get::<_, String>(3))?,
             roles: row.get(4),
             using_expression: row.get(5),
             check_expression: row.get(6),
@@ -963,90 +1095,140 @@ fn query(
         })
 }
 
-fn table_kind(code: &str, is_partition: bool) -> TableKind {
+fn table_kind(
+    source_id: &SourceId,
+    code: &str,
+    is_partition: bool,
+) -> Result<TableKind, IntrospectionError> {
     if is_partition {
-        return TableKind::Partition;
+        return Ok(TableKind::Partition);
     }
     match code {
-        "p" => TableKind::PartitionedTable,
-        "f" => TableKind::ForeignTable,
-        "r" => TableKind::Table,
-        _ => unreachable!("relation query filters to represented PostgreSQL table kinds"),
-    }
-}
-
-fn policy_command(code: &str) -> PolicyCommand {
-    match code {
-        "r" => PolicyCommand::Select,
-        "a" => PolicyCommand::Insert,
-        "w" => PolicyCommand::Update,
-        "d" => PolicyCommand::Delete,
-        "*" => PolicyCommand::All,
-        _ => unreachable!("pg_policy.polcmd is constrained to documented PostgreSQL codes"),
+        "p" => Ok(TableKind::PartitionedTable),
+        "f" => Ok(TableKind::ForeignTable),
+        "r" => Ok(TableKind::Table),
+        _ => Err(unsupported_catalog_value(source_id, "relation kind", code)),
     }
 }
 
-fn constraint_kind(code: &str) -> ConstraintKind {
+fn policy_command(source_id: &SourceId, code: &str) -> Result<PolicyCommand, IntrospectionError> {
     match code {
-        "p" => ConstraintKind::PrimaryKey,
-        "f" => ConstraintKind::ForeignKey,
-        "u" => ConstraintKind::Unique,
-        "x" => ConstraintKind::Exclusion,
-        "c" => ConstraintKind::Check,
-        _ => unreachable!("constraint query filters to represented PostgreSQL constraint kinds"),
+        "r" => Ok(PolicyCommand::Select),
+        "a" => Ok(PolicyCommand::Insert),
+        "w" => Ok(PolicyCommand::Update),
+        "d" => Ok(PolicyCommand::Delete),
+        "*" => Ok(PolicyCommand::All),
+        _ => Err(unsupported_catalog_value(source_id, "policy command", code)),
     }
 }
 
-fn foreign_key_action(code: &str) -> ForeignKeyAction {
+fn constraint_kind(source_id: &SourceId, code: &str) -> Result<ConstraintKind, IntrospectionError> {
     match code {
-        "r" => ForeignKeyAction::Restrict,
-        "c" => ForeignKeyAction::Cascade,
-        "n" => ForeignKeyAction::SetNull,
-        "d" => ForeignKeyAction::SetDefault,
-        "a" => ForeignKeyAction::NoAction,
-        _ => unreachable!("PostgreSQL foreign-key actions use documented catalog codes"),
+        "p" => Ok(ConstraintKind::PrimaryKey),
+        "f" => Ok(ConstraintKind::ForeignKey),
+        "u" => Ok(ConstraintKind::Unique),
+        "x" => Ok(ConstraintKind::Exclusion),
+        "c" => Ok(ConstraintKind::Check),
+        _ => Err(unsupported_catalog_value(
+            source_id,
+            "constraint kind",
+            code,
+        )),
     }
 }
 
-fn foreign_key_match(code: &str) -> &'static str {
+fn foreign_key_action(
+    source_id: &SourceId,
+    code: &str,
+) -> Result<ForeignKeyAction, IntrospectionError> {
     match code {
-        "f" => "FULL",
-        "p" => "PARTIAL",
-        "s" => "SIMPLE",
-        _ => unreachable!("PostgreSQL foreign-key match types use documented catalog codes"),
+        "r" => Ok(ForeignKeyAction::Restrict),
+        "c" => Ok(ForeignKeyAction::Cascade),
+        "n" => Ok(ForeignKeyAction::SetNull),
+        "d" => Ok(ForeignKeyAction::SetDefault),
+        "a" => Ok(ForeignKeyAction::NoAction),
+        _ => Err(unsupported_catalog_value(
+            source_id,
+            "foreign-key action",
+            code,
+        )),
     }
 }
 
-fn function_volatility(code: &str) -> FunctionVolatility {
+fn foreign_key_match(source_id: &SourceId, code: &str) -> Result<&'static str, IntrospectionError> {
     match code {
-        "i" => FunctionVolatility::Immutable,
-        "s" => FunctionVolatility::Stable,
-        "v" => FunctionVolatility::Volatile,
-        _ => unreachable!("PostgreSQL function volatility uses documented catalog codes"),
+        "f" => Ok("FULL"),
+        "p" => Ok("PARTIAL"),
+        "s" => Ok("SIMPLE"),
+        _ => Err(unsupported_catalog_value(
+            source_id,
+            "foreign-key match type",
+            code,
+        )),
     }
 }
 
-fn function_parallel(code: &str) -> FunctionParallel {
+fn function_volatility(
+    source_id: &SourceId,
+    code: &str,
+) -> Result<FunctionVolatility, IntrospectionError> {
     match code {
-        "s" => FunctionParallel::Safe,
-        "r" => FunctionParallel::Restricted,
-        "u" => FunctionParallel::Unsafe,
-        _ => unreachable!("PostgreSQL function parallel safety uses documented catalog codes"),
+        "i" => Ok(FunctionVolatility::Immutable),
+        "s" => Ok(FunctionVolatility::Stable),
+        "v" => Ok(FunctionVolatility::Volatile),
+        _ => Err(unsupported_catalog_value(
+            source_id,
+            "function volatility",
+            code,
+        )),
     }
 }
 
-fn trigger_enabled(code: &str) -> TriggerEnabled {
+fn function_parallel(
+    source_id: &SourceId,
+    code: &str,
+) -> Result<FunctionParallel, IntrospectionError> {
     match code {
-        "O" => TriggerEnabled::Origin,
-        "D" => TriggerEnabled::Disabled,
-        "R" => TriggerEnabled::Replica,
-        "A" => TriggerEnabled::Always,
-        _ => unreachable!("PostgreSQL trigger enablement uses documented catalog codes"),
+        "s" => Ok(FunctionParallel::Safe),
+        "r" => Ok(FunctionParallel::Restricted),
+        "u" => Ok(FunctionParallel::Unsafe),
+        _ => Err(unsupported_catalog_value(
+            source_id,
+            "function parallel safety",
+            code,
+        )),
+    }
+}
+
+fn trigger_enabled(source_id: &SourceId, code: &str) -> Result<TriggerEnabled, IntrospectionError> {
+    match code {
+        "O" => Ok(TriggerEnabled::Origin),
+        "D" => Ok(TriggerEnabled::Disabled),
+        "R" => Ok(TriggerEnabled::Replica),
+        "A" => Ok(TriggerEnabled::Always),
+        _ => Err(unsupported_catalog_value(
+            source_id,
+            "trigger enablement",
+            code,
+        )),
+    }
+}
+
+fn unsupported_catalog_value(
+    source_id: &SourceId,
+    catalog: &'static str,
+    value: &str,
+) -> IntrospectionError {
+    IntrospectionError::UnsupportedCatalogValue {
+        source_id: source_id.clone(),
+        catalog,
+        value: value.to_string(),
     }
 }
 
 /// Why a PostgreSQL source could not be introspected.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum IntrospectionError {
     /// The configured source could not be connected.
     #[error("failed to connect to PostgreSQL source `{source_id}`")]
@@ -1068,4 +1250,74 @@ pub enum IntrospectionError {
         #[source]
         source: postgres::Error,
     },
+    /// A trigger predicate was present but could not be recovered from the
+    /// server-normalized definition.
+    #[error(
+        "failed to interpret PostgreSQL definition for trigger `{trigger}` in source `{source_id}`"
+    )]
+    TriggerDefinition {
+        /// Stable source identity, safe for diagnostics.
+        source_id: SourceId,
+        /// Qualified trigger name, safe for diagnostics.
+        trigger: String,
+    },
+    /// A catalog code was outside the values understood by this adapter.
+    #[error(
+        "unsupported PostgreSQL {catalog} value `{value}` while introspecting source `{source_id}`"
+    )]
+    UnsupportedCatalogValue {
+        /// Stable source identity, safe for diagnostics.
+        source_id: SourceId,
+        /// Catalog field being interpreted.
+        catalog: &'static str,
+        /// Unexpected server-provided code.
+        value: String,
+    },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::trigger_when_expression;
+
+    #[test]
+    fn extracts_trigger_predicate_around_quoted_delimiter_text() {
+        let definition = concat!(
+            "CREATE TRIGGER \"name WHEN (not a predicate)\" BEFORE UPDATE ON audit.accounts ",
+            "FOR EACH ROW WHEN ((new.email = 'literal WHEN (still literal)') ",
+            "AND pg_trigger_depth() = 0) EXECUTE FUNCTION audit.capture_row_change()"
+        );
+
+        assert_eq!(
+            trigger_when_expression(definition, true),
+            Some(Some(
+                "(new.email = 'literal WHEN (still literal)') AND pg_trigger_depth() = 0"
+                    .to_string()
+            ))
+        );
+    }
+
+    #[test]
+    fn extracts_trigger_predicate_around_dollar_quoted_parentheses() {
+        let definition = concat!(
+            "CREATE TRIGGER test BEFORE UPDATE ON audit.accounts FOR EACH ROW ",
+            "WHEN (new.email = $tag$) EXECUTE FUNCTION fake WHEN ($tag$) ",
+            "EXECUTE FUNCTION audit.capture_row_change()"
+        );
+
+        assert_eq!(
+            trigger_when_expression(definition, true),
+            Some(Some(
+                "new.email = $tag$) EXECUTE FUNCTION fake WHEN ($tag$".to_string()
+            ))
+        );
+    }
+
+    #[test]
+    fn distinguishes_absent_from_unrecoverable_trigger_predicates() {
+        let definition =
+            "CREATE TRIGGER test BEFORE UPDATE ON audit.accounts EXECUTE FUNCTION audit.fn()";
+
+        assert_eq!(trigger_when_expression(definition, false), Some(None));
+        assert_eq!(trigger_when_expression(definition, true), None);
+    }
 }

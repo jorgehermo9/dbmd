@@ -1,9 +1,18 @@
-{{ view.heading }} {{ view.qualified_name }}
+{{ heading }} {{ object.qualified_name }}
+
+{% if object.comment -%}
+{{ object.comment }}
+
+{% endif -%}
+{% for fact in object.facts -%}
+**{{ fact.label }}:** {{ fact.value }}
+
+{% endfor -%}
 
 | Column | Type | Nullable |
 |---|---|---|
-{% for column in view.columns -%}
+{% for column in object.columns -%}
 | {{ column.name }} | {{ column.data_type }} | {{ column.nullable }} |
 {% endfor %}
 
-{{ view.definition }}
+{{ object.definition }}

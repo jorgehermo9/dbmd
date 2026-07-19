@@ -12,7 +12,7 @@ use dbmd_backends::relational::{
 };
 use dbmd_backends::{all_template_files, render_context, Catalog, DatabaseContext};
 use dbmd_core::{SourceId, SourceSnapshot};
-use dbmd_render::{RenderedArtifact, Renderer};
+use dbmd_render::{OutputLayout, RenderOptions, RenderedArtifact, Renderer, SourceLayout};
 use dbmd_test_support::{run_postgres_cases, PostgresCase, PostgresServer, TestResult};
 
 const CASES: &[PostgresCase] = &[
@@ -340,7 +340,7 @@ fn introspects_postgres_trigger_semantics(server: &PostgresServer) -> TestResult
 
     let snapshot = introspect(&source)?;
 
-    assert_eq!(snapshot.catalog().triggers.len(), 5);
+    assert_eq!(snapshot.catalog().triggers.len(), 7);
     assert_eq!(
         snapshot
             .catalog()
@@ -354,6 +354,8 @@ fn introspects_postgres_trigger_semantics(server: &PostgresServer) -> TestResult
             ("accounts", "accounts_transition"),
             ("accounts", "accounts_truncate"),
             ("accounts", "zz_accounts_change"),
+            ("partitioned_events", "partitioned_events_change"),
+            ("partitioned_events_2026", "partitioned_events_change"),
         ]
     );
 
@@ -440,14 +442,27 @@ fn introspects_postgres_trigger_semantics(server: &PostgresServer) -> TestResult
     assert_eq!(view.timing, TriggerTiming::InsteadOf);
     assert_eq!(view.orientation, TriggerOrientation::Row);
 
+    let cloned = snapshot
+        .catalog()
+        .triggers
+        .iter()
+        .find(|trigger| trigger.target == "partitioned_events_2026")
+        .expect("cloned partition trigger should be present");
+    assert_eq!(
+        cloned.parent_trigger.as_deref(),
+        Some("audit.partitioned_events.partitioned_events_change")
+    );
+
     let composed = SourceSnapshot::new(
         snapshot.id().clone(),
         Catalog::Postgres(snapshot.catalog().clone()),
     );
     let database = DatabaseContext::new(vec![composed])?;
     let context = render_context(&database, false);
+    insta::assert_yaml_snapshot!("triggers_render_context", context);
     let templates = all_template_files();
-    let artifact = Renderer::embedded(&templates)?.render(&context)?;
+    let renderer = Renderer::embedded(&templates)?;
+    let artifact = renderer.render(&context)?;
     let RenderedArtifact::SingleFile(markdown) = artifact else {
         panic!("default PostgreSQL rendering should produce one file");
     };
@@ -457,6 +472,20 @@ fn introspects_postgres_trigger_semantics(server: &PostgresServer) -> TestResult
     assert!(markdown.contains("**Enabled:** `always`"));
     assert!(markdown.contains("**Old transition table:** `previous_rows`"));
     assert!(markdown.contains("**Constraint trigger:** deferrable initially deferred"));
+
+    let directory = renderer.render_with_options(
+        &context,
+        RenderOptions {
+            layout: OutputLayout::Directory,
+            source_layout: SourceLayout::Auto,
+        },
+    )?;
+    let RenderedArtifact::Directory(files) = directory else {
+        panic!("directory rendering should produce a file map");
+    };
+    assert!(files
+        .keys()
+        .any(|path| path.as_str() == "triggers/audit.accounts%2Ezz_accounts_change.md"));
 
     insta::assert_yaml_snapshot!("triggers", snapshot);
     Ok(())

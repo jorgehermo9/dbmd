@@ -1,66 +1,69 @@
 use std::fs;
 
 use dbmd_render::{
-    embedded_template_files, ArtifactPath, OutputLayout, RenderColumn, RenderContext, RenderEnum,
-    RenderOptions, RenderSource, RenderTable, RenderTableDetails, RenderedArtifact, Renderer,
-    SourceLayout, TemplateFile,
+    embedded_template_files, ArtifactPath, OutputLayout, RenderContext, RenderError, RenderObject,
+    RenderOptions, RenderSource, RenderedArtifact, Renderer, SourceLayout, TemplateFile,
 };
+use serde::Serialize;
 
 const TEST_TEMPLATES: &[TemplateFile] = &[
-    TemplateFile {
-        relative_path: "single_file/backends/test/source.md.j2",
-        template_name: "backends/test/single_file/source.md.j2",
-        contents: "{% if source.nested %}## Source: `{{ source.id }}`\n\n{% endif %}{% for table in source.tables %}{% include \"table.md.j2\" %}{% endfor %}",
-    },
-    TemplateFile {
-        relative_path: "directory/backends/test/source.md.j2",
-        template_name: "backends/test/directory/source.md.j2",
-        contents: "# Database: {{ source.name }}\n{% for object in source.tables %}- [{{ object.qualified_name }}](tables/{{ object.file_name }})\n{% endfor %}",
-    },
+    TemplateFile::new(
+        "single_file/backends/test/source.md.j2",
+        "backends/test/single_file/source.md.j2",
+        "{% if source.nested %}## Source: `{{ source.id }}`\n\n{% endif %}{% for object in source.data.widgets %}{{ source.data.object_heading }} {{ object.qualified_name }}\n\n{{ object.definition }}\n{% endfor %}",
+    ),
+    TemplateFile::new(
+        "directory/backends/test/source.md.j2",
+        "backends/test/directory/source.md.j2",
+        "# Database: {{ source.name }}\n{% for object in source.data.widgets %}- [{{ object.qualified_name }}](widgets/{{ object.file_name }})\n{% endfor %}",
+    ),
+    TemplateFile::new(
+        "directory/backends/test/widget.md.j2",
+        "backends/test/directory/widget.md.j2",
+        "{{ heading }} {{ object.qualified_name }}\n\n{{ object.definition }}\n",
+    ),
 ];
 
-fn source(id: &str, display_name: Option<&str>, table_name: &str, nested: bool) -> RenderSource {
-    RenderSource {
-        id: id.to_string(),
-        name: format!("`{}`", display_name.unwrap_or(id)),
-        has_display_name: display_name.is_some(),
-        backend: "test",
-        single_file_template: TEST_TEMPLATES[0].template_name,
-        directory_template: TEST_TEMPLATES[1].template_name,
-        nested,
-        section_heading: if nested { "###" } else { "##" },
+#[derive(Clone, Serialize)]
+struct TestObject {
+    qualified_name: String,
+    file_name: String,
+    definition: String,
+}
+
+#[derive(Serialize)]
+struct TestData {
+    object_heading: &'static str,
+    widgets: Vec<TestObject>,
+}
+
+fn source(id: &str, display_name: Option<&str>, object_name: &str, nested: bool) -> RenderSource {
+    let object = TestObject {
+        qualified_name: format!("`main.{object_name}`"),
+        file_name: format!("main.{object_name}.md"),
+        definition: format!("Definition of {object_name}"),
+    };
+    let data = TestData {
         object_heading: if nested { "####" } else { "###" },
-        detail_heading: if nested { "#####" } else { "####" },
-        namespaces: Vec::new(),
-        enums: Vec::new(),
-        tables: vec![RenderTable {
-            heading: if nested { "####" } else { "###" },
-            detail_heading: if nested { "#####" } else { "####" },
-            qualified_name: format!("`main.{table_name}`"),
-            file_name: format!("main.{table_name}.md"),
-            comment: None,
-            columns: vec![RenderColumn {
-                name: "`id`".to_string(),
-                data_type: "`INTEGER`".to_string(),
-                nullable: "no",
-                default: "-".to_string(),
-                notes: String::new(),
-            }],
-            constraints: Vec::new(),
-            indexes: Vec::new(),
-            backend: RenderTableDetails {
-                title: "Test",
-                facts: Vec::new(),
-                notices: Vec::new(),
-                definition: Some(format!(
-                    "```sql\nCREATE TABLE {table_name} (id INTEGER)\n```"
-                )),
-            },
-        }],
-        views: Vec::new(),
-        triggers: Vec::new(),
-        functions: Vec::new(),
-    }
+        widgets: vec![object.clone()],
+    };
+    RenderSource::builder(
+        id,
+        "test",
+        (
+            TEST_TEMPLATES[0].template_name,
+            TEST_TEMPLATES[1].template_name,
+        ),
+        data,
+    )
+    .display_name(display_name.map(|name| format!("`{name}`")))
+    .nested(nested)
+    .objects(vec![RenderObject::new(
+        format!("widgets/{}", object.file_name),
+        TEST_TEMPLATES[2].template_name,
+        object,
+    )])
+    .build()
 }
 
 #[test]
@@ -83,7 +86,7 @@ fn renders_multiple_backend_prepared_sources_as_one_document() {
 }
 
 #[test]
-fn renders_directory_objects_with_validated_relative_paths() {
+fn renders_backend_declared_directory_objects_without_knowing_their_family() {
     let context = RenderContext::new(vec![
         source("analytics", Some("Analytics"), "events", true),
         source("app", None, "users", true),
@@ -105,11 +108,18 @@ fn renders_directory_objects_with_validated_relative_paths() {
         files.keys().map(ArtifactPath::as_str).collect::<Vec<_>>(),
         [
             "analytics/index.md",
-            "analytics/tables/main.events.md",
+            "analytics/widgets/main.events.md",
             "app/index.md",
-            "app/tables/main.users.md",
+            "app/widgets/main.users.md",
             "index.md",
         ]
+    );
+    let object_path = "analytics/widgets/main.events.md"
+        .parse::<ArtifactPath>()
+        .expect("object path should be valid");
+    assert_eq!(
+        String::from_utf8(files[&object_path].clone()).expect("Markdown should be UTF-8"),
+        "# `main.events`\n\nDefinition of events"
     );
 }
 
@@ -120,6 +130,61 @@ fn artifact_paths_reject_absolute_and_parent_traversal() {
             invalid.parse::<ArtifactPath>().is_err(),
             "accepted {invalid}"
         );
+    }
+}
+
+#[test]
+fn directory_manifests_reject_duplicate_and_reserved_paths() {
+    let data = TestData {
+        object_heading: "###",
+        widgets: Vec::new(),
+    };
+    let object = TestObject {
+        qualified_name: "`main.widget`".to_string(),
+        file_name: "main.widget.md".to_string(),
+        definition: "Definition".to_string(),
+    };
+    for objects in [
+        vec![
+            RenderObject::new(
+                "widgets/main.widget.md",
+                TEST_TEMPLATES[2].template_name,
+                &object,
+            ),
+            RenderObject::new(
+                "widgets/main.widget.md",
+                TEST_TEMPLATES[2].template_name,
+                &object,
+            ),
+        ],
+        vec![RenderObject::new(
+            "index.md",
+            TEST_TEMPLATES[2].template_name,
+            &object,
+        )],
+    ] {
+        let source = RenderSource::builder(
+            "app",
+            "test",
+            (
+                TEST_TEMPLATES[0].template_name,
+                TEST_TEMPLATES[1].template_name,
+            ),
+            &data,
+        )
+        .objects(objects)
+        .build();
+        let error = Renderer::embedded(TEST_TEMPLATES)
+            .expect("embedded templates should compile")
+            .render_with_options(
+                &RenderContext::new(vec![source]),
+                RenderOptions {
+                    layout: OutputLayout::Directory,
+                    source_layout: SourceLayout::Auto,
+                },
+            )
+            .expect_err("colliding manifest paths must be rejected");
+        assert!(matches!(error, RenderError::DuplicateArtifactPath(_)));
     }
 }
 
@@ -166,36 +231,4 @@ fn custom_template_root_does_not_fall_back_to_embedded_files() {
         panic!("missing custom files must not fall back to embedded templates");
     };
     assert!(error.to_string().contains("directory/enum.md.j2"));
-}
-
-#[test]
-fn directory_layout_renders_first_class_enum_objects() {
-    let mut source = source("catalog", None, "accounts", false);
-    source.enums.push(RenderEnum {
-        heading: "###",
-        qualified_name: "`catalog.account_state`".to_string(),
-        file_name: "catalog.account_state.md".to_string(),
-        comment: Some("Lifecycle state".to_string()),
-        values: "`active, suspended`".to_string(),
-    });
-    let context = RenderContext::new(vec![source]);
-    let artifact = Renderer::embedded(TEST_TEMPLATES)
-        .expect("embedded templates should compile")
-        .render_with_options(
-            &context,
-            RenderOptions {
-                layout: OutputLayout::Directory,
-                source_layout: SourceLayout::Auto,
-            },
-        )
-        .expect("enum directory should render");
-    let RenderedArtifact::Directory(files) = artifact else {
-        panic!("directory options should produce a directory artifact");
-    };
-    let path = "enums/catalog.account_state.md"
-        .parse::<ArtifactPath>()
-        .expect("enum artifact path should be valid");
-    let markdown = String::from_utf8(files[&path].clone()).expect("Markdown should be UTF-8");
-    assert!(markdown.contains("# `catalog.account_state`"));
-    assert!(markdown.contains("Values: `active, suspended`"));
 }

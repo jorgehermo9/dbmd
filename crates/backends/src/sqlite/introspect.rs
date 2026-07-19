@@ -1055,13 +1055,18 @@ fn quoted_identifier(identifier: &str) -> String {
 
 /// Why a SQLite source attachment could not be configured.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[non_exhaustive]
 pub enum SqliteSourceError {
+    /// The attachment namespace was empty.
     #[error("attached SQLite namespace cannot be empty")]
     EmptyNamespace,
+    /// The attachment namespace contained a NUL byte.
     #[error("attached SQLite namespace cannot contain NUL")]
     NamespaceContainsNul,
+    /// The attachment attempted to use `main` or `temp`.
     #[error("SQLite namespace `{0}` is reserved")]
     ReservedNamespace(String),
+    /// The attachment namespace duplicated another configured attachment.
     #[error("SQLite namespace `{0}` is attached more than once")]
     DuplicateNamespace(String),
 }

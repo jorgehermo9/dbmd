@@ -1,13 +1,17 @@
-{{ trigger.heading }} {{ trigger.qualified_name }}
+{{ heading }} {{ object.qualified_name }}
 
-**{{ trigger.event }}** on {{ trigger.target }}.
+{% if object.comment -%}
+{{ object.comment }}
 
-{% for fact in trigger.facts -%}
+{% endif -%}
+**{{ object.event }}** on {{ object.target }}.
+
+{% for fact in object.facts -%}
 **{{ fact.label }}:** {{ fact.value }}
 
 {% endfor -%}
-{% if trigger.when_expression -%}
-When: {{ trigger.when_expression }}
+{% if object.when_expression -%}
+When: {{ object.when_expression }}
 
 {% endif -%}
-{{ trigger.definition }}
+{{ object.definition }}

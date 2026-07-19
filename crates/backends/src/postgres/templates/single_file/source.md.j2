@@ -4,54 +4,59 @@
 Backend: `{{ source.backend }}`
 
 {% endif -%}
-{% if source.namespaces -%}
-{{ source.section_heading }} Namespaces
+{% if source.data.namespaces -%}
+{{ source.data.section_heading }} Namespaces
 
 | Name | Comment |
 |---|---|
-{% for namespace in source.namespaces -%}
+{% for namespace in source.data.namespaces -%}
 | {{ namespace.name }} | {{ namespace.comment or "-" }} |
 {% endfor %}
 
 {% endif -%}
-{% if source.enums -%}
-{{ source.section_heading }} Enum Types
+{% if source.data.enums -%}
+{{ source.data.section_heading }} Enum Types
 
 | Type | Values | Comment |
 |---|---|---|
-{% for enum in source.enums -%}
+{% for enum in source.data.enums -%}
 | {{ enum.qualified_name }} | {{ enum.values }} | {{ enum.comment or "-" }} |
 {% endfor %}
 
 {% endif -%}
-{% if source.tables -%}
-{{ source.section_heading }} Tables
+{% if source.data.tables -%}
+{{ source.data.section_heading }} Tables
 
-{% for table in source.tables -%}
+{% for object in source.data.tables -%}
+{% set heading = source.data.object_heading -%}
+{% set detail_heading = source.data.detail_heading -%}
 {% include "table.md.j2" %}
 
 {% endfor -%}
 {% endif -%}
-{% if source.views -%}
-{{ source.section_heading }} Views
+{% if source.data.views -%}
+{{ source.data.section_heading }} Views
 
-{% for view in source.views -%}
+{% for object in source.data.views -%}
+{% set heading = source.data.object_heading -%}
 {% include "view.md.j2" %}
 
 {% endfor -%}
 {% endif -%}
-{% if source.triggers -%}
-{{ source.section_heading }} Triggers
+{% if source.data.triggers -%}
+{{ source.data.section_heading }} Triggers
 
-{% for trigger in source.triggers -%}
+{% for object in source.data.triggers -%}
+{% set heading = source.data.object_heading -%}
 {% include "trigger.md.j2" %}
 
 {% endfor -%}
 {% endif -%}
-{% if source.functions -%}
-{{ source.section_heading }} Functions
+{% if source.data.functions -%}
+{{ source.data.section_heading }} Functions
 
-{% for function in source.functions -%}
+{% for object in source.data.functions -%}
+{% set heading = source.data.object_heading -%}
 {% include "function.md.j2" %}
 
 {% endfor -%}

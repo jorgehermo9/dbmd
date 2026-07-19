@@ -5,9 +5,8 @@ mod context;
 
 pub use artifact::{ArtifactPath, ArtifactPathError, RenderedArtifact};
 pub use context::{
-    code_block, inline_code, object_file_name, text, RenderColumn, RenderConstraint, RenderContext,
-    RenderEnum, RenderFact, RenderFunction, RenderIndex, RenderNamespace, RenderSource,
-    RenderTable, RenderTableDetails, RenderTrigger, RenderView,
+    code_block, inline_code, object_file_name, text, RenderContext, RenderObject, RenderSource,
+    RenderSourceBuilder,
 };
 
 use std::{fs, path::Path, path::PathBuf};
@@ -46,6 +45,7 @@ pub struct RenderOptions {
 
 /// One file in the complete embedded template set.
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub struct TemplateFile {
     /// Path relative to one profile directory.
     pub relative_path: &'static str,
@@ -55,45 +55,61 @@ pub struct TemplateFile {
     pub contents: &'static str,
 }
 
+impl TemplateFile {
+    /// Declares one embedded/custom-profile template entry.
+    #[must_use]
+    pub const fn new(
+        relative_path: &'static str,
+        template_name: &'static str,
+        contents: &'static str,
+    ) -> Self {
+        Self {
+            relative_path,
+            template_name,
+            contents,
+        }
+    }
+}
+
 /// Returns the complete built-in profile template set.
 #[must_use]
 pub fn embedded_template_files() -> &'static [TemplateFile] {
     const FILES: &[TemplateFile] = &[
-        TemplateFile {
-            relative_path: "single_file/database.md.j2",
-            template_name: "database.md.j2",
-            contents: include_str!("../templates/database.md.j2"),
-        },
-        TemplateFile {
-            relative_path: "directory/enum.md.j2",
-            template_name: "enum.md.j2",
-            contents: include_str!("../templates/enum.md.j2"),
-        },
-        TemplateFile {
-            relative_path: "directory/table.md.j2",
-            template_name: "table.md.j2",
-            contents: include_str!("../templates/table.md.j2"),
-        },
-        TemplateFile {
-            relative_path: "directory/view.md.j2",
-            template_name: "view.md.j2",
-            contents: include_str!("../templates/view.md.j2"),
-        },
-        TemplateFile {
-            relative_path: "directory/trigger.md.j2",
-            template_name: "trigger.md.j2",
-            contents: include_str!("../templates/trigger.md.j2"),
-        },
-        TemplateFile {
-            relative_path: "directory/function.md.j2",
-            template_name: "function.md.j2",
-            contents: include_str!("../templates/function.md.j2"),
-        },
-        TemplateFile {
-            relative_path: "directory/root.md.j2",
-            template_name: "directory_root.md.j2",
-            contents: include_str!("../templates/directory_root.md.j2"),
-        },
+        TemplateFile::new(
+            "single_file/database.md.j2",
+            "database.md.j2",
+            include_str!("../templates/database.md.j2"),
+        ),
+        TemplateFile::new(
+            "directory/enum.md.j2",
+            "enum.md.j2",
+            include_str!("../templates/enum.md.j2"),
+        ),
+        TemplateFile::new(
+            "directory/table.md.j2",
+            "table.md.j2",
+            include_str!("../templates/table.md.j2"),
+        ),
+        TemplateFile::new(
+            "directory/view.md.j2",
+            "view.md.j2",
+            include_str!("../templates/view.md.j2"),
+        ),
+        TemplateFile::new(
+            "directory/trigger.md.j2",
+            "trigger.md.j2",
+            include_str!("../templates/trigger.md.j2"),
+        ),
+        TemplateFile::new(
+            "directory/function.md.j2",
+            "function.md.j2",
+            include_str!("../templates/function.md.j2"),
+        ),
+        TemplateFile::new(
+            "directory/root.md.j2",
+            "directory_root.md.j2",
+            include_str!("../templates/directory_root.md.j2"),
+        ),
     ];
     FILES
 }
@@ -183,7 +199,14 @@ impl Renderer {
         options: RenderOptions,
     ) -> Result<RenderedArtifact, RenderError> {
         let nested = options.source_layout == SourceLayout::Nested
-            || (options.source_layout == SourceLayout::Auto && render_context.sources.len() > 1);
+            || (options.source_layout == SourceLayout::Auto && render_context.sources().len() > 1);
+        if render_context
+            .sources()
+            .iter()
+            .any(|source| source.nested() != nested)
+        {
+            return Err(RenderError::InconsistentSourceLayout);
+        }
         match options.layout {
             OutputLayout::SingleFile => {
                 let template = self.env.get_template("database.md.j2")?;
@@ -214,24 +237,28 @@ impl Renderer {
         let mut files = BTreeMap::new();
         if nested {
             let links = context
-                .sources
+                .sources()
                 .iter()
                 .map(|source| SourceLink {
-                    id: &source.id,
-                    name: &source.name,
-                    backend: source.backend,
-                    path: format!("{}/index.md", source.id),
+                    id: source.id(),
+                    name: source.name(),
+                    backend: source.backend(),
+                    path: format!("{}/index.md", source.id()),
                 })
                 .collect::<Vec<_>>();
             let root = self
                 .env
                 .get_template("directory_root.md.j2")?
                 .render(context! { sources => links })?;
-            files.insert(ArtifactPath::from_str("index.md")?, root.into_bytes());
-            for source in &context.sources {
-                self.render_source_directory(&mut files, source, Some(&source.id))?;
+            insert_artifact(
+                &mut files,
+                ArtifactPath::from_str("index.md")?,
+                root.into_bytes(),
+            )?;
+            for source in context.sources() {
+                self.render_source_directory(&mut files, source, Some(source.id()))?;
             }
-        } else if let Some(source) = context.sources.first() {
+        } else if let Some(source) = context.sources().first() {
             self.render_source_directory(&mut files, source, None)?;
         }
         Ok(RenderedArtifact::Directory(files))
@@ -245,75 +272,61 @@ impl Renderer {
     ) -> Result<(), RenderError> {
         let source_index = self
             .env
-            .get_template(source.directory_template)?
+            .get_template(source.directory_template())?
             .render(context! { source => source })?;
         let index_path = prefix.map_or_else(
             || "index.md".to_string(),
             |prefix| format!("{prefix}/index.md"),
         );
-        files.insert(index_path.parse()?, source_index.into_bytes());
+        insert_artifact(files, index_path.parse()?, source_index.into_bytes())?;
 
-        let enum_template = self.env.get_template("enum.md.j2")?;
-        for enum_type in &source.enums {
-            let path = artifact_object_path(prefix, "enums", &enum_type.file_name)?;
-            let mut enum_type = enum_type.clone();
-            enum_type.heading = "#";
-            let markdown = enum_template.render(context! { enum_type => enum_type })?;
-            files.insert(path, markdown.into_bytes());
-        }
-
-        let table_template = self.env.get_template("table.md.j2")?;
-        for table in &source.tables {
-            let path = artifact_object_path(prefix, "tables", &table.file_name)?;
-            let mut table = table.clone();
-            table.heading = "#";
-            table.detail_heading = "##";
-            let markdown = table_template.render(context! { table => table })?;
-            files.insert(path, markdown.into_bytes());
-        }
-        let view_template = self.env.get_template("view.md.j2")?;
-        for view in &source.views {
-            let path = artifact_object_path(prefix, "views", &view.file_name)?;
-            let mut view = view.clone();
-            view.heading = "#";
-            let markdown = view_template.render(context! { view => view })?;
-            files.insert(path, markdown.into_bytes());
-        }
-        let trigger_template = self.env.get_template("trigger.md.j2")?;
-        for trigger in &source.triggers {
-            let path = artifact_object_path(prefix, "triggers", &trigger.file_name)?;
-            let mut trigger = trigger.clone();
-            trigger.heading = "#";
-            let markdown = trigger_template.render(context! { trigger => trigger })?;
-            files.insert(path, markdown.into_bytes());
-        }
-        let function_template = self.env.get_template("function.md.j2")?;
-        for function in &source.functions {
-            let path = artifact_object_path(prefix, "functions", &function.file_name)?;
-            let mut function = function.clone();
-            function.heading = "#";
-            let markdown = function_template.render(context! { function => function })?;
-            files.insert(path, markdown.into_bytes());
+        for object in source.objects() {
+            let path = artifact_object_path(prefix, object.relative_path())?;
+            let markdown = self.env.get_template(object.template())?.render(context! {
+                source => source,
+                object => object.data(),
+                heading => "#",
+                detail_heading => "##",
+            })?;
+            insert_artifact(files, path, markdown.into_bytes())?;
         }
         Ok(())
     }
 }
 
+fn insert_artifact(
+    files: &mut std::collections::BTreeMap<ArtifactPath, Vec<u8>>,
+    path: ArtifactPath,
+    contents: Vec<u8>,
+) -> Result<(), RenderError> {
+    use std::collections::btree_map::Entry;
+
+    match files.entry(path) {
+        Entry::Vacant(entry) => {
+            entry.insert(contents);
+            Ok(())
+        }
+        Entry::Occupied(entry) => Err(RenderError::DuplicateArtifactPath(
+            entry.key().as_str().to_string(),
+        )),
+    }
+}
+
 fn artifact_object_path(
     prefix: Option<&str>,
-    kind: &str,
-    file_name: &str,
+    relative_path: &str,
 ) -> Result<ArtifactPath, ArtifactPathError> {
     prefix
         .map_or_else(
-            || format!("{kind}/{file_name}"),
-            |prefix| format!("{prefix}/{kind}/{file_name}"),
+            || relative_path.to_string(),
+            |prefix| format!("{prefix}/{relative_path}"),
         )
         .parse()
 }
 
 /// Why a database context could not be rendered.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum RenderError {
     /// A required custom template could not be read.
     #[error("failed to read required template `{path}`")]
@@ -328,12 +341,12 @@ pub enum RenderError {
     /// Template compilation or execution failed.
     #[error("template error: {0}")]
     Template(#[from] minijinja::Error),
-    /// A rendered artifact that must be UTF-8 was not.
-    #[error("rendered artifact was not UTF-8")]
-    Utf8(#[source] std::string::FromUtf8Error),
-    /// An internal single-file operation unexpectedly produced a directory.
-    #[error("renderer produced an unexpected artifact layout")]
-    UnexpectedArtifact,
+    /// Backend-prepared source headings do not match the selected source layout.
+    #[error("render context source nesting does not match the selected source layout")]
+    InconsistentSourceLayout,
+    /// Two backend declarations resolve to the same artifact path.
+    #[error("render manifest declares artifact path `{0}` more than once")]
+    DuplicateArtifactPath(String),
     /// A generated directory entry was not a safe relative path.
     #[error(transparent)]
     ArtifactPath(#[from] ArtifactPathError),

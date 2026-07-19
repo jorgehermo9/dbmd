@@ -31,12 +31,13 @@ and dispatch functions that let the application work with the backends compiled
 into dbmd. Adding a backend changes this root and the application configuration
 parser, but does not require adding vendor variants to core or render.
 
-`dbmd-render` owns only presentation types, Markdown helpers, template execution,
-and artifact assembly. It does not import backend catalogs. A backend converts
-its catalog into the dedicated versioned render context and supplies a
-namespaced template manifest. Templates whose behavior depends on one backend
-live beside that backend; genuinely common artifact/object templates remain in
-`dbmd-render`.
+`dbmd-render` owns only a presentation envelope, Markdown helpers, template
+execution, and artifact assembly. It does not import backend catalogs or model
+database object families. A backend converts its catalog into opaque
+serializable presentation data, supplies a generic object-artifact manifest,
+and supplies a namespaced template manifest. Templates whose behavior depends
+on one backend live beside that backend; genuinely common artifact/object
+templates remain in `dbmd-render`.
 
 No public driver trait or runtime plugin ABI is introduced. A trait will be
 considered only when a real substitutability consumer exists.

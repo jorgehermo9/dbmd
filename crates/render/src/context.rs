@@ -1,15 +1,17 @@
 use std::fmt::Write as _;
 
+use minijinja::value::Value;
 use serde::Serialize;
 
 /// Presentation-only data supplied to templates.
 ///
 /// This type contains no database catalog types, connection settings,
 /// environment values, driver handles, or internal error values.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[non_exhaustive]
 pub struct RenderContext {
-    pub version: u32,
-    pub sources: Vec<RenderSource>,
+    version: u32,
+    sources: Vec<RenderSource>,
 }
 
 impl RenderContext {
@@ -17,151 +19,198 @@ impl RenderContext {
     #[must_use]
     pub fn new(sources: Vec<RenderSource>) -> Self {
         Self {
-            version: 1,
+            version: 2,
             sources,
         }
+    }
+
+    /// Returns backend-prepared sources in deterministic operation order.
+    #[must_use]
+    pub fn sources(&self) -> &[RenderSource] {
+        &self.sources
     }
 }
 
 /// One backend-prepared source supplied to the shared artifact renderer.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+///
+/// `data` is deliberately opaque to `dbmd-render`. Its shape and semantics are
+/// owned by the backend template named by this source.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[non_exhaustive]
 pub struct RenderSource {
-    pub id: String,
-    pub name: String,
-    pub has_display_name: bool,
-    pub backend: &'static str,
-    pub single_file_template: &'static str,
-    pub directory_template: &'static str,
-    pub nested: bool,
-    pub section_heading: &'static str,
-    pub object_heading: &'static str,
-    pub detail_heading: &'static str,
-    pub namespaces: Vec<RenderNamespace>,
-    pub enums: Vec<RenderEnum>,
-    pub tables: Vec<RenderTable>,
-    pub views: Vec<RenderView>,
-    pub triggers: Vec<RenderTrigger>,
-    pub functions: Vec<RenderFunction>,
+    id: String,
+    name: String,
+    has_display_name: bool,
+    backend: &'static str,
+    single_file_template: &'static str,
+    directory_template: &'static str,
+    nested: bool,
+    data: Value,
+    #[serde(skip)]
+    objects: Vec<RenderObject>,
 }
 
-/// One namespace row.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct RenderNamespace {
-    pub name: String,
-    pub comment: Option<String>,
-}
-
-/// One enum type.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct RenderEnum {
-    pub heading: &'static str,
-    pub qualified_name: String,
-    pub file_name: String,
-    pub comment: Option<String>,
-    pub values: String,
-}
-
-/// One table.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct RenderTable {
-    pub heading: &'static str,
-    pub detail_heading: &'static str,
-    pub qualified_name: String,
-    pub file_name: String,
-    pub comment: Option<String>,
-    pub columns: Vec<RenderColumn>,
-    pub constraints: Vec<RenderConstraint>,
-    pub indexes: Vec<RenderIndex>,
-    pub backend: RenderTableDetails,
-}
-
-/// One column row.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct RenderColumn {
-    pub name: String,
-    pub data_type: String,
-    pub nullable: &'static str,
-    pub default: String,
-    pub notes: String,
-}
-
-/// One constraint row.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct RenderConstraint {
-    pub name: String,
-    pub kind: String,
-    pub columns: String,
-    pub details: String,
-}
-
-/// One index row.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct RenderIndex {
-    pub name: String,
-    pub terms: String,
-    pub unique: &'static str,
-    pub origin: String,
-    pub predicate: String,
-}
-
-/// Backend-owned table facts represented without exposing its catalog type.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct RenderTableDetails {
-    pub title: &'static str,
-    pub facts: Vec<RenderFact>,
-    pub notices: Vec<&'static str>,
-    pub definition: Option<String>,
-}
-
-/// One labeled presentation fact.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct RenderFact {
-    pub label: &'static str,
-    pub value: String,
-}
-
-impl RenderFact {
+impl RenderSource {
+    /// Starts named construction of a backend-prepared source.
     #[must_use]
-    pub fn new(label: &'static str, value: impl Into<String>) -> Self {
-        Self {
-            label,
-            value: value.into(),
+    pub fn builder(
+        id: impl Into<String>,
+        backend: &'static str,
+        templates: (&'static str, &'static str),
+        data: impl Serialize,
+    ) -> RenderSourceBuilder {
+        RenderSourceBuilder {
+            id: id.into(),
+            display_name: None,
+            backend,
+            single_file_template: templates.0,
+            directory_template: templates.1,
+            nested: false,
+            data: Value::from_serialize(data),
+            objects: Vec::new(),
+        }
+    }
+
+    #[must_use]
+    /// Returns the stable source ID used for selection and nested paths.
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    #[must_use]
+    /// Returns the Markdown-ready explicit or fallback source name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    #[must_use]
+    /// Returns the stable backend tag.
+    pub const fn backend(&self) -> &'static str {
+        self.backend
+    }
+
+    #[must_use]
+    /// Returns the backend entrypoint for single-file rendering.
+    pub const fn single_file_template(&self) -> &'static str {
+        self.single_file_template
+    }
+
+    #[must_use]
+    /// Returns the backend entrypoint for a directory source index.
+    pub const fn directory_template(&self) -> &'static str {
+        self.directory_template
+    }
+
+    #[must_use]
+    /// Returns whether this source is rendered with explicit source nesting.
+    pub const fn nested(&self) -> bool {
+        self.nested
+    }
+
+    #[must_use]
+    /// Returns backend-declared directory object artifacts in render order.
+    pub fn objects(&self) -> &[RenderObject] {
+        &self.objects
+    }
+}
+
+/// Named construction for a backend-prepared render source.
+#[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
+pub struct RenderSourceBuilder {
+    id: String,
+    display_name: Option<String>,
+    backend: &'static str,
+    single_file_template: &'static str,
+    directory_template: &'static str,
+    nested: bool,
+    data: Value,
+    objects: Vec<RenderObject>,
+}
+
+impl RenderSourceBuilder {
+    /// Sets an optional Markdown-ready display name.
+    #[must_use]
+    pub fn display_name(mut self, display_name: Option<String>) -> Self {
+        self.display_name = display_name;
+        self
+    }
+
+    /// Sets whether explicit source nesting is active.
+    #[must_use]
+    pub const fn nested(mut self, nested: bool) -> Self {
+        self.nested = nested;
+        self
+    }
+
+    /// Sets backend-declared directory object artifacts in render order.
+    #[must_use]
+    pub fn objects(mut self, objects: Vec<RenderObject>) -> Self {
+        self.objects = objects;
+        self
+    }
+
+    /// Finishes the render source, deriving the fallback name from its ID.
+    #[must_use]
+    pub fn build(self) -> RenderSource {
+        let has_display_name = self.display_name.is_some();
+        let name = self.display_name.unwrap_or_else(|| inline_code(&self.id));
+        RenderSource {
+            id: self.id,
+            name,
+            has_display_name,
+            backend: self.backend,
+            single_file_template: self.single_file_template,
+            directory_template: self.directory_template,
+            nested: self.nested,
+            data: self.data,
+            objects: self.objects,
         }
     }
 }
 
-/// One view.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct RenderView {
-    pub heading: &'static str,
-    pub qualified_name: String,
-    pub file_name: String,
-    pub columns: Vec<RenderColumn>,
-    pub definition: String,
+/// One backend-declared object file in a directory-layout artifact.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[non_exhaustive]
+pub struct RenderObject {
+    relative_path: String,
+    template: &'static str,
+    data: Value,
 }
 
-/// One trigger.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct RenderTrigger {
-    pub heading: &'static str,
-    pub qualified_name: String,
-    pub file_name: String,
-    pub event: String,
-    pub target: String,
-    pub facts: Vec<RenderFact>,
-    pub when_expression: Option<String>,
-    pub definition: String,
-}
+impl RenderObject {
+    /// Creates one object file from a validated-at-render-time relative path,
+    /// an embedded/custom template name, and backend-owned presentation data.
+    #[must_use]
+    pub fn new(
+        relative_path: impl Into<String>,
+        template: &'static str,
+        data: impl Serialize,
+    ) -> Self {
+        Self {
+            relative_path: relative_path.into(),
+            template,
+            data: Value::from_serialize(data),
+        }
+    }
 
-/// One function.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct RenderFunction {
-    pub heading: &'static str,
-    pub qualified_name: String,
-    pub file_name: String,
-    pub comment: Option<String>,
-    pub facts: Vec<RenderFact>,
-    pub definition: Option<String>,
+    #[must_use]
+    /// Returns the source-relative artifact path declared by the backend.
+    pub fn relative_path(&self) -> &str {
+        &self.relative_path
+    }
+
+    #[must_use]
+    /// Returns the template selected for this object artifact.
+    pub const fn template(&self) -> &'static str {
+        self.template
+    }
+
+    #[must_use]
+    /// Returns the opaque backend-owned presentation payload.
+    pub fn data(&self) -> &Value {
+        &self.data
+    }
 }
 
 /// Escapes a value as Markdown inline code safe for a table cell.

@@ -58,6 +58,8 @@ Application accounts
 
 ### `catalog.active_accounts`
 
+**Kind:** `view`
+
 | Column | Type | Nullable |
 |---|---|---|
 | `id` | `bigint` | yes |

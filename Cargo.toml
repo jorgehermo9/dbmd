@@ -25,7 +25,6 @@ minijinja = { version = "2.10.2", features = ["loader"] }
 postgres = "0.19.14"
 rusqlite = { version = "0.40.1", features = ["bundled"] }
 serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
 similar = "2.7.0"
 sqlite3-parser = "0.17.0"
 tempfile = "3.27.0"

@@ -2,19 +2,21 @@
 
 ## Boundary
 
-`dbmd-render` is backend-neutral. It owns versioned presentation structs,
+`dbmd-render` is backend-neutral. It owns a versioned presentation envelope,
 Markdown escaping, strict MiniJinja execution, common artifact templates, and
 in-memory artifact assembly. It does not import `dbmd-core` or any backend
-catalog.
+catalog, and it does not enumerate database object families.
 
-Each backend maps its catalog to a `RenderSource`. That mapping computes
-qualified names, display-ready facts, backend summaries, trigger/function
-details, paths, and Markdown-safe values before template execution.
+Each backend maps its catalog to a `RenderSource`. The source contains opaque
+backend-owned serializable data plus a generic directory-object manifest. That
+mapping computes qualified names, display-ready facts, backend summaries,
+paths, and Markdown-safe values before template execution.
 
 ```text
 backend Catalog
   → backend render mapping
-  → RenderSource
+  → backend presentation data + object manifest
+  → RenderSource envelope
   → RenderContext
   → common + selected backend templates
   → RenderedArtifact
@@ -44,12 +46,17 @@ MiniJinja names are implementation details.
 
 ## Render context
 
-The context contains stable external backend tags, source identity, qualified
-names, safe path components, presentation-ready schema facts, and
-deterministically ordered objects. It never contains credentials, connection
-settings, environment values, driver handles, or internal errors.
+The common context contains stable external backend tags, source identity,
+backend template entrypoints, opaque presentation data, and deterministically
+ordered object manifests. Each object declares its relative artifact path,
+template, and opaque presentation value. It never contains credentials,
+connection settings, environment values, driver handles, or internal errors.
 
-Context version `1` identifies its shape but is not a promise that arbitrary
+`dbmd-render` validates and assembles declared paths without knowing whether an
+object is a table, trigger, extension, policy, or a future backend-only concept.
+Adding a catalog family changes only the owning backend mapping and templates.
+
+Context version `2` identifies its shape but is not a promise that arbitrary
 custom templates remain source-compatible forever. Changes are reviewed through
 render-context and Markdown tests.
 
@@ -61,8 +68,8 @@ replacement.
 
 - Single-file layout renders all selected backend source fragments into one
   document.
-- Directory layout renders a root/source index plus stable files for each
-  represented object family.
+- Directory layout renders a root/source index plus the stable object files
+  declared by each backend manifest.
 - Source nesting follows the resolved source-layout policy.
 
 The application owns stdout, atomic file/tree replacement, and exact

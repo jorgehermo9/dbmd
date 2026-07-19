@@ -1,13 +1,13 @@
-{{ function.heading }} {{ function.qualified_name }}
+{{ heading }} {{ object.qualified_name }}
 
-{% if function.comment -%}
-{{ function.comment }}
+{% if object.comment -%}
+{{ object.comment }}
 
 {% endif -%}
-{% for fact in function.facts -%}
+{% for fact in object.facts -%}
 **{{ fact.label }}:** {{ fact.value }}
 
 {% endfor -%}
-{% if function.definition -%}
-{{ function.definition }}
+{% if object.definition -%}
+{{ object.definition }}
 {% endif -%}

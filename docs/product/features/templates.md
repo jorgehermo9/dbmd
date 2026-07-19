@@ -74,9 +74,49 @@ Builtin partial paths are internal implementation details. Custom sets own any p
 ## Render-context compatibility
 
 Custom templates receive the dedicated, versioned render context rather than
-core model structs. Context versioning identifies shape but does not constitute
-a stable external compatibility guarantee.
+core model structs. The common root template receives `context`:
+
+| Field | Meaning |
+| --- | --- |
+| `context.version` | Integer render-context shape version. |
+| `context.sources` | Sources in resolved operation order. |
+
+Every source value has this common envelope:
+
+| Field | Meaning |
+| --- | --- |
+| `id` | Stable source ID used for selection and nested paths. |
+| `name` | Markdown-ready display name, falling back to the source ID. |
+| `has_display_name` | Whether `name` came from an explicit configured display name. |
+| `backend` | Stable backend tag such as `sqlite` or `postgres`. |
+| `single_file_template` | Backend-owned entrypoint included by `single_file/database.md.j2`. |
+| `directory_template` | Backend-owned source-index entrypoint selected internally by the renderer; available to templates for inspection but normally not dispatched manually. |
+| `nested` | Whether source headings/directories are explicit for this render. |
+| `data` | Opaque backend-owned presentation payload documented below. |
+
+A single-file backend entrypoint receives `source`. A directory backend
+entrypoint also receives `source`; each declared directory object template
+receives `source`, `object`, `heading` (`#`), and `detail_heading` (`##`).
+Generated object paths and object template selection are backend-owned and are
+not derived by custom templates.
+
+Backend payload references:
+
+- [SQLite template context](../../../crates/backends/src/sqlite/README.md#template-context)
+- [PostgreSQL template context](../../../crates/backends/src/postgres/README.md#template-context)
+
+All catalog-derived strings in these payloads are already Markdown-ready.
+Collections retain deterministic catalog order. Optional values are either a
+string or null; an empty list means that object family has no represented
+members.
+
+Context versioning identifies shape but does not constitute an indefinitely
+stable external compatibility guarantee. A field addition, removal, or meaning
+change is a reviewed product-contract change: update the backend reference,
+embedded templates, render-context snapshots, and context version when old
+custom templates cannot continue to render correctly. Strict undefined-value
+handling makes incompatible custom profiles fail before output replacement.
+The context documented here is version `2`.
 
 `explain` exposes the resolved template root, profile, layout, and required
-entrypoints without exposing expanded environment values. A machine-readable
-example context is outside this contract.
+entrypoints without exposing expanded environment values.

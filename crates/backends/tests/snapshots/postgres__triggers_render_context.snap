@@ -1,0 +1,314 @@
+---
+source: crates/backends/tests/postgres.rs
+expression: context
+---
+version: 2
+sources:
+  - id: audit
+    name: "`audit`"
+    has_display_name: false
+    backend: postgres
+    single_file_template: backends/postgres/single_file/source.md.j2
+    directory_template: backends/postgres/directory/source.md.j2
+    nested: false
+    data:
+      detail_heading: "####"
+      enums: []
+      functions:
+        - comment: ~
+          definition: "```sql\nCREATE OR REPLACE FUNCTION audit.capture_row_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n\n```"
+          facts:
+            - label: Returns
+              value: "`trigger`"
+            - label: Language
+              value: "`plpgsql`"
+            - label: Volatility
+              value: "`volatile`"
+            - label: Parallel
+              value: "`unsafe`"
+            - label: Security
+              value: "`invoker`"
+          file_name: audit.capture_row_change%28%29.md
+          qualified_name: "`audit.capture_row_change()`"
+        - comment: ~
+          definition: "```sql\nCREATE OR REPLACE FUNCTION audit.capture_statement_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    RETURN NULL;\nEND;\n$function$\n\n```"
+          facts:
+            - label: Returns
+              value: "`trigger`"
+            - label: Language
+              value: "`plpgsql`"
+            - label: Volatility
+              value: "`volatile`"
+            - label: Parallel
+              value: "`unsafe`"
+            - label: Security
+              value: "`invoker`"
+          file_name: audit.capture_statement_change%28%29.md
+          qualified_name: "`audit.capture_statement_change()`"
+      namespaces:
+        - comment: ~
+          name: "`audit`"
+        - comment: standard public schema
+          name: "`public`"
+      object_heading: "###"
+      section_heading: "##"
+      tables:
+        - backend:
+            definition: ~
+            facts:
+              - label: Kind
+                value: "`table`"
+            notices: []
+            title: PostgreSQL
+          columns:
+            - data_type: "`bigint`"
+              default: "-"
+              name: "`account_id`"
+              notes: ""
+              nullable: "no"
+            - data_type: "`integer`"
+              default: "-"
+              name: "`minimum_balance`"
+              notes: ""
+              nullable: "no"
+          comment: ~
+          constraints:
+            - columns: "`account_id`"
+              details: "`PRIMARY KEY (account_id)`; no inherit"
+              kind: "`primary_key`"
+              name: "`account_limits_pkey`"
+          file_name: audit.account_limits.md
+          indexes:
+            - name: "`account_limits_pkey`"
+              origin: "postgres `btree`"
+              predicate: "-"
+              terms: "`account_id` ascending opclass `pg_catalog.int8_ops` nulls `last`"
+              unique: "yes"
+          qualified_name: "`audit.account_limits`"
+        - backend:
+            definition: ~
+            facts:
+              - label: Kind
+                value: "`table`"
+            notices: []
+            title: PostgreSQL
+          columns:
+            - data_type: "`bigint`"
+              default: "-"
+              name: "`id`"
+              notes: "identity `always`"
+              nullable: "no"
+            - data_type: "`text`"
+              default: "-"
+              name: "`email`"
+              notes: ""
+              nullable: "no"
+            - data_type: "`integer`"
+              default: "`0`"
+              name: "`balance`"
+              notes: ""
+              nullable: "no"
+          comment: ~
+          constraints:
+            - columns: "`id`"
+              details: "`PRIMARY KEY (id)`; no inherit"
+              kind: "`primary_key`"
+              name: "`accounts_pkey`"
+          file_name: audit.accounts.md
+          indexes:
+            - name: "`accounts_pkey`"
+              origin: "postgres `btree`"
+              predicate: "-"
+              terms: "`id` ascending opclass `pg_catalog.int8_ops` nulls `last`"
+              unique: "yes"
+          qualified_name: "`audit.accounts`"
+        - backend:
+            definition: ~
+            facts:
+              - label: Kind
+                value: "`partitioned_table`"
+              - label: Partition key
+                value: "`RANGE (occurred_on)`"
+            notices: []
+            title: PostgreSQL
+          columns:
+            - data_type: "`bigint`"
+              default: "-"
+              name: "`id`"
+              notes: ""
+              nullable: "no"
+            - data_type: "`date`"
+              default: "-"
+              name: "`occurred_on`"
+              notes: ""
+              nullable: "no"
+          comment: ~
+          constraints: []
+          file_name: audit.partitioned_events.md
+          indexes: []
+          qualified_name: "`audit.partitioned_events`"
+        - backend:
+            definition: ~
+            facts:
+              - label: Kind
+                value: "`partition`"
+              - label: Inherits
+                value: "`audit.partitioned_events`"
+              - label: Partition parent
+                value: "`audit.partitioned_events`"
+              - label: Partition bound
+                value: "`FOR VALUES FROM ('2026-01-01') TO ('2027-01-01')`"
+            notices: []
+            title: PostgreSQL
+          columns:
+            - data_type: "`bigint`"
+              default: "-"
+              name: "`id`"
+              notes: ""
+              nullable: "no"
+            - data_type: "`date`"
+              default: "-"
+              name: "`occurred_on`"
+              notes: ""
+              nullable: "no"
+          comment: ~
+          constraints: []
+          file_name: audit.partitioned_events_2026.md
+          indexes: []
+          qualified_name: "`audit.partitioned_events_2026`"
+      triggers:
+        - comment: ~
+          definition: "```sql\nCREATE TRIGGER account_emails_write INSTEAD OF INSERT OR DELETE OR UPDATE ON audit.account_emails FOR EACH ROW EXECUTE FUNCTION audit.capture_row_change('view')\n```"
+          event: INSTEAD OF INSERT OR UPDATE OR DELETE
+          facts:
+            - label: Orientation
+              value: "`row`"
+            - label: Function
+              value: "`audit.capture_row_change()`"
+            - label: Enabled
+              value: "`origin`"
+            - label: Arguments
+              value: "`view`"
+          file_name: audit.account_emails%2Eaccount_emails_write.md
+          qualified_name: "`audit.account_emails.account_emails_write`"
+          target: "`audit.account_emails`"
+          when_expression: ~
+        - comment: ~
+          definition: "```sql\nCREATE CONSTRAINT TRIGGER accounts_balance_constraint AFTER UPDATE OF balance ON audit.accounts FROM audit.account_limits DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (new.balance < 0) EXECUTE FUNCTION audit.capture_row_change('balance')\n```"
+          event: AFTER UPDATE OF balance
+          facts:
+            - label: Orientation
+              value: "`row`"
+            - label: Function
+              value: "`audit.capture_row_change()`"
+            - label: Enabled
+              value: "`origin`"
+            - label: Arguments
+              value: "`balance`"
+            - label: Constraint trigger
+              value: "deferrable initially deferred; from `audit.account_limits`"
+          file_name: audit.accounts%2Eaccounts_balance_constraint.md
+          qualified_name: "`audit.accounts.accounts_balance_constraint`"
+          target: "`audit.accounts`"
+          when_expression: "`new.balance < 0`"
+        - comment: ~
+          definition: "```sql\nCREATE TRIGGER accounts_transition AFTER UPDATE ON audit.accounts REFERENCING OLD TABLE AS previous_rows NEW TABLE AS current_rows FOR EACH STATEMENT EXECUTE FUNCTION audit.capture_statement_change()\n```"
+          event: AFTER UPDATE
+          facts:
+            - label: Orientation
+              value: "`statement`"
+            - label: Function
+              value: "`audit.capture_statement_change()`"
+            - label: Enabled
+              value: "`disabled`"
+            - label: Old transition table
+              value: "`previous_rows`"
+            - label: New transition table
+              value: "`current_rows`"
+          file_name: audit.accounts%2Eaccounts_transition.md
+          qualified_name: "`audit.accounts.accounts_transition`"
+          target: "`audit.accounts`"
+          when_expression: ~
+        - comment: ~
+          definition: "```sql\nCREATE TRIGGER accounts_truncate AFTER TRUNCATE ON audit.accounts FOR EACH STATEMENT EXECUTE FUNCTION audit.capture_statement_change()\n```"
+          event: AFTER TRUNCATE
+          facts:
+            - label: Orientation
+              value: "`statement`"
+            - label: Function
+              value: "`audit.capture_statement_change()`"
+            - label: Enabled
+              value: "`replica`"
+          file_name: audit.accounts%2Eaccounts_truncate.md
+          qualified_name: "`audit.accounts.accounts_truncate`"
+          target: "`audit.accounts`"
+          when_expression: ~
+        - comment: Captures relevant account row changes
+          definition: "```sql\nCREATE TRIGGER zz_accounts_change BEFORE INSERT OR DELETE OR UPDATE OF email, balance ON audit.accounts FOR EACH ROW WHEN (pg_trigger_depth() = 0) EXECUTE FUNCTION audit.capture_row_change('history', 'full')\n```"
+          event: "BEFORE INSERT OR UPDATE OF email, balance OR DELETE"
+          facts:
+            - label: Orientation
+              value: "`row`"
+            - label: Function
+              value: "`audit.capture_row_change()`"
+            - label: Enabled
+              value: "`always`"
+            - label: Arguments
+              value: "`history, full`"
+          file_name: audit.accounts%2Ezz_accounts_change.md
+          qualified_name: "`audit.accounts.zz_accounts_change`"
+          target: "`audit.accounts`"
+          when_expression: "`pg_trigger_depth() = 0`"
+        - comment: ~
+          definition: "```sql\nCREATE TRIGGER partitioned_events_change BEFORE INSERT OR UPDATE ON audit.partitioned_events FOR EACH ROW EXECUTE FUNCTION audit.capture_row_change('partition')\n```"
+          event: BEFORE INSERT OR UPDATE
+          facts:
+            - label: Orientation
+              value: "`row`"
+            - label: Function
+              value: "`audit.capture_row_change()`"
+            - label: Enabled
+              value: "`origin`"
+            - label: Arguments
+              value: "`partition`"
+          file_name: audit.partitioned_events%2Epartitioned_events_change.md
+          qualified_name: "`audit.partitioned_events.partitioned_events_change`"
+          target: "`audit.partitioned_events`"
+          when_expression: ~
+        - comment: ~
+          definition: "```sql\nCREATE TRIGGER partitioned_events_change BEFORE INSERT OR UPDATE ON audit.partitioned_events_2026 FOR EACH ROW EXECUTE FUNCTION audit.capture_row_change('partition')\n```"
+          event: BEFORE INSERT OR UPDATE
+          facts:
+            - label: Orientation
+              value: "`row`"
+            - label: Function
+              value: "`audit.capture_row_change()`"
+            - label: Enabled
+              value: "`origin`"
+            - label: Arguments
+              value: "`partition`"
+            - label: Parent trigger
+              value: "`audit.partitioned_events.partitioned_events_change`"
+          file_name: audit.partitioned_events_2026%2Epartitioned_events_change.md
+          qualified_name: "`audit.partitioned_events_2026.partitioned_events_change`"
+          target: "`audit.partitioned_events_2026`"
+          when_expression: ~
+      views:
+        - columns:
+            - data_type: "`bigint`"
+              default: "-"
+              name: "`id`"
+              notes: ""
+              nullable: "yes"
+            - data_type: "`text`"
+              default: "-"
+              name: "`email`"
+              notes: ""
+              nullable: "yes"
+          comment: Writable account email projection
+          definition: "```sql\n SELECT id,\n    email\n   FROM audit.accounts;\n```"
+          facts:
+            - label: Kind
+              value: "`view`"
+          file_name: audit.account_emails.md
+          qualified_name: "`audit.account_emails`"

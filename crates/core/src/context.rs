@@ -103,12 +103,6 @@ impl<C> SourceSnapshot<C> {
         &self.catalog
     }
 
-    /// Returns the backend-owned normalized catalog mutably.
-    #[must_use]
-    pub fn catalog_mut(&mut self) -> &mut C {
-        &mut self.catalog
-    }
-
     /// Splits the envelope into identity, display name, and catalog.
     #[must_use]
     pub fn into_parts(self) -> (SourceId, Option<String>, C) {

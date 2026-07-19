@@ -142,12 +142,75 @@ catalog:
       row_level_security: false
       force_row_level_security: false
       policies: []
+    - namespace: audit
+      name: partitioned_events
+      comment: ~
+      columns:
+        - name: id
+          data_type: bigint
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+        - name: occurred_on
+          data_type: date
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+      constraints: []
+      indexes: []
+      kind: partitioned_table
+      tablespace: ~
+      inherits: []
+      partition_key: RANGE (occurred_on)
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+    - namespace: audit
+      name: partitioned_events_2026
+      comment: ~
+      columns:
+        - name: id
+          data_type: bigint
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+        - name: occurred_on
+          data_type: date
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+      constraints: []
+      indexes: []
+      kind: partition
+      tablespace: ~
+      inherits:
+        - audit.partitioned_events
+      partition_key: ~
+      partition_parent: audit.partitioned_events
+      partition_bound: "FOR VALUES FROM ('2026-01-01') TO ('2027-01-01')"
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
   views:
     - namespace: audit
       name: account_emails
       definition: " SELECT id,\n    email\n   FROM audit.accounts;"
       materialized: false
-      comment: ~
+      comment: Writable account email projection
       columns:
         - name: id
           data_type: bigint
@@ -274,6 +337,48 @@ catalog:
       old_transition_table: ~
       new_transition_table: ~
       parent_trigger: ~
+    - namespace: audit
+      name: partitioned_events_change
+      target_namespace: audit
+      target: partitioned_events
+      timing: before
+      events:
+        - event: insert
+        - event: update
+          columns: []
+      orientation: row
+      comment: ~
+      when_expression: ~
+      definition: "CREATE TRIGGER partitioned_events_change BEFORE INSERT OR UPDATE ON audit.partitioned_events FOR EACH ROW EXECUTE FUNCTION audit.capture_row_change('partition')"
+      function: audit.capture_row_change()
+      arguments:
+        - partition
+      enabled: origin
+      constraint: ~
+      old_transition_table: ~
+      new_transition_table: ~
+      parent_trigger: ~
+    - namespace: audit
+      name: partitioned_events_change
+      target_namespace: audit
+      target: partitioned_events_2026
+      timing: before
+      events:
+        - event: insert
+        - event: update
+          columns: []
+      orientation: row
+      comment: ~
+      when_expression: ~
+      definition: "CREATE TRIGGER partitioned_events_change BEFORE INSERT OR UPDATE ON audit.partitioned_events_2026 FOR EACH ROW EXECUTE FUNCTION audit.capture_row_change('partition')"
+      function: audit.capture_row_change()
+      arguments:
+        - partition
+      enabled: origin
+      constraint: ~
+      old_transition_table: ~
+      new_transition_table: ~
+      parent_trigger: audit.partitioned_events.partitioned_events_change
   functions:
     - namespace: audit
       name: capture_row_change
