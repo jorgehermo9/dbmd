@@ -33,21 +33,26 @@ modules without exposing their internal steps to callers.
 
 ```text
 crates/
-  core/       source identity envelopes and aggregate invariants
-  backends/   compiled backend composition and vertical backend modules
-    src/sqlite/    catalog, introspection, render mapping, templates
-    src/postgres/  catalog, introspection, render mapping, templates
-  render/     presentation types, common templates, and artifact assembly
-  app/        config resolution, operations, verification, and safe output
-  cli/        argument parsing and report/error presentation
+  core/              source identity envelopes and aggregate invariants
+  backends/
+    composition/     closed built-in backend registry and dispatch
+    relational/      equivalent relational leaf and presentation values
+    sqlite/          SQLite vertical backend implementation
+    postgres/        PostgreSQL vertical backend implementation
+  render/            presentation engine, common templates, and artifact assembly
+  app/               config resolution, operations, verification, and safe output
+  cli/               argument parsing and report/error presentation
 ```
 
 The dependency direction is:
 
 ```text
-cli → app → backends → core
-          │      └────→ render
-          └───────────→ render
+cli → app
+app → backends/composition, core, render
+backends/composition → backend-sqlite, backend-postgres, core, render
+backend-sqlite → core, relational, render
+backend-postgres → core, relational, render
+relational → render
 ```
 
 `render` does not depend on `core` or backend catalog types. `core` has no
@@ -55,30 +60,30 @@ database, configuration, filesystem, CLI, or template dependencies.
 
 ## Backend composition
 
-`dbmd-backends` is both the registry of compiled-in database families and the
-owner of shared relational leaf values. Its root contains only closed dispatch
-types and functions. Concrete semantics stay in submodules:
+`dbmd-backends` is the registry of compiled-in database families. Its crate
+contains only closed dispatch types and functions. Concrete semantics stay in
+sibling backend crates, while equivalent relational support stays separate:
 
 ```text
-backends/src/
-  lib.rs             Source, Catalog, Backend, dispatch
-  relational.rs      equivalent relational leaf values
+backends/
+  composition/       SourceConfig, Source, Catalog, Backend, dispatch
+  relational/        equivalent relational leaf and presentation values
   sqlite/
-    catalog.rs
-    introspect.rs
-    render.rs
-    templates/
+    src/catalog.rs
+    src/introspect.rs
+    src/render.rs
+    src/templates/
     README.md
   postgres/
-    catalog.rs
-    introspect.rs
-    render.rs
-    templates/
+    src/catalog.rs
+    src/introspect.rs
+    src/render.rs
+    src/templates/
     README.md
 ```
 
-Adding a compiled-in backend adds one sibling module and wires it into the
-closed root. It does not add vendor variants to `dbmd-core` or imports to
+Adding a compiled-in backend adds one sibling crate and wires it into the closed
+composition crate. It does not add vendor variants to `dbmd-core` or imports to
 `dbmd-render`. A public driver trait and runtime plugin ABI are intentionally
 absent until a concrete runtime-extension consumer exists.
 
@@ -112,12 +117,18 @@ These types preserve stable identity and source order and reject empty or
 duplicate aggregates. The generic catalog parameter prevents core from
 registering every database family.
 
-### Backends
+### Backend crates
 
 Each backend owns source connection inputs, catalog queries, normalization,
 catalog types, render mapping, backend template fragments, fixture tests, and a
-coverage matrix beside the code. The root converts concrete snapshots into a
-closed composition catalog for application use.
+coverage matrix beside the code. `dbmd-relational` owns only leaf vocabulary and
+presentation helpers whose meaning is equivalent across multiple backends.
+
+### Backend composition
+
+`dbmd-backends` converts concrete snapshots into a closed composition catalog
+for application use. It owns the compiled backend list and heterogeneous
+dispatch, but no database driver, catalog query, or backend template body.
 
 ### Render
 
@@ -140,6 +151,6 @@ code nor application orchestration reaches into concrete catalog fields.
 - [Rendering](rendering.md)
 - [Configuration and CLI](config-and-cli.md)
 - [Testing](testing.md)
-- [SQLite backend coverage](../../crates/backends/src/sqlite/README.md)
-- [PostgreSQL backend coverage](../../crates/backends/src/postgres/README.md)
+- [SQLite backend coverage](../../crates/backends/sqlite/README.md)
+- [PostgreSQL backend coverage](../../crates/backends/postgres/README.md)
 - [ADR-0005](../adr/0005-backend-owned-catalogs-and-templates.md)

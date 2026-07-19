@@ -1,9 +1,12 @@
 [workspace]
 members = [
     "crates/app",
+    "crates/backends/composition",
+    "crates/backends/postgres",
+    "crates/backends/relational",
+    "crates/backends/sqlite",
     "crates/cli",
     "crates/core",
-    "crates/backends",
     "crates/render",
     "crates/test-support",
 ]

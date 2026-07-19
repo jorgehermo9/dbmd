@@ -1,5 +1,5 @@
 [package]
-name = "dbmd-app"
+name = "dbmd-backend-postgres"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,19 +10,16 @@ readme = "README.md"
 postgres-tests = ["dep:dbmd-test-support"]
 
 [dependencies]
-dbmd-core = { path = "../core" }
-dbmd-backends = { path = "../backends/composition" }
-dbmd-render = { path = "../render" }
-dbmd-test-support = { path = "../test-support", optional = true }
+dbmd-core = { path = "../../core" }
+dbmd-relational = { path = "../relational" }
+dbmd-render = { path = "../../render" }
+dbmd-test-support = { path = "../../test-support", optional = true }
+postgres.workspace = true
 serde.workspace = true
-similar.workspace = true
-tempfile.workspace = true
 thiserror.workspace = true
-toml.workspace = true
 
 [dev-dependencies]
 insta.workspace = true
-rusqlite.workspace = true
 
 [[test]]
 name = "postgres"

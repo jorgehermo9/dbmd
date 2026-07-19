@@ -1,0 +1,15 @@
+[package]
+name = "dbmd-backends"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+dbmd-backend-postgres = { path = "../postgres" }
+dbmd-backend-sqlite = { path = "../sqlite" }
+dbmd-core = { path = "../../core" }
+dbmd-render = { path = "../../render" }
+serde.workspace = true
+thiserror.workspace = true

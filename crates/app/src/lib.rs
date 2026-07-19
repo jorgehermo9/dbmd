@@ -375,12 +375,11 @@ fn generate(
                 ));
             }
             config::RenderPlan {
-                sources: vec![dbmd_backends::sqlite::SqliteSource::new(
+                sources: vec![backends::Source::sqlite(
                     SourceId::from_str("local")
                         .expect("the built-in one-off source ID is always valid"),
                     path,
-                )
-                .into()],
+                )],
                 project_root: None,
                 repository_root: None,
                 output_path: overrides.output_path,

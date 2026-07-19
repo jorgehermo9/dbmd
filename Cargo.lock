@@ -518,20 +518,45 @@ dependencies = [
 ]
 
 [[package]]
-name = "dbmd-backends"
+name = "dbmd-backend-postgres"
+version = "0.1.0"
+dependencies = [
+ "dbmd-core",
+ "dbmd-relational",
+ "dbmd-render",
+ "dbmd-test-support",
+ "insta",
+ "postgres",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "dbmd-backend-sqlite"
 version = "0.1.0"
 dependencies = [
  "bumpalo",
  "dbmd-core",
+ "dbmd-relational",
  "dbmd-render",
- "dbmd-test-support",
  "fallible-iterator 0.3.0",
  "insta",
- "postgres",
  "rusqlite",
  "serde",
  "sqlite3-parser",
  "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "dbmd-backends"
+version = "0.1.0"
+dependencies = [
+ "dbmd-backend-postgres",
+ "dbmd-backend-sqlite",
+ "dbmd-core",
+ "dbmd-render",
+ "serde",
  "thiserror",
 ]
 
@@ -541,6 +566,14 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "dbmd-relational"
+version = "0.1.0"
+dependencies = [
+ "dbmd-render",
+ "serde",
 ]
 
 [[package]]

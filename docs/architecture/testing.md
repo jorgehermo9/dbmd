@@ -114,10 +114,13 @@ Use Cargo integration-test directories within the owning crate rather than a wor
 
 ```text
 crates/core/tests/
-crates/backends/tests/
-  fixtures/sqlite/<case>/schema.sql
-  fixtures/postgres/<case>/schema.sql
+crates/backends/sqlite/tests/
+  fixtures/<case>/schema.sql
   snapshots/
+crates/backends/postgres/tests/
+  fixtures/<case>/schema.sql
+  snapshots/
+crates/backends/composition/tests/
 crates/render/tests/
   snapshots/
 crates/app/tests/
@@ -171,11 +174,11 @@ logical databases, forcibly drops each database through an RAII guard, and then
 drops the container:
 
 ```sh
-cargo test -p dbmd-backends --features postgres-tests --test postgres
+cargo test -p dbmd-backend-postgres --features postgres-tests --test postgres
 cargo test -p dbmd-app --features postgres-tests --test postgres
 ```
 
 The shared lifecycle implementation lives in `crates/test-support`; fixture SQL,
 assertions, and snapshots remain in the crate whose public seam they test.
 Catalog coverage is documented beside the adapter in
-`crates/backends/src/postgres/README.md`.
+`crates/backends/postgres/README.md`.

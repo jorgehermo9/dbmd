@@ -102,8 +102,8 @@ not derived by custom templates.
 
 Backend payload references:
 
-- [SQLite template context](../../../crates/backends/src/sqlite/README.md#template-context)
-- [PostgreSQL template context](../../../crates/backends/src/postgres/README.md#template-context)
+- [SQLite template context](../../../crates/backends/sqlite/README.md#template-context)
+- [PostgreSQL template context](../../../crates/backends/postgres/README.md#template-context)
 
 All catalog-derived strings in these payloads are already Markdown-ready.
 Collections retain deterministic catalog order. Optional values are either a

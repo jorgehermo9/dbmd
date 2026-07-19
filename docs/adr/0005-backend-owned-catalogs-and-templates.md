@@ -22,7 +22,7 @@ backends. Runtime third-party driver loading is not a current product goal.
 `dbmd-core` owns only backend-neutral identity envelopes and aggregate
 invariants: `SourceId`, generic `SourceSnapshot<C>`, and
 `DatabaseContext<C>`. Concrete normalized catalogs belong to vertical backend
-modules under `dbmd-backends::{sqlite, postgres}`. Each backend module owns its
+crates under `crates/backends/{sqlite, postgres}`. Each backend crate owns its
 source configuration type, catalog types, introspection, render-context mapping,
 embedded backend templates, coverage documentation, and fixture tests.
 
@@ -49,8 +49,8 @@ considered only when a real substitutability consumer exists.
 - Core and render do not change when a backend gains a new catalog feature.
 - The composition root intentionally changes when a compiled-in backend is
   added; this is explicit compile-time wiring rather than accidental coupling.
-- Some relational leaf value types may be shared inside `dbmd-backends` when
-  their semantics are genuinely equivalent.
+- Relational leaf values and presentation support may live in the sibling
+  `dbmd-relational` crate only when their semantics are genuinely equivalent.
 - Backend-specific template files are part of a complete custom profile and are
   validated before connecting to selected sources.
 - Cross-backend policy and output features operate on explicit presentation or

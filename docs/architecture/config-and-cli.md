@@ -105,9 +105,9 @@ Render and verify fail fast enough to avoid partial work. Doctor may continue in
 
 ## Introspection dispatch
 
-SQLite and PostgreSQL expose concrete vertical modules in `dbmd-backends`.
-Their composition root provides a closed source enum and dispatch function,
-without a driver trait:
+SQLite and PostgreSQL expose concrete vertical crates under `crates/backends/`.
+The `dbmd-backends` composition crate provides a closed source enum and dispatch
+function, without a driver trait:
 
 ```rust
 pub enum Source { Sqlite(SqliteSource), Postgres(PostgresSource) }

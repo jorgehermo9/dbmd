@@ -38,10 +38,13 @@ transition tables, function arguments, constraint metadata, parentage, and
 enablement. Neither shape is forced to pretend that the other database has the
 same semantics.
 
-Shared values under `backends::relational` are deliberately small and require
+Shared values in `dbmd-relational` are deliberately small and require
 equivalent meaning across represented backends. Current examples include
-namespaces, constraint categories, foreign-key actions and references, and
-ordered index terms. Shared leaf types do not imply a shared aggregate model.
+namespaces, foreign-key actions and references, and ascending/descending index
+ordering. Constraint categories and complete index-term shapes remain
+backend-owned because PostgreSQL exclusion/operator-class/null-placement facts
+and SQLite row identifiers are not shared semantics. Shared leaf types do not
+imply a shared aggregate model.
 
 ## Composition catalog
 
@@ -88,8 +91,8 @@ Drivers never expose unspecified catalog row order as product behavior.
 
 The durable implementation coverage matrices live beside the owning backend:
 
-- [SQLite](../../crates/backends/src/sqlite/README.md)
-- [PostgreSQL](../../crates/backends/src/postgres/README.md)
+- [SQLite](../../crates/backends/sqlite/README.md)
+- [PostgreSQL](../../crates/backends/postgres/README.md)
 
 Product documentation states user-visible contracts; these module documents
 state which backend schema facts are implemented and fixture-proven.

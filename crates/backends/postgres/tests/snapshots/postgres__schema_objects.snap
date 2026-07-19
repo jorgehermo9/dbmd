@@ -1,0 +1,155 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: snapshot
+---
+id: catalog
+display_name: ~
+catalog:
+  namespaces:
+    - name: catalog
+      comment: ~
+    - name: empty_space
+      comment: Reserved for future objects
+    - name: public
+      comment: standard public schema
+  enums:
+    - namespace: catalog
+      name: account_state
+      comment: Lifecycle of an account
+      values:
+        - invited
+        - active
+        - suspended
+  tables:
+    - namespace: catalog
+      name: accounts
+      comment: ~
+      columns:
+        - name: id
+          data_type: bigint
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: by_default
+          generated: ~
+        - name: email
+          data_type: text
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+        - name: state
+          data_type: catalog.account_state
+          nullable: false
+          default: "'invited'::catalog.account_state"
+          comment: ~
+          enum_values:
+            - invited
+            - active
+            - suspended
+          identity: ~
+          generated: ~
+      constraints:
+        - name: accounts_pkey
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          definition: PRIMARY KEY (id)
+          deferrable: false
+          initially_deferred: false
+          validated: true
+          locally_defined: true
+          no_inherit: true
+      indexes:
+        - name: accounts_pkey
+          unique: true
+          terms:
+            - target:
+                column: id
+              collation: ~
+              operator_class: pg_catalog.int8_ops
+              order: ascending
+              nulls_order: last
+          predicate: ~
+          definition: CREATE UNIQUE INDEX accounts_pkey ON catalog.accounts USING btree (id)
+          method: btree
+          included_columns: []
+          nulls_not_distinct: false
+          valid: true
+          ready: true
+          clustered: false
+          replica_identity: false
+      kind: table
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+  views:
+    - namespace: catalog
+      name: account_counts
+      definition: " SELECT state,\n    count(*) AS account_count\n   FROM catalog.accounts\n  GROUP BY state;"
+      materialized: true
+      comment: ~
+      columns:
+        - name: state
+          data_type: catalog.account_state
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values:
+            - invited
+            - active
+            - suspended
+          identity: ~
+          generated: ~
+        - name: account_count
+          data_type: bigint
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+    - namespace: catalog
+      name: active_accounts
+      definition: " SELECT id,\n    email\n   FROM catalog.accounts\n  WHERE state = 'active'::catalog.account_state;"
+      materialized: false
+      comment: Accounts allowed to sign in
+      columns:
+        - name: id
+          data_type: bigint
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+        - name: email
+          data_type: text
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+  triggers: []
+  functions:
+    - namespace: catalog
+      name: normalize_email
+      signature: (value text)
+      definition: "CREATE OR REPLACE FUNCTION catalog.normalize_email(value text)\n RETURNS text\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nRETURN lower(TRIM(BOTH FROM value))\n"
+      comment: Normalizes an email address
+      return_type: text
+      language: sql
+      volatility: immutable
+      parallel: safe
+      security_definer: false

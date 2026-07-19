@@ -27,7 +27,7 @@ backend Catalog
 Common templates that contain no database-family assumptions live in
 `dbmd-render`, including artifact roots and common object layouts. Templates
 whose structure or content depends on a backend live beside that backend under
-`backends/src/<backend>/templates/` and use namespaced internal template names.
+`backends/<backend>/src/templates/` and use namespaced internal template names.
 
 The compiled backend composition root supplies the manifests required by the
 selected sources. This lets template completeness be validated from the

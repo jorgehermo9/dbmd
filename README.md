@@ -88,8 +88,8 @@ accepts no output-shaping overrides.
 
 The canonical domain glossary lives in [CONTEXT.md](CONTEXT.md). Backend schema
 coverage and known gaps live beside each adapter:
-[SQLite](crates/backends/src/sqlite/README.md) and
-[PostgreSQL](crates/backends/src/postgres/README.md).
+[SQLite](crates/backends/sqlite/README.md) and
+[PostgreSQL](crates/backends/postgres/README.md).
 
 ## Development
 
@@ -102,7 +102,7 @@ cargo test --workspace --all-targets
 PostgreSQL container suites:
 
 ```sh
-cargo test -p dbmd-backends --features postgres-tests --test postgres
+cargo test -p dbmd-backend-postgres --features postgres-tests --test postgres
 cargo test -p dbmd-app --features postgres-tests --test postgres
 ```
 
