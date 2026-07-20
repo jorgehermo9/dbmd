@@ -21,6 +21,13 @@ scratchpad when a planning session needs files. Remove that directory when the
 plan is implemented, abandoned, or otherwise no longer needed. Persistent docs
 describe durable product contracts, architecture, and accepted decisions only.
 
+## Development workflows
+
+Use the root [`justfile`](justfile) for formatting, linting, tests, and snapshot
+updates. Run `just` to list recipes; prefer `just check [backend]`,
+`just test [backend]`, and `just snapshots [backend]` over manual Cargo or
+`INSTA_UPDATE` commands. The optional backend selector defaults to `all`.
+
 ## Agent skills
 
 ### Rust coding
