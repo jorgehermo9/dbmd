@@ -32,19 +32,43 @@ Supported backend tags and committed connection fields are:
 | Backend | Required fields | Optional fields |
 | --- | --- | --- |
 | `clickhouse` | `url` | `database`, `username`, `password`, `display_name` |
-| `duckdb` | `path` | `display_name`, named `attachments` with `path` and `read_only` |
-| `mariadb` | `url` | `schema`, `display_name` |
-| `mysql` | `url` | `schema`, `display_name` |
-| `postgres` | `url` | `display_name` |
+| `duckdb` | `path` | `display_name`, `secret_directory`, `extension_directory`, named `attachments` with `path` and `read_only` |
+| `mariadb` | `url` | `schema`, `display_name`, `include_global_objects` |
+| `mysql` | `url` | `schema`, `display_name`, `include_global_objects` |
+| `postgres` | `url` | `display_name`, `include_cluster_objects` |
 | `sqlite` | `path` | `display_name`, named attachments with `path` |
 
 MySQL and MariaDB are distinct backends even though their connection URL
 syntax overlaps. Their catalogs and rendered facts preserve their different
 schema features.
 
+MariaDB's `include_global_objects` defaults to `false`. When enabled, dbmd also
+catalogs server definitions, accounts, roles, memberships, and privileges. The
+connection must be allowed to read the corresponding `mysql` system catalogs.
+Credential verifiers, authentication strings, raw server-option JSON, and
+`SHOW CREATE SERVER` are never acquired.
+
+MySQL's `include_global_objects` also defaults to `false`. When enabled, dbmd
+catalogs credential-safe server definitions, spatial reference systems,
+tablespaces, resource groups, loadable functions, plugins, components,
+accounts, authentication-factor metadata, role graphs, and privileges.
+Passwords, authentication strings, raw account JSON, and tablespace file
+locations are excluded at acquisition time.
+
+DuckDB resolves `path`, `secret_directory`, `extension_directory`, and attached
+database paths relative to the configuration file after environment expansion.
+`secret_directory` makes persistent secret identities visible to introspection;
+dbmd never acquires `secret_string` or other credential fields. Directory paths
+are connection details and never appear in catalog or rendered output.
+
 ## Identity
 
 The table key is the stable source ID. `display_name` is optional presentation text and does not affect CLI selection, ordering references, output paths, or verification identity.
+
+For PostgreSQL, `include_cluster_objects` defaults to `false`. When enabled it
+includes cluster-wide databases, user-created roles and memberships, and
+tablespaces. Password material and subscription connection strings are never
+included; tablespace filesystem locations are redacted.
 
 Source IDs accept ASCII letters, numbers, `_`, and `-`. dbmd rejects identifiers that would require slugification or could escape an output directory.
 

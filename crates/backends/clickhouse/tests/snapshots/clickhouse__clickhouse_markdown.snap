@@ -8,7 +8,7 @@ expression: markdown
 
 | Name | Comment |
 |---|---|
-| `analytics` | Engine `Atomic`; Analytical application data |
+| `analytics` | Engine `Atomic`; UUID `10000000-0000-0000-0000-000000000001`; Analytical application data |
 
 
 ## Tables
@@ -19,16 +19,71 @@ expression: markdown
 
 | Column | Type | Nullable | Default | Notes |
 |---|---|---|---|---|
-| `country_id` | `UInt64` | no | - |  |
+| `country_id` | `UInt64` | no | - | precision 64 base 2; scale 0 |
+| `parent_id` | `UInt64` | no | - | precision 64 base 2; scale 0 |
 | `country_name` | `String` | no | - |  |
+| `normalized_name` | `String` | no | - |  |
 
 
 #### ClickHouse
 
 **Kind:** `dictionary`
 
+**UUID:** `20000000-0000-0000-0000-000000000006`
+
+**Loads after:** `analytics.country_source`
+
+**Dictionary layout:** `HASHED`
+
+**Dictionary keys:** `country_id UInt64 IS_OBJECT_ID`
+
+**Dictionary attributes:** `parent_id UInt64 DEFAULT 0 HIERARCHICAL, country_name String DEFAULT 'unknown' INJECTIVE, normalized_name String EXPRESSION lowerUTF8(country_name)`
+
+**Dictionary source:** ``
+
+**Dictionary lifetime:** 30..60 seconds
+
+**Dictionary setting:** `max_threads_for_updates` = `4`
+
 ```sql
-CREATE DICTIONARY analytics.country_names (`country_id` UInt64, `country_name` String) PRIMARY KEY country_id SOURCE(CLICKHOUSE(HOST 'localhost' PORT 9000 USER 'default' DB 'analytics' TABLE 'country_source')) LIFETIME(MIN 0 MAX 0) LAYOUT(HASHED())
+CREATE DICTIONARY analytics.country_names (`country_id` UInt64 IS_OBJECT_ID, `parent_id` UInt64 DEFAULT 0 HIERARCHICAL, `country_name` String DEFAULT 'unknown' INJECTIVE, `normalized_name` String EXPRESSION lowerUTF8(country_name)) PRIMARY KEY country_id SOURCE(CLICKHOUSE(HOST 'localhost' PORT 9000 USER 'default' PASSWORD '[HIDDEN]' DB 'analytics' TABLE 'country_source')) LIFETIME(MIN 30 MAX 60) LAYOUT(HASHED()) SETTINGS(max_threads_for_updates = 4)
+```
+
+
+### `analytics.country_rates`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `country_id` | `UInt64` | no | - | precision 64 base 2; scale 0 |
+| `valid_from` | `Date` | no | - | datetime precision 0 |
+| `valid_to` | `Date` | no | - | datetime precision 0 |
+| `rate` | `Float64` | no | - |  |
+
+
+#### ClickHouse
+
+**Kind:** `dictionary`
+
+**UUID:** `20000000-0000-0000-0000-000000000016`
+
+**Loads after:** `analytics.country_source`
+
+**Dictionary layout:** `RANGE_HASHED`
+
+**Dictionary keys:** `country_id UInt64`
+
+**Dictionary attributes:** `rate Float64 DEFAULT 0`
+
+**Dictionary source:** ``
+
+**Dictionary lifetime:** 0..0 seconds
+
+**Dictionary range:** MIN `valid_from` MAX `valid_to`
+
+```sql
+CREATE DICTIONARY analytics.country_rates (`country_id` UInt64, `valid_from` Date, `valid_to` Date, `rate` Float64 DEFAULT 0) PRIMARY KEY country_id SOURCE(CLICKHOUSE(HOST 'localhost' PORT 9000 USER 'default' PASSWORD '[HIDDEN]' DB 'analytics' TABLE 'country_source')) LIFETIME(MIN 0 MAX 0) LAYOUT(RANGE_HASHED()) RANGE(MIN valid_from MAX valid_to)
 ```
 
 
@@ -38,13 +93,19 @@ CREATE DICTIONARY analytics.country_names (`country_id` UInt64, `country_name` S
 
 | Column | Type | Nullable | Default | Notes |
 |---|---|---|---|---|
-| `country_id` | `UInt64` | no | - | keys `primary, sorting` |
-| `country_name` | `String` | no | - |  |
+| `country_id` | `UInt64` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; precision 64 base 2; scale 0; keys `primary, sorting` |
+| `parent_id` | `UInt64` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; precision 64 base 2; scale 0 |
+| `country_name` | `String` | no | - | serialization `Default`; statistics `Uniq(auto)` |
+| `valid_from` | `Date` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; datetime precision 0 |
+| `valid_to` | `Date` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; datetime precision 0 |
+| `rate` | `Float64` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)` |
 
 
 #### ClickHouse
 
 **Kind:** `table`
+
+**UUID:** `20000000-0000-0000-0000-000000000005`
 
 **Engine:** `MergeTree ORDER BY country_id SETTINGS index_granularity = 8192`
 
@@ -54,8 +115,14 @@ CREATE DICTIONARY analytics.country_names (`country_id` UInt64, `country_name` S
 
 **Storage policy:** `default`
 
+**Setting:** `index_granularity` = `8192`
+
+**Loads before:** `analytics.country_rates`
+
+**Loads before:** `analytics.country_names`
+
 ```sql
-CREATE TABLE analytics.country_source (`country_id` UInt64, `country_name` String) ENGINE = MergeTree ORDER BY country_id SETTINGS index_granularity = 8192
+CREATE TABLE analytics.country_source (`country_id` UInt64, `parent_id` UInt64, `country_name` String, `valid_from` Date, `valid_to` Date, `rate` Float64) ENGINE = MergeTree ORDER BY country_id SETTINGS index_granularity = 8192
 ```
 
 
@@ -65,13 +132,15 @@ CREATE TABLE analytics.country_source (`country_id` UInt64, `country_name` Strin
 
 | Column | Type | Nullable | Default | Notes |
 |---|---|---|---|---|
-| `event_type` | `LowCardinality(String)` | no | - | keys `primary, sorting` |
+| `event_type` | `LowCardinality(String)` | no | - | statistics `Uniq(auto)`; keys `primary, sorting` |
 | `total` | `AggregateFunction(count)` | no | - |  |
 
 
 #### ClickHouse
 
 **Kind:** `table`
+
+**UUID:** `20000000-0000-0000-0000-000000000002`
 
 **Engine:** `AggregatingMergeTree ORDER BY event_type SETTINGS index_granularity = 8192`
 
@@ -80,6 +149,8 @@ CREATE TABLE analytics.country_source (`country_id` UInt64, `country_name` Strin
 **Sorting key:** `event_type`
 
 **Storage policy:** `default`
+
+**Setting:** `index_granularity` = `8192`
 
 ```sql
 CREATE TABLE analytics.event_counts (`event_type` LowCardinality(String), `total` AggregateFunction(count)) ENGINE = AggregatingMergeTree ORDER BY event_type SETTINGS index_granularity = 8192
@@ -94,35 +165,46 @@ Immutable analytical events
 
 | Column | Type | Nullable | Default | Notes |
 |---|---|---|---|---|
-| `tenant_id` | `UInt32` | no | - | Owning tenant; keys `primary, sorting` |
-| `event_id` | `UUID` | no | - | keys `primary, sorting` |
-| `occurred_at` | `DateTime64(3, 'UTC')` | no | - | codec `CODEC(DoubleDelta, ZSTD(1))`; keys `partition, sorting` |
+| `tenant_id` | `UInt32` | no | - | Owning tenant; serialization `Default`; statistics `minmax(auto)`; precision 32 base 2; scale 0; keys `primary, sorting` |
+| `event_id` | `UUID` | no | - | serialization `Default`; keys `primary, sorting` |
+| `occurred_at` | `DateTime64(3, 'UTC')` | no | - | codec `CODEC(DoubleDelta, ZSTD(1))`; serialization `Default`; statistics `minmax(auto)`; datetime precision 3; keys `partition, sorting` |
 | `event_type` | `LowCardinality(String)` | no | `'unknown'` | `default` expression |
-| `payload` | `String` | no | - | codec `CODEC(ZSTD(3))` |
-| `expires_at` | `DateTime` | no | `toDateTime(occurred_at) + toIntervalDay(30)` | `materialized` expression |
-| `version` | `UInt64` | no | - |  |
-| `deleted` | `UInt8` | no | `0` | `default` expression |
+| `payload` | `String` | no | - | codec `CODEC(ZSTD(3))`; serialization `Default` |
+| `vector` | `QBit(Float32, 8)` | no | - |  |
+| `expires_at` | `DateTime` | no | `toDateTime(occurred_at) + toIntervalDay(30)` | serialization `Default`; statistics `minmax(auto)`; datetime precision 0; `materialized` expression |
+| `version` | `UInt64` | no | - | serialization `Default`; statistics `minmax(auto)`; precision 64 base 2; scale 0 |
+| `deleted` | `UInt8` | no | `0` | serialization `Default`; statistics `minmax(auto)`; precision 8 base 2; scale 0; `default` expression |
 
 
 #### Constraints
 
 | Name | Kind | Columns | Details |
 |---|---|---|---|
-| `valid_deleted` | `CHECK` | - | `deleted IN (0, 1)` |
+| `positive_tenant` | `assumption` | - | `tenant_id > 0` |
+| `valid_deleted` | `check` | - | `deleted IN (0, 1)` |
 
 
 #### Indexes
 
 | Name | Terms | Unique | Origin / details | Predicate |
 |---|---|---|---|---|
-| `payload_tokens` | `lower(payload)` | no | clickhouse `tokenbf_v1(1024, 3, 0)` granularity 4; creation origin unknown | - |
+| `auto_minmax_index_expires_at` | `expires_at` | no | clickhouse `minmax()` granularity 1; implicit | - |
+| `auto_minmax_index_occurred_at` | `occurred_at` | no | clickhouse `minmax()` granularity 1; implicit | - |
+| `payload_text` | `payload` | no | clickhouse `text(tokenizer = 'splitByNonAlpha')` granularity 100000000 | - |
+| `payload_tokens` | `lower(payload)` | no | clickhouse `tokenbf_v1(1024, 3, 0)` granularity 4 | - |
 
 
 #### ClickHouse
 
 **Kind:** `table`
 
-**Engine:** `ReplacingMergeTree(version, deleted) PARTITION BY toYYYYMM(occurred_at) PRIMARY KEY (tenant_id, event_id) ORDER BY (tenant_id, event_id, occurred_at) TTL toDateTime(occurred_at) + toIntervalDay(365) SETTINGS index_granularity = 4096, deduplicate_merge_projection_mode = 'drop'`
+**UUID:** `20000000-0000-0000-0000-000000000001`
+
+**Engine:** `ReplacingMergeTree(version, deleted) PARTITION BY toYYYYMM(occurred_at) PRIMARY KEY (tenant_id, event_id) ORDER BY (tenant_id, event_id, occurred_at) TTL toDateTime(occurred_at) + toIntervalDay(365) SETTINGS index_granularity = 4096, deduplicate_merge_projection_mode = 'drop', auto_statistics_types = 'minmax', add_minmax_index_for_temporal_columns = 1`
+
+**Engine argument:** 1: `version`
+
+**Engine argument:** 2: `deleted`
 
 **Partition key:** `toYYYYMM(occurred_at)`
 
@@ -132,10 +214,298 @@ Immutable analytical events
 
 **Storage policy:** `default`
 
-**Projection:** `by_event_type` `Aggregate` sorted by `event_type`: `SELECT event_type, count() GROUP BY event_type`
+**TTL:** `toDateTime(occurred_at) + toIntervalDay(365)`; `delete`
+
+**Setting:** `add_minmax_index_for_temporal_columns` = `1`
+
+**Setting:** `auto_statistics_types` = `'minmax'`
+
+**Setting:** `deduplicate_merge_projection_mode` = `'drop'`
+
+**Setting:** `index_granularity` = `4096`
+
+**Depends on:** `analytics.event_counts_mv`
+
+**Projection:** `by_event_type` `Aggregate sorted by event_type`: `SELECT event_type, count() GROUP BY event_type`
+
+**Projection:** `by_time` `index occurred_at type basic`: `occurred_at`
 
 ```sql
-CREATE TABLE analytics.events (`tenant_id` UInt32 COMMENT 'Owning tenant', `event_id` UUID, `occurred_at` DateTime64(3, 'UTC') CODEC(DoubleDelta, ZSTD(1)), `event_type` LowCardinality(String) DEFAULT 'unknown', `payload` String CODEC(ZSTD(3)), `expires_at` DateTime MATERIALIZED toDateTime(occurred_at) + toIntervalDay(30), `version` UInt64, `deleted` UInt8 DEFAULT 0, INDEX payload_tokens lower(payload) TYPE tokenbf_v1(1024, 3, 0) GRANULARITY 4, CONSTRAINT valid_deleted CHECK deleted IN (0, 1), PROJECTION by_event_type (SELECT event_type, count() GROUP BY event_type)) ENGINE = ReplacingMergeTree(version, deleted) PARTITION BY toYYYYMM(occurred_at) PRIMARY KEY (tenant_id, event_id) ORDER BY (tenant_id, event_id, occurred_at) TTL toDateTime(occurred_at) + toIntervalDay(365) SETTINGS index_granularity = 4096, deduplicate_merge_projection_mode = 'drop' COMMENT 'Immutable analytical events'
+CREATE TABLE analytics.events (`tenant_id` UInt32 COMMENT 'Owning tenant', `event_id` UUID, `occurred_at` DateTime64(3, 'UTC') CODEC(DoubleDelta, ZSTD(1)), `event_type` LowCardinality(String) DEFAULT 'unknown', `payload` String CODEC(ZSTD(3)), `vector` QBit(Float32, 8), `expires_at` DateTime MATERIALIZED toDateTime(occurred_at) + toIntervalDay(30), `version` UInt64, `deleted` UInt8 DEFAULT 0, INDEX payload_tokens lower(payload) TYPE tokenbf_v1(1024, 3, 0) GRANULARITY 4, INDEX payload_text payload TYPE text(tokenizer = 'splitByNonAlpha') GRANULARITY 100000000, CONSTRAINT valid_deleted CHECK deleted IN (0, 1), CONSTRAINT positive_tenant ASSUME tenant_id > 0, PROJECTION by_event_type (SELECT event_type, count() GROUP BY event_type), PROJECTION by_time INDEX occurred_at TYPE basic) ENGINE = ReplacingMergeTree(version, deleted) PARTITION BY toYYYYMM(occurred_at) PRIMARY KEY (tenant_id, event_id) ORDER BY (tenant_id, event_id, occurred_at) TTL toDateTime(occurred_at) + toIntervalDay(365) SETTINGS index_granularity = 4096, deduplicate_merge_projection_mode = 'drop', auto_statistics_types = 'minmax', add_minmax_index_for_temporal_columns = 1 COMMENT 'Immutable analytical events'
+```
+
+
+### `analytics.modern_storage`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `UInt64` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; precision 64 base 2; scale 0; keys `primary, sorting` |
+| `measurement` | `Float64` | no | - | codec `CODEC(ALP, ZSTD(1))`; serialization `Default`; statistics `Uniq(auto),minmax(auto)` |
+| `attributes` | `Map(String, String)` | no | - |  |
+
+
+#### ClickHouse
+
+**Kind:** `table`
+
+**UUID:** `20000000-0000-0000-0000-000000000014`
+
+**Engine:** `CoalescingMergeTree ORDER BY id SETTINGS map_serialization_version = 'with_buckets', map_serialization_version_for_zero_level_parts = 'basic', map_buckets_strategy = 'linear', map_buckets_coefficient = 0.5, map_buckets_min_avg_size = 0, max_buckets_in_map = 64, index_granularity = 8192`
+
+**Primary key:** `id`
+
+**Sorting key:** `id`
+
+**Storage policy:** `default`
+
+**Setting:** `index_granularity` = `8192`
+
+**Setting:** `map_buckets_coefficient` = `0.5`
+
+**Setting:** `map_buckets_min_avg_size` = `0`
+
+**Setting:** `map_buckets_strategy` = `'linear'`
+
+**Setting:** `map_serialization_version` = `'with_buckets'`
+
+**Setting:** `map_serialization_version_for_zero_level_parts` = `'basic'`
+
+**Setting:** `max_buckets_in_map` = `64`
+
+```sql
+CREATE TABLE analytics.modern_storage (`id` UInt64, `measurement` Float64 CODEC(ALP, ZSTD(1)), `attributes` Map(String, String)) ENGINE = CoalescingMergeTree ORDER BY id SETTINGS map_serialization_version = 'with_buckets', map_serialization_version_for_zero_level_parts = 'basic', map_buckets_strategy = 'linear', map_buckets_coefficient = 0.5, map_buckets_min_avg_size = 0, max_buckets_in_map = 64, index_granularity = 8192
+```
+
+
+### `analytics.refresh_rollups`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `tenant_id` | `UInt32` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; precision 32 base 2; scale 0; keys `primary, sorting` |
+| `total` | `UInt64` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; precision 64 base 2; scale 0 |
+
+
+#### ClickHouse
+
+**Kind:** `table`
+
+**UUID:** `20000000-0000-0000-0000-000000000011`
+
+**Engine:** `MergeTree ORDER BY tenant_id SETTINGS index_granularity = 8192`
+
+**Primary key:** `tenant_id`
+
+**Sorting key:** `tenant_id`
+
+**Storage policy:** `default`
+
+**Setting:** `index_granularity` = `8192`
+
+```sql
+CREATE TABLE analytics.refresh_rollups (`tenant_id` UInt32, `total` UInt64) ENGINE = MergeTree ORDER BY tenant_id SETTINGS index_granularity = 8192
+```
+
+
+### `analytics.refresh_snapshots`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `tenant_id` | `UInt32` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; precision 32 base 2; scale 0; keys `primary, sorting` |
+| `captured_at` | `DateTime` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; datetime precision 0 |
+
+
+#### ClickHouse
+
+**Kind:** `table`
+
+**UUID:** `20000000-0000-0000-0000-000000000010`
+
+**Engine:** `MergeTree ORDER BY tenant_id SETTINGS index_granularity = 8192`
+
+**Primary key:** `tenant_id`
+
+**Sorting key:** `tenant_id`
+
+**Storage policy:** `default`
+
+**Setting:** `index_granularity` = `8192`
+
+```sql
+CREATE TABLE analytics.refresh_snapshots (`tenant_id` UInt32, `captured_at` DateTime) ENGINE = MergeTree ORDER BY tenant_id SETTINGS index_granularity = 8192
+```
+
+
+### `analytics.remote_accounts`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `account_id` | `UInt64` | no | - | precision 64 base 2; scale 0 |
+| `email` | `String` | no | - |  |
+
+
+#### ClickHouse
+
+**Kind:** `table`
+
+**UUID:** `20000000-0000-0000-0000-000000000007`
+
+**Engine:** `MySQL('127.0.0.1:3306', 'remote_app', 'accounts', 'remote_reader', '[HIDDEN]')`
+
+**Engine argument:** 1: `'127.0.0.1:3306'`
+
+**Engine argument:** 2: `'remote_app'`
+
+**Engine argument:** 3: `'accounts'`
+
+**Engine argument:** 4: `'remote_reader'`
+
+**Engine argument:** 5: `'[HIDDEN]'`
+
+```sql
+CREATE TABLE analytics.remote_accounts (`account_id` UInt64, `email` String) ENGINE = MySQL('127.0.0.1:3306', 'remote_app', 'accounts', 'remote_reader', '[HIDDEN]')
+```
+
+
+### `analytics.retention_matrix`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `event_id` | `UInt64` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; precision 64 base 2; scale 0; keys `primary, sorting` |
+| `occurred_at` | `DateTime` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; datetime precision 0 |
+| `expires_at` | `DateTime` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; TTL `expires_at + toIntervalDay(1)`; datetime precision 0 |
+| `deleted` | `UInt8` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; precision 8 base 2; scale 0 |
+| `payload` | `String` | no | - | serialization `Default`; statistics `Uniq(auto)` |
+
+
+#### ClickHouse
+
+**Kind:** `table`
+
+**UUID:** `20000000-0000-0000-0000-000000000008`
+
+**Engine:** `MergeTree ORDER BY event_id TTL occurred_at + toIntervalDay(7) TO DISK 'default', occurred_at + toIntervalDay(10) TO VOLUME 'default', occurred_at + toIntervalDay(14) RECOMPRESS CODEC(ZSTD(9)), occurred_at + toIntervalDay(30) WHERE deleted = 1 SETTINGS index_granularity = 4096`
+
+**Primary key:** `event_id`
+
+**Sorting key:** `event_id`
+
+**Storage policy:** `default`
+
+**TTL:** `occurred_at + toIntervalDay(7)`; `move to disk 'default'`
+
+**TTL:** `occurred_at + toIntervalDay(10)`; `move to volume 'default'`
+
+**TTL:** `occurred_at + toIntervalDay(14)`; `recompress CODEC(ZSTD(9))`
+
+**TTL:** `occurred_at + toIntervalDay(30)`; `delete where deleted = 1`
+
+**Setting:** `index_granularity` = `4096`
+
+```sql
+CREATE TABLE analytics.retention_matrix (`event_id` UInt64, `occurred_at` DateTime, `expires_at` DateTime TTL expires_at + toIntervalDay(1), `deleted` UInt8, `payload` String) ENGINE = MergeTree ORDER BY event_id TTL occurred_at + toIntervalDay(7) TO DISK 'default', occurred_at + toIntervalDay(10) TO VOLUME 'default', occurred_at + toIntervalDay(14) RECOMPRESS CODEC(ZSTD(9)), occurred_at + toIntervalDay(30) WHERE deleted = 1 SETTINGS index_granularity = 4096
+```
+
+
+### `analytics.retention_rollup`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `tenant_id` | `UInt64` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; precision 64 base 2; scale 0; keys `primary, sorting` |
+| `occurred_at` | `DateTime` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; datetime precision 0 |
+| `amount` | `UInt64` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; precision 64 base 2; scale 0 |
+
+
+#### ClickHouse
+
+**Kind:** `table`
+
+**UUID:** `20000000-0000-0000-0000-000000000009`
+
+**Engine:** `MergeTree ORDER BY tenant_id TTL occurred_at + toIntervalDay(30) GROUP BY tenant_id SET amount = sum(amount) SETTINGS index_granularity = 8192`
+
+**Primary key:** `tenant_id`
+
+**Sorting key:** `tenant_id`
+
+**Storage policy:** `default`
+
+**TTL:** `occurred_at + toIntervalDay(30)`; `group by tenant_id set amount = sum(amount)`
+
+**Setting:** `index_granularity` = `8192`
+
+```sql
+CREATE TABLE analytics.retention_rollup (`tenant_id` UInt64, `occurred_at` DateTime, `amount` UInt64) ENGINE = MergeTree ORDER BY tenant_id TTL occurred_at + toIntervalDay(30) GROUP BY tenant_id SET amount = sum(amount) SETTINGS index_granularity = 8192
+```
+
+
+### `analytics.s3_archive`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `payload` | `String` | no | - |  |
+
+
+#### ClickHouse
+
+**Kind:** `table`
+
+**UUID:** `20000000-0000-0000-0000-000000000015`
+
+**Engine:** `S3('s3://dbmd-audit/archive.parquet', 'Parquet', storage_class_name = 'INTELLIGENT_TIERING')`
+
+**Engine argument:** 1: `'s3://dbmd-audit/archive.parquet'`
+
+**Engine argument:** 2: `'Parquet'`
+
+**Engine parameter:** `storage_class_name` = `'INTELLIGENT_TIERING'`
+
+```sql
+CREATE TABLE analytics.s3_archive (`payload` String) ENGINE = S3('s3://dbmd-audit/archive.parquet', 'Parquet', storage_class_name = 'INTELLIGENT_TIERING')
+```
+
+
+### `analytics.window_event_counts`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `total` | `UInt64` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; precision 64 base 2; scale 0 |
+| `window_end` | `DateTime` | no | - | serialization `Default`; statistics `Uniq(auto),minmax(auto)`; datetime precision 0; keys `primary, sorting` |
+
+
+#### ClickHouse
+
+**Kind:** `table`
+
+**UUID:** `20000000-0000-0000-0000-000000000018`
+
+**Engine:** `MergeTree ORDER BY window_end SETTINGS index_granularity = 8192`
+
+**Primary key:** `window_end`
+
+**Sorting key:** `window_end`
+
+**Storage policy:** `default`
+
+**Setting:** `index_granularity` = `8192`
+
+```sql
+CREATE TABLE analytics.window_event_counts (`total` UInt64, `window_end` DateTime) ENGINE = MergeTree ORDER BY window_end SETTINGS index_granularity = 8192
 ```
 
 
@@ -147,6 +517,14 @@ Non-deleted events
 
 **Kind:** `view`
 
+**UUID:** `20000000-0000-0000-0000-000000000004`
+
+**Definer:** `default`
+
+**SQL security:** `invoker`
+
+**AS SELECT:** `SELECT tenant_id, event_id, occurred_at, event_type FROM analytics.events WHERE deleted = 0`
+
 | Column | Type | Nullable |
 |---|---|---|
 | `tenant_id` | `UInt32` | no |
@@ -156,14 +534,18 @@ Non-deleted events
 
 
 ```sql
-CREATE VIEW analytics.active_events (`tenant_id` UInt32, `event_id` UUID, `occurred_at` DateTime64(3, 'UTC'), `event_type` LowCardinality(String)) AS (SELECT tenant_id, event_id, occurred_at, event_type FROM analytics.events WHERE deleted = 0) COMMENT 'Non-deleted events'
+CREATE VIEW analytics.active_events (`tenant_id` UInt32, `event_id` UUID, `occurred_at` DateTime64(3, 'UTC'), `event_type` LowCardinality(String)) DEFINER = default SQL SECURITY INVOKER COMMENT 'Non-deleted events' AS SELECT tenant_id, event_id, occurred_at, event_type FROM analytics.events WHERE deleted = 0
 ```
 
 ### `analytics.event_counts_mv`
 
 **Kind:** `materialized_view`
 
+**UUID:** `20000000-0000-0000-0000-000000000003`
+
 **Target:** `analytics.event_counts`
+
+**AS SELECT:** `SELECT event_type, countState() AS total FROM analytics.events GROUP BY event_type`
 
 | Column | Type | Nullable |
 |---|---|---|
@@ -175,12 +557,276 @@ CREATE VIEW analytics.active_events (`tenant_id` UInt32, `event_id` UUID, `occur
 CREATE MATERIALIZED VIEW analytics.event_counts_mv TO analytics.event_counts (`event_type` LowCardinality(String), `total` AggregateFunction(count)) AS SELECT event_type, countState() AS total FROM analytics.events GROUP BY event_type
 ```
 
+### `analytics.events_by_tenant`
+
+**Kind:** `view`
+
+**UUID:** `20000000-0000-0000-0000-000000000017`
+
+**AS SELECT:** `SELECT tenant_id, event_id, occurred_at, event_type FROM analytics.events WHERE tenant_id = {requested_tenant:UInt32}`
+
+**Parameter:** `requested_tenant` `UInt32`
+
+| Column | Type | Nullable |
+|---|---|---|
+
+
+```sql
+CREATE VIEW analytics.events_by_tenant AS SELECT tenant_id, event_id, occurred_at, event_type FROM analytics.events WHERE tenant_id = {requested_tenant:UInt32}
+```
+
+### `analytics.refresh_base`
+
+**Kind:** `materialized_view`
+
+**UUID:** `20000000-0000-0000-0000-000000000012`
+
+**Target:** `analytics.refresh_snapshots`
+
+**Refresh:** `every 1 HOUR`
+
+**Refresh offset:** `5 MINUTE`
+
+**Refresh randomization:** `1 MINUTE`
+
+**Refresh mode:** `append`
+
+**Refresh setting:** `refresh_retries` = `5`
+
+**Definer:** `default`
+
+**SQL security:** `definer`
+
+**AS SELECT:** `SELECT tenant_id, now() AS captured_at FROM analytics.events`
+
+| Column | Type | Nullable |
+|---|---|---|
+| `tenant_id` | `UInt32` | no |
+| `captured_at` | `DateTime` | no |
+
+
+```sql
+CREATE MATERIALIZED VIEW analytics.refresh_base REFRESH EVERY 1 HOUR OFFSET 5 MINUTE RANDOMIZE FOR 1 MINUTE SETTINGS refresh_retries = 5 APPEND TO analytics.refresh_snapshots (`tenant_id` UInt32, `captured_at` DateTime) DEFINER = default SQL SECURITY DEFINER AS SELECT tenant_id, now() AS captured_at FROM analytics.events
+```
+
+### `analytics.refresh_dependent`
+
+**Kind:** `materialized_view`
+
+**UUID:** `20000000-0000-0000-0000-000000000013`
+
+**Target:** `analytics.refresh_rollups`
+
+**Refresh:** `after 2 HOUR`
+
+**Refresh mode:** `replace`
+
+**Refresh depends on:** `analytics.refresh_base`
+
+**Refresh setting:** `refresh_retries` = `3`
+
+**Definer:** `default`
+
+**SQL security:** `definer`
+
+**AS SELECT:** `SELECT tenant_id, count() AS total FROM analytics.events GROUP BY tenant_id`
+
+| Column | Type | Nullable |
+|---|---|---|
+| `tenant_id` | `UInt32` | no |
+| `total` | `UInt64` | no |
+
+
+```sql
+CREATE MATERIALIZED VIEW analytics.refresh_dependent REFRESH AFTER 2 HOUR DEPENDS ON analytics.refresh_base SETTINGS refresh_retries = 3 TO analytics.refresh_rollups (`tenant_id` UInt32, `total` UInt64) DEFINER = default SQL SECURITY DEFINER AS SELECT tenant_id, count() AS total FROM analytics.events GROUP BY tenant_id
+```
+
+### `analytics.windowed_events`
+
+**Kind:** `window_view`
+
+**UUID:** `20000000-0000-0000-0000-000000000019`
+
+**Target:** `analytics.window_event_counts`
+
+**Window inner engine:** `AggregatingMergeTree ORDER BY tuple()`
+
+**Watermark:** `STRICTLY_ASCENDING`
+
+**AS SELECT:** `SELECT count(event_id) AS total, tumbleEnd(window_id) AS window_end FROM analytics.retention_matrix GROUP BY tumble(occurred_at, toIntervalSecond('5')) AS window_id`
+
+| Column | Type | Nullable |
+|---|---|---|
+| `total` | `UInt64` | no |
+| `window_end` | `DateTime` | no |
+
+
+```sql
+CREATE WINDOW VIEW analytics.windowed_events TO analytics.window_event_counts (`total` UInt64, `window_end` DateTime) INNER ENGINE = AggregatingMergeTree ORDER BY tuple() WATERMARK STRICTLY_ASCENDING AS SELECT count(event_id) AS total, tumbleEnd(window_id) AS window_end FROM analytics.retention_matrix GROUP BY tumble(occurred_at, toIntervalSecond('5')) AS window_id
+```
+
+### `analytics.windowed_events_owned`
+
+**Kind:** `window_view`
+
+**UUID:** `20000000-0000-0000-0000-000000000020`
+
+**Window inner engine:** `AggregatingMergeTree ORDER BY tuple()`
+
+**Window storage engine:** `MergeTree ORDER BY window_end SETTINGS index_granularity = 8192`
+
+**Watermark:** `ASCENDING`
+
+**Allowed lateness:** `toIntervalSecond('2')`
+
+**AS SELECT:** `SELECT count(event_id) AS total, tumbleEnd(window_id) AS window_end FROM analytics.retention_matrix GROUP BY tumble(occurred_at, toIntervalSecond('5')) AS window_id`
+
+| Column | Type | Nullable |
+|---|---|---|
+| `total` | `UInt64` | no |
+| `window_end` | `DateTime` | no |
+
+
+```sql
+CREATE WINDOW VIEW analytics.windowed_events_owned (`total` UInt64, `window_end` DateTime) INNER ENGINE = AggregatingMergeTree ORDER BY tuple() ENGINE = MergeTree ORDER BY window_end SETTINGS index_granularity = 8192 WATERMARK ASCENDING ALLOWED_LATENESS toIntervalSecond('2') AS SELECT count(event_id) AS total, tumbleEnd(window_id) AS window_end FROM analytics.retention_matrix GROUP BY tumble(occurred_at, toIntervalSecond('5')) AS window_id
+```
+
 ## Functions
 
 ### `analytics_normalize`
 
-**Kind:** `sql_user_defined`
+**Kind:** `user_defined_function`
+
+**Origin:** `SQLUserDefined`
 
 ```sql
 CREATE FUNCTION analytics_normalize AS value -> lowerUTF8(value)
+```
+
+
+## Access and workload objects
+
+### `analytics_service`
+
+**Kind:** `user`
+
+**Storage:** `local_directory`
+
+**Authentication:** `sha256_password`
+
+**Hosts:** `name localhost`
+
+**Default roles:** `analytics_reader`
+
+**Grantees:** `all`
+
+**Default database:** `analytics`
+
+**Role grant:** `analytics_reader default with admin option`
+
+
+
+### `analytics_reader`
+
+**Kind:** `role`
+
+**Storage:** `local_directory`
+
+**Privilege:** `SELECT on analytics with grant option`
+
+
+
+### `tenant_events ON analytics.events`
+
+**Kind:** `row_policy`
+
+**Database:** `analytics`
+
+**Table:** `events`
+
+**Mode:** `permissive`
+
+**Applies to:** `analytics_reader`
+
+**Storage:** `local_directory`
+
+**SELECT filter:** `tenant_id > 0`
+
+
+
+### `analytics_quota`
+
+**Kind:** `quota`
+
+**Storage:** `local_directory`
+
+**Keys:** `user_name`
+
+**Applies to:** `analytics_reader`
+
+**Limit:** `3600 seconds, queries=100, query_selects=90, query_inserts=10, errors=5, result_rows=1000, result_bytes=2000, read_rows=3000, read_bytes=4000, written_bytes=5000, failed_sequential_authentications=3, queries_per_normalized_hash=7, execution_time=60`
+
+
+
+### `analytics_profile`
+
+**Kind:** `settings_profile`
+
+**Storage:** `local_directory`
+
+**Applies to:** `analytics_reader`
+
+**Element:** `max_threads = 4 min 1 max 8 writable`
+
+
+
+### `analytics_remote`
+
+**Kind:** `named_collection`
+
+**Source:** `SQL`
+
+**Entry:** `host`; overridable
+
+**Entry:** `password`; not overridable
+
+```sql
+CREATE NAMED COLLECTION analytics_remote AS host = '[HIDDEN]' OVERRIDABLE, password = '[HIDDEN]' NOT OVERRIDABLE
+```
+
+
+### `analytics_cpu`
+
+**Kind:** `resource`
+
+**Unit:** `CPUNanosecond`
+
+**Operation:** `master thread`
+
+**Operation:** `worker thread`
+
+```sql
+CREATE RESOURCE analytics_cpu (MASTER THREAD, WORKER THREAD)
+```
+
+
+### `analytics_all`
+
+**Kind:** `workload`
+
+```sql
+CREATE WORKLOAD analytics_all
+```
+
+
+### `analytics_interactive`
+
+**Kind:** `workload`
+
+**Parent:** `analytics_all`
+
+**Setting:** `max_concurrent_threads` = `8` for `analytics_cpu`
+
+```sql
+CREATE WORKLOAD analytics_interactive IN analytics_all SETTINGS max_concurrent_threads = 8 FOR analytics_cpu
 ```

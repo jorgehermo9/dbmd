@@ -513,6 +513,8 @@ pub struct ViewPresentation {
     pub facts: Vec<FactView>,
     /// Columns in catalog order.
     pub columns: Vec<ColumnView>,
+    /// Indexes attached to the view-like relation, in backend-defined order.
+    pub indexes: Vec<IndexView>,
     /// Fenced view definition.
     pub definition: String,
 }
@@ -533,6 +535,7 @@ pub struct ViewPresentationBuilder {
     comment: Option<String>,
     facts: Vec<FactView>,
     columns: Vec<ColumnView>,
+    indexes: Vec<IndexView>,
     definition: Option<String>,
 }
 
@@ -572,6 +575,13 @@ impl ViewPresentationBuilder {
         self
     }
 
+    /// Sets indexes attached to the view-like relation.
+    #[must_use]
+    pub fn indexes(mut self, value: Vec<IndexView>) -> Self {
+        self.indexes = value;
+        self
+    }
+
     /// Sets the fenced view definition.
     #[must_use]
     pub fn definition(mut self, value: String) -> Self {
@@ -596,6 +606,7 @@ impl ViewPresentationBuilder {
             comment: self.comment,
             facts: self.facts,
             columns: self.columns,
+            indexes: self.indexes,
             definition: self
                 .definition
                 .expect("view presentation requires a definition"),

@@ -1,7 +1,7 @@
 //! SQLite catalog introspection and normalization.
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
 };
 
@@ -26,8 +26,8 @@ use super::catalog::{
     TriggerEvent as CoreTriggerEvent, TriggerTiming as CoreTriggerTiming, View,
 };
 use dbmd_relational::{
-    ForeignKeyAction, ForeignKeyDeferrability, ForeignKeyInitialTiming, ForeignKeyReference,
-    IndexSortOrder, Namespace,
+    ForeignKeyAction, ForeignKeyDeferrability, ForeignKeyInitialTiming, ForeignKeyMatch,
+    ForeignKeyReference, IndexSortOrder, Namespace,
 };
 
 /// A resolved SQLite source ready for introspection.
@@ -193,7 +193,7 @@ fn read_table_entries(
          FROM pragma_table_list
          WHERE schema = ?1
            AND type IN ('table', 'virtual', 'shadow')
-           AND name NOT LIKE 'sqlite_%'
+           AND name NOT GLOB 'sqlite_*'
          ORDER BY name COLLATE BINARY",
     )?;
     let rows = statement
@@ -391,7 +391,7 @@ fn read_views(connection: &Connection, namespace: &str) -> rusqlite::Result<Vec<
     let mut statement = connection.prepare(&format!(
         "SELECT name, sql
          FROM {schema}.sqlite_schema
-         WHERE type = 'view' AND name NOT LIKE 'sqlite_%'
+         WHERE type = 'view' AND name NOT GLOB 'sqlite_*'
          ORDER BY name COLLATE BINARY"
     ))?;
     let definitions = statement
@@ -445,7 +445,7 @@ fn read_triggers(connection: &Connection, namespace: &str) -> rusqlite::Result<V
     let mut statement = connection.prepare(&format!(
         "SELECT name, sql
          FROM {schema}.sqlite_schema
-         WHERE type = 'trigger' AND name NOT LIKE 'sqlite_%'
+         WHERE type = 'trigger' AND name NOT GLOB 'sqlite_*'
          ORDER BY name COLLATE BINARY"
     ))?;
     let triggers = statement
@@ -821,11 +821,25 @@ fn parse_foreign_key_reference(
         match argument {
             RefArg::OnDelete(action) => reference.on_delete = parse_reference_action(*action),
             RefArg::OnUpdate(action) => reference.on_update = parse_reference_action(*action),
-            RefArg::Match(name) => reference.match_name = Some(sqlite_identifier(name.0)),
+            RefArg::Match(name) => {
+                reference.match_type = Some(sqlite_foreign_key_match(&sqlite_identifier(name.0)));
+            }
             RefArg::OnInsert(_) => {}
         }
     }
     reference
+}
+
+fn sqlite_foreign_key_match(name: &str) -> ForeignKeyMatch {
+    if name.eq_ignore_ascii_case("simple") {
+        ForeignKeyMatch::Simple
+    } else if name.eq_ignore_ascii_case("partial") {
+        ForeignKeyMatch::Partial
+    } else if name.eq_ignore_ascii_case("full") {
+        ForeignKeyMatch::Full
+    } else {
+        ForeignKeyMatch::Named(name.to_string())
+    }
 }
 
 fn parse_reference_action(action: RefAct) -> ForeignKeyAction {
@@ -913,20 +927,17 @@ fn merge_catalog_constraints(
         constraints.extend(catalog_primary_key);
     }
 
+    let mut matched_constraints = BTreeSet::new();
     for catalog_constraint in catalog_foreign_keys {
-        let parsed = constraints.iter_mut().find(|constraint| {
-            constraint.kind == ConstraintKind::ForeignKey
-                && constraint.columns == catalog_constraint.columns
-                && constraint
-                    .references
-                    .as_ref()
-                    .map(|reference| &reference.table)
-                    == catalog_constraint
-                        .references
-                        .as_ref()
-                        .map(|reference| &reference.table)
-        });
-        if let Some(parsed) = parsed {
+        let parsed = constraints
+            .iter_mut()
+            .enumerate()
+            .find(|(index, constraint)| {
+                !matched_constraints.contains(index)
+                    && foreign_keys_match(constraint, &catalog_constraint)
+            });
+        if let Some((index, parsed)) = parsed {
+            matched_constraints.insert(index);
             if let (Some(parsed_reference), Some(catalog_reference)) =
                 (&mut parsed.references, catalog_constraint.references)
             {
@@ -938,6 +949,22 @@ fn merge_catalog_constraints(
             constraints.push(catalog_constraint);
         }
     }
+}
+
+fn foreign_keys_match(parsed: &Constraint, catalog: &Constraint) -> bool {
+    if parsed.kind != ConstraintKind::ForeignKey || parsed.columns != catalog.columns {
+        return false;
+    }
+    let (Some(parsed_reference), Some(catalog_reference)) =
+        (&parsed.references, &catalog.references)
+    else {
+        return false;
+    };
+    parsed_reference.table == catalog_reference.table
+        && (parsed_reference.columns.is_empty()
+            || parsed_reference.columns == catalog_reference.columns)
+        && parsed_reference.on_update == catalog_reference.on_update
+        && parsed_reference.on_delete == catalog_reference.on_delete
 }
 
 fn sqlite_identifier(value: &str) -> String {

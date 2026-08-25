@@ -19,13 +19,29 @@ jobs:
         with:
           components: clippy, rustfmt
       - run: cargo fmt --all -- --check
-      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - run: cargo test --workspace
 
-  postgres:
+  server-backends:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: dbmd-backend-postgres
+            feature: postgres-tests
+            test: postgres
+          - package: dbmd-backend-clickhouse
+            feature: clickhouse-tests
+            test: clickhouse
+          - package: dbmd-backend-mysql
+            feature: mysql-tests
+            test: mysql
+          - package: dbmd-backend-mariadb
+            feature: mariadb-tests
+            test: mariadb
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo test -p dbmd-introspect --features postgres-tests --test postgres
-      - run: cargo test -p dbmd-app --features postgres-tests --test postgres
+      - run: cargo test -p ${{ matrix.package }} --features ${{ matrix.feature }} --test ${{ matrix.test }}
+      - run: cargo test -p dbmd-app --features ${{ matrix.feature }} --test ${{ matrix.test }}

@@ -1,0 +1,1449 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: snapshot
+---
+id: access-control
+display_name: ~
+catalog:
+  database:
+    name: dbmd_test_5d5be19f658d3fe2
+    owner: postgres
+    encoding: UTF8
+    locale_provider: libc
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    locale: ~
+    icu_rules: ~
+    collation_version: ~
+    tablespace: pg_default
+    template: false
+    allow_connections: true
+    connection_limit: -1
+    configuration: []
+    comment: ~
+  cluster_databases:
+    - name: dbmd_test_5d5be19f658d3fe2
+      owner: postgres
+      encoding: UTF8
+      locale_provider: libc
+      lc_collate: en_US.utf8
+      lc_ctype: en_US.utf8
+      locale: ~
+      icu_rules: ~
+      collation_version: ~
+      tablespace: pg_default
+      template: false
+      allow_connections: true
+      connection_limit: -1
+      configuration: []
+      comment: ~
+    - name: postgres
+      owner: postgres
+      encoding: UTF8
+      locale_provider: libc
+      lc_collate: en_US.utf8
+      lc_ctype: en_US.utf8
+      locale: ~
+      icu_rules: ~
+      collation_version: ~
+      tablespace: pg_default
+      template: false
+      allow_connections: true
+      connection_limit: -1
+      configuration: []
+      comment: default administrative connection database
+    - name: template0
+      owner: postgres
+      encoding: UTF8
+      locale_provider: libc
+      lc_collate: en_US.utf8
+      lc_ctype: en_US.utf8
+      locale: ~
+      icu_rules: ~
+      collation_version: ~
+      tablespace: pg_default
+      template: true
+      allow_connections: false
+      connection_limit: -1
+      configuration: []
+      comment: unmodifiable empty database
+    - name: template1
+      owner: postgres
+      encoding: UTF8
+      locale_provider: libc
+      lc_collate: en_US.utf8
+      lc_ctype: en_US.utf8
+      locale: ~
+      icu_rules: ~
+      collation_version: ~
+      tablespace: pg_default
+      template: true
+      allow_connections: true
+      connection_limit: -1
+      configuration: []
+      comment: default template for new databases
+  tablespaces:
+    - name: pg_default
+      owner: postgres
+      options: []
+      comment: ~
+      location_redacted: true
+    - name: pg_global
+      owner: postgres
+      options: []
+      comment: ~
+      location_redacted: true
+  namespaces:
+    - name: public
+      owner: pg_database_owner
+      extension: ~
+      comment: standard public schema
+    - name: secure
+      owner: dbmd_acl_owner
+      extension: ~
+      comment: ~
+  enums:
+    - namespace: secure
+      name: event_state
+      owner: dbmd_acl_owner
+      extension: ~
+      comment: ~
+      values:
+        - pending
+        - complete
+  composite_types: []
+  domains:
+    - namespace: secure
+      name: event_code
+      base_type: text
+      collation: "pg_catalog.\"default\""
+      default: ~
+      not_null: false
+      owner: dbmd_acl_owner
+      extension: ~
+      constraints:
+        - name: event_code_check
+          definition: "CHECK (VALUE <> ''::text)"
+          validated: true
+          comment: ~
+      comment: ~
+      definition: "CREATE DOMAIN \"secure\".\"event_code\"\n    AS text\n    COLLATE pg_catalog.\"default\"\n    CONSTRAINT \"event_code_check\" CHECK (VALUE <> ''::text);"
+  base_types: []
+  range_types: []
+  sequences:
+    - namespace: secure
+      name: event_sequence
+      owner: dbmd_acl_owner
+      extension: ~
+      data_type: bigint
+      start: 1
+      minimum: 1
+      maximum: 9223372036854775807
+      increment: 1
+      cache: 1
+      cycle: false
+      persistence: permanent
+      owned_by: ~
+      comment: ~
+      definition: "CREATE SEQUENCE \"secure\".\"event_sequence\" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE OWNED BY NONE;"
+  tables:
+    - namespace: secure
+      name: events
+      extension: ~
+      comment: ~
+      columns:
+        - name: id
+          data_type: bigint
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: payload
+          data_type: text
+          collation: "pg_catalog.\"default\""
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints:
+        - name: events_id_not_null
+          kind: not_null
+          columns:
+            - id
+          expression: ~
+          references: ~
+          definition: NOT NULL id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: events_pkey
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          definition: PRIMARY KEY (id)
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: true
+          temporal: false
+          comment: ~
+      indexes:
+        - name: events_pkey
+          extension: ~
+          unique: true
+          terms:
+            - target:
+                column: id
+              collation: ~
+              operator_class: pg_catalog.int8_ops
+              operator_class_parameters: []
+              order: ascending
+              nulls_order: last
+          predicate: ~
+          definition: CREATE UNIQUE INDEX events_pkey ON secure.events USING btree (id)
+          method: btree
+          included_columns: []
+          nulls_not_distinct: false
+          valid: true
+          ready: true
+          clustered: false
+          replica_identity: false
+          owner: dbmd_acl_owner
+          tablespace: ~
+          options: []
+          partitioned: false
+          parent_index: ~
+          constraint: events_pkey
+          comment: ~
+      kind: table
+      owner: dbmd_acl_owner
+      persistence: permanent
+      access_method: heap
+      typed_table: ~
+      replica_identity: default
+      options: []
+      foreign: ~
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+    - namespace: secure
+      name: remote_events
+      extension: ~
+      comment: ~
+      columns:
+        - name: id
+          data_type: bigint
+          collation: ~
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: payload
+          data_type: text
+          collation: "pg_catalog.\"default\""
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints: []
+      indexes: []
+      kind: foreign_table
+      owner: dbmd_acl_owner
+      persistence: permanent
+      access_method: ~
+      typed_table: ~
+      replica_identity: nothing
+      options: []
+      foreign:
+        server: secure_server
+        wrapper: postgres_fdw
+        options:
+          - table_name=events
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+  views:
+    - namespace: secure
+      name: event_rollup
+      extension: ~
+      definition: " SELECT count(*) AS event_count\n   FROM secure.events;"
+      materialized: true
+      comment: ~
+      columns:
+        - name: event_count
+          data_type: bigint
+          collation: ~
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      indexes: []
+      owner: dbmd_acl_owner
+      persistence: permanent
+      access_method: heap
+      tablespace: ~
+      options: []
+      populated: false
+      security_barrier: false
+      security_invoker: false
+      check_option: ~
+    - namespace: secure
+      name: event_view
+      extension: ~
+      definition: " SELECT id,\n    payload\n   FROM secure.events;"
+      materialized: false
+      comment: ~
+      columns:
+        - name: id
+          data_type: bigint
+          collation: ~
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: payload
+          data_type: text
+          collation: "pg_catalog.\"default\""
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      indexes: []
+      owner: dbmd_acl_owner
+      persistence: permanent
+      access_method: ~
+      tablespace: ~
+      options: []
+      populated: true
+      security_barrier: false
+      security_invoker: false
+      check_option: ~
+  triggers: []
+  functions:
+    - namespace: public
+      name: postgres_fdw_disconnect
+      extension: postgres_fdw
+      signature: (text)
+      arguments: text
+      definition: "CREATE OR REPLACE FUNCTION public.postgres_fdw_disconnect(text)\n RETURNS boolean\n LANGUAGE c\n PARALLEL RESTRICTED STRICT\nAS '$libdir/postgres_fdw', $function$postgres_fdw_disconnect$function$\n"
+      comment: ~
+      return_type: boolean
+      owner: postgres
+      kind: ordinary
+      language: c
+      volatility: volatile
+      parallel: restricted
+      security_definer: false
+      strict: true
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "1"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: public
+      name: postgres_fdw_disconnect_all
+      extension: postgres_fdw
+      signature: ()
+      arguments: ""
+      definition: "CREATE OR REPLACE FUNCTION public.postgres_fdw_disconnect_all()\n RETURNS boolean\n LANGUAGE c\n PARALLEL RESTRICTED STRICT\nAS '$libdir/postgres_fdw', $function$postgres_fdw_disconnect_all$function$\n"
+      comment: ~
+      return_type: boolean
+      owner: postgres
+      kind: ordinary
+      language: c
+      volatility: volatile
+      parallel: restricted
+      security_definer: false
+      strict: true
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "1"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: public
+      name: postgres_fdw_get_connections
+      extension: postgres_fdw
+      signature: "(check_conn boolean, OUT server_name text, OUT user_name text, OUT valid boolean, OUT used_in_xact boolean, OUT closed boolean, OUT remote_backend_pid integer)"
+      arguments: "check_conn boolean DEFAULT false, OUT server_name text, OUT user_name text, OUT valid boolean, OUT used_in_xact boolean, OUT closed boolean, OUT remote_backend_pid integer"
+      definition: "CREATE OR REPLACE FUNCTION public.postgres_fdw_get_connections(check_conn boolean DEFAULT false, OUT server_name text, OUT user_name text, OUT valid boolean, OUT used_in_xact boolean, OUT closed boolean, OUT remote_backend_pid integer)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL RESTRICTED STRICT\nAS '$libdir/postgres_fdw', $function$postgres_fdw_get_connections_1_2$function$\n"
+      comment: ~
+      return_type: SETOF record
+      owner: postgres
+      kind: ordinary
+      language: c
+      volatility: volatile
+      parallel: restricted
+      security_definer: false
+      strict: true
+      leakproof: false
+      returns_set: true
+      support_function: ~
+      cost: "1"
+      rows: "1000"
+      configuration: []
+      transforms: []
+    - namespace: public
+      name: postgres_fdw_handler
+      extension: postgres_fdw
+      signature: ()
+      arguments: ""
+      definition: "CREATE OR REPLACE FUNCTION public.postgres_fdw_handler()\n RETURNS fdw_handler\n LANGUAGE c\n STRICT\nAS '$libdir/postgres_fdw', $function$postgres_fdw_handler$function$\n"
+      comment: ~
+      return_type: fdw_handler
+      owner: postgres
+      kind: ordinary
+      language: c
+      volatility: volatile
+      parallel: unsafe
+      security_definer: false
+      strict: true
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "1"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: public
+      name: postgres_fdw_validator
+      extension: postgres_fdw
+      signature: "(text[], oid)"
+      arguments: "text[], oid"
+      definition: "CREATE OR REPLACE FUNCTION public.postgres_fdw_validator(text[], oid)\n RETURNS void\n LANGUAGE c\n STRICT\nAS '$libdir/postgres_fdw', $function$postgres_fdw_validator$function$\n"
+      comment: ~
+      return_type: void
+      owner: postgres
+      kind: ordinary
+      language: c
+      volatility: volatile
+      parallel: unsafe
+      security_definer: false
+      strict: true
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "1"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: secure
+      name: event_count
+      extension: ~
+      signature: ()
+      arguments: ""
+      definition: "CREATE OR REPLACE FUNCTION secure.event_count()\n RETURNS bigint\n LANGUAGE sql\nRETURN (SELECT count(*) AS count FROM secure.events)\n"
+      comment: ~
+      return_type: bigint
+      owner: dbmd_acl_owner
+      kind: ordinary
+      language: sql
+      volatility: volatile
+      parallel: unsafe
+      security_definer: false
+      strict: false
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
+  procedures:
+    - namespace: secure
+      name: clear_events
+      extension: ~
+      signature: ()
+      arguments: ""
+      definition: "CREATE OR REPLACE PROCEDURE secure.clear_events()\n LANGUAGE sql\nAS $procedure$DELETE FROM secure.events$procedure$\n"
+      comment: ~
+      owner: dbmd_acl_owner
+      language: sql
+      security_definer: false
+      configuration: []
+      transforms: []
+  aggregates:
+    - namespace: secure
+      name: total_int
+      extension: ~
+      signature: (integer)
+      arguments: integer
+      owner: dbmd_acl_owner
+      result_type: integer
+      kind: normal
+      direct_arguments: 0
+      transition_function: "pg_catalog.int4pl(integer,integer)"
+      final_function: ~
+      combine_function: ~
+      serialization_function: ~
+      deserialization_function: ~
+      moving_transition_function: ~
+      moving_inverse_function: ~
+      moving_final_function: ~
+      final_extra_arguments: false
+      moving_final_extra_arguments: false
+      final_modify: read_only
+      moving_final_modify: read_only
+      sort_operator: ~
+      transition_type: integer
+      transition_space: 0
+      moving_transition_type: ~
+      moving_transition_space: 0
+      initial_condition: "0"
+      moving_initial_condition: ~
+      parallel: unsafe
+      comment: ~
+  casts: []
+  conversions: []
+  operators: []
+  operator_families: []
+  operator_classes: []
+  access_methods: []
+  languages:
+    - name: plpgsql
+      owner: postgres
+      extension: plpgsql
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: PL/pgSQL procedural language
+  transforms: []
+  rules: []
+  event_triggers: []
+  statistics: []
+  foreign_data_wrappers:
+    - name: postgres_fdw
+      owner: postgres
+      handler: public.postgres_fdw_handler()
+      validator: "public.postgres_fdw_validator(pg_catalog.text[],pg_catalog.oid)"
+      options: []
+      extension: postgres_fdw
+      comment: ~
+  foreign_servers:
+    - name: secure_server
+      owner: dbmd_acl_owner
+      wrapper: postgres_fdw
+      server_type: ~
+      version: ~
+      options:
+        - host=127.0.0.1
+        - dbname=postgres
+      extension: ~
+      comment: ~
+  user_mappings: []
+  text_search_parsers: []
+  text_search_templates: []
+  text_search_dictionaries: []
+  text_search_configurations: []
+  extensions:
+    - name: plpgsql
+      owner: postgres
+      namespace: pg_catalog
+      relocatable: false
+      version: "1.0"
+      configuration: []
+      members:
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_call_handler
+          arguments: []
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_inline_handler
+          arguments:
+            - pg_catalog.internal
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_validator
+          arguments:
+            - pg_catalog.oid
+        - object_type: language
+          names:
+            - plpgsql
+          arguments: []
+      comment: PL/pgSQL procedural language
+    - name: postgres_fdw
+      owner: postgres
+      namespace: public
+      relocatable: true
+      version: "1.2"
+      configuration: []
+      members:
+        - object_type: foreign-data wrapper
+          names:
+            - postgres_fdw
+          arguments: []
+        - object_type: function
+          names:
+            - public
+            - postgres_fdw_disconnect_all
+          arguments: []
+        - object_type: function
+          names:
+            - public
+            - postgres_fdw_disconnect
+          arguments:
+            - pg_catalog.text
+        - object_type: function
+          names:
+            - public
+            - postgres_fdw_get_connections
+          arguments:
+            - boolean
+        - object_type: function
+          names:
+            - public
+            - postgres_fdw_handler
+          arguments: []
+        - object_type: function
+          names:
+            - public
+            - postgres_fdw_validator
+          arguments:
+            - "pg_catalog.text[]"
+            - pg_catalog.oid
+      comment: foreign-data wrapper for remote PostgreSQL servers
+  publications: []
+  subscriptions: []
+  privileges:
+    - object_kind: database
+      object_identity: dbmd_test_5d5be19f658d3fe2
+      grantor: postgres
+      grantee: PUBLIC
+      privilege: connect
+      grantable: false
+    - object_kind: database
+      object_identity: dbmd_test_5d5be19f658d3fe2
+      grantor: postgres
+      grantee: PUBLIC
+      privilege: temporary
+      grantable: false
+    - object_kind: database
+      object_identity: dbmd_test_5d5be19f658d3fe2
+      grantor: postgres
+      grantee: dbmd_acl_reader
+      privilege: create
+      grantable: false
+    - object_kind: database
+      object_identity: dbmd_test_5d5be19f658d3fe2
+      grantor: postgres
+      grantee: dbmd_acl_reader
+      privilege: connect
+      grantable: false
+    - object_kind: database
+      object_identity: dbmd_test_5d5be19f658d3fe2
+      grantor: postgres
+      grantee: dbmd_acl_reader
+      privilege: temporary
+      grantable: false
+    - object_kind: database
+      object_identity: dbmd_test_5d5be19f658d3fe2
+      grantor: postgres
+      grantee: postgres
+      privilege: create
+      grantable: false
+    - object_kind: database
+      object_identity: dbmd_test_5d5be19f658d3fe2
+      grantor: postgres
+      grantee: postgres
+      privilege: connect
+      grantable: false
+    - object_kind: database
+      object_identity: dbmd_test_5d5be19f658d3fe2
+      grantor: postgres
+      grantee: postgres
+      privilege: temporary
+      grantable: false
+    - object_kind: database
+      object_identity: template0
+      grantor: postgres
+      grantee: PUBLIC
+      privilege: connect
+      grantable: false
+    - object_kind: database
+      object_identity: template0
+      grantor: postgres
+      grantee: postgres
+      privilege: create
+      grantable: false
+    - object_kind: database
+      object_identity: template0
+      grantor: postgres
+      grantee: postgres
+      privilege: connect
+      grantable: false
+    - object_kind: database
+      object_identity: template0
+      grantor: postgres
+      grantee: postgres
+      privilege: temporary
+      grantable: false
+    - object_kind: database
+      object_identity: template1
+      grantor: postgres
+      grantee: PUBLIC
+      privilege: connect
+      grantable: false
+    - object_kind: database
+      object_identity: template1
+      grantor: postgres
+      grantee: postgres
+      privilege: create
+      grantable: false
+    - object_kind: database
+      object_identity: template1
+      grantor: postgres
+      grantee: postgres
+      privilege: connect
+      grantable: false
+    - object_kind: database
+      object_identity: template1
+      grantor: postgres
+      grantee: postgres
+      privilege: temporary
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: create
+      grantable: false
+    - object_kind: schema
+      object_identity: secure
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: secure
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: create
+      grantable: false
+    - object_kind: schema
+      object_identity: secure
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: usage
+      grantable: true
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: select
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: insert
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: update
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: delete
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: truncate
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: references
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: trigger
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: maintain
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: select
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: insert
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: update
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: delete
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: truncate
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: references
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: trigger
+      grantable: false
+    - object_kind: table
+      object_identity: secure.events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: maintain
+      grantable: false
+    - object_kind: table_column
+      object_identity: secure.events.payload
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: update
+      grantable: true
+    - object_kind: sequence
+      object_identity: secure.event_sequence
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: select
+      grantable: false
+    - object_kind: sequence
+      object_identity: secure.event_sequence
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: update
+      grantable: false
+    - object_kind: sequence
+      object_identity: secure.event_sequence
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: usage
+      grantable: false
+    - object_kind: sequence
+      object_identity: secure.event_sequence
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: select
+      grantable: false
+    - object_kind: sequence
+      object_identity: secure.event_sequence
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: update
+      grantable: false
+    - object_kind: sequence
+      object_identity: secure.event_sequence
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: usage
+      grantable: false
+    - object_kind: view
+      object_identity: secure.event_view
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: select
+      grantable: false
+    - object_kind: view
+      object_identity: secure.event_view
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: insert
+      grantable: false
+    - object_kind: view
+      object_identity: secure.event_view
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: update
+      grantable: false
+    - object_kind: view
+      object_identity: secure.event_view
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: delete
+      grantable: false
+    - object_kind: view
+      object_identity: secure.event_view
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: truncate
+      grantable: false
+    - object_kind: view
+      object_identity: secure.event_view
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: references
+      grantable: false
+    - object_kind: view
+      object_identity: secure.event_view
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: trigger
+      grantable: false
+    - object_kind: view
+      object_identity: secure.event_view
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: maintain
+      grantable: false
+    - object_kind: view
+      object_identity: secure.event_view
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: select
+      grantable: false
+    - object_kind: materialized_view
+      object_identity: secure.event_rollup
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: select
+      grantable: false
+    - object_kind: materialized_view
+      object_identity: secure.event_rollup
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: insert
+      grantable: false
+    - object_kind: materialized_view
+      object_identity: secure.event_rollup
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: update
+      grantable: false
+    - object_kind: materialized_view
+      object_identity: secure.event_rollup
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: delete
+      grantable: false
+    - object_kind: materialized_view
+      object_identity: secure.event_rollup
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: truncate
+      grantable: false
+    - object_kind: materialized_view
+      object_identity: secure.event_rollup
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: references
+      grantable: false
+    - object_kind: materialized_view
+      object_identity: secure.event_rollup
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: trigger
+      grantable: false
+    - object_kind: materialized_view
+      object_identity: secure.event_rollup
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: maintain
+      grantable: false
+    - object_kind: materialized_view
+      object_identity: secure.event_rollup
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: select
+      grantable: false
+    - object_kind: foreign_table
+      object_identity: secure.remote_events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: select
+      grantable: false
+    - object_kind: foreign_table
+      object_identity: secure.remote_events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: insert
+      grantable: false
+    - object_kind: foreign_table
+      object_identity: secure.remote_events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: update
+      grantable: false
+    - object_kind: foreign_table
+      object_identity: secure.remote_events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: delete
+      grantable: false
+    - object_kind: foreign_table
+      object_identity: secure.remote_events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: truncate
+      grantable: false
+    - object_kind: foreign_table
+      object_identity: secure.remote_events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: references
+      grantable: false
+    - object_kind: foreign_table
+      object_identity: secure.remote_events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: trigger
+      grantable: false
+    - object_kind: foreign_table
+      object_identity: secure.remote_events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: maintain
+      grantable: false
+    - object_kind: foreign_table
+      object_identity: secure.remote_events
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: select
+      grantable: false
+    - object_kind: function
+      object_identity: secure.event_count()
+      grantor: dbmd_acl_owner
+      grantee: PUBLIC
+      privilege: execute
+      grantable: false
+    - object_kind: function
+      object_identity: secure.event_count()
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: execute
+      grantable: false
+    - object_kind: function
+      object_identity: secure.event_count()
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: execute
+      grantable: false
+    - object_kind: procedure
+      object_identity: secure.clear_events()
+      grantor: dbmd_acl_owner
+      grantee: PUBLIC
+      privilege: execute
+      grantable: false
+    - object_kind: procedure
+      object_identity: secure.clear_events()
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: execute
+      grantable: false
+    - object_kind: procedure
+      object_identity: secure.clear_events()
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: execute
+      grantable: false
+    - object_kind: aggregate
+      object_identity: secure.total_int(integer)
+      grantor: dbmd_acl_owner
+      grantee: PUBLIC
+      privilege: execute
+      grantable: false
+    - object_kind: aggregate
+      object_identity: secure.total_int(integer)
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: execute
+      grantable: false
+    - object_kind: aggregate
+      object_identity: secure.total_int(integer)
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: execute
+      grantable: false
+    - object_kind: type
+      object_identity: secure.event_code
+      grantor: dbmd_acl_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: type
+      object_identity: secure.event_code
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: usage
+      grantable: false
+    - object_kind: type
+      object_identity: secure.event_code
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: usage
+      grantable: false
+    - object_kind: type
+      object_identity: secure.event_state
+      grantor: dbmd_acl_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: type
+      object_identity: secure.event_state
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: usage
+      grantable: false
+    - object_kind: type
+      object_identity: secure.event_state
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: usage
+      grantable: false
+    - object_kind: language
+      object_identity: plpgsql
+      grantor: postgres
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: language
+      object_identity: plpgsql
+      grantor: postgres
+      grantee: dbmd_acl_reader
+      privilege: usage
+      grantable: false
+    - object_kind: language
+      object_identity: plpgsql
+      grantor: postgres
+      grantee: postgres
+      privilege: usage
+      grantable: false
+    - object_kind: large_object
+      object_identity: "424242"
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: select
+      grantable: false
+    - object_kind: large_object
+      object_identity: "424242"
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: update
+      grantable: false
+    - object_kind: large_object
+      object_identity: "424242"
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: select
+      grantable: false
+    - object_kind: large_object
+      object_identity: "424242"
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: update
+      grantable: false
+    - object_kind: foreign_data_wrapper
+      object_identity: postgres_fdw
+      grantor: postgres
+      grantee: dbmd_acl_reader
+      privilege: usage
+      grantable: false
+    - object_kind: foreign_data_wrapper
+      object_identity: postgres_fdw
+      grantor: postgres
+      grantee: postgres
+      privilege: usage
+      grantable: false
+    - object_kind: foreign_server
+      object_identity: secure_server
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: usage
+      grantable: false
+    - object_kind: foreign_server
+      object_identity: secure_server
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: usage
+      grantable: false
+    - object_kind: parameter
+      object_identity: statement_timeout
+      grantor: postgres
+      grantee: dbmd_acl_reader
+      privilege: alter_system
+      grantable: false
+    - object_kind: parameter
+      object_identity: statement_timeout
+      grantor: postgres
+      grantee: postgres
+      privilege: set
+      grantable: false
+    - object_kind: parameter
+      object_identity: statement_timeout
+      grantor: postgres
+      grantee: postgres
+      privilege: alter_system
+      grantable: false
+    - object_kind: parameter
+      object_identity: work_mem
+      grantor: postgres
+      grantee: dbmd_acl_reader
+      privilege: set
+      grantable: false
+    - object_kind: parameter
+      object_identity: work_mem
+      grantor: postgres
+      grantee: postgres
+      privilege: set
+      grantable: false
+    - object_kind: parameter
+      object_identity: work_mem
+      grantor: postgres
+      grantee: postgres
+      privilege: alter_system
+      grantable: false
+    - object_kind: tablespace
+      object_identity: pg_default
+      grantor: postgres
+      grantee: dbmd_acl_reader
+      privilege: create
+      grantable: false
+    - object_kind: tablespace
+      object_identity: pg_default
+      grantor: postgres
+      grantee: postgres
+      privilege: create
+      grantable: false
+  default_privileges:
+    - owner: dbmd_acl_owner
+      namespace: secure
+      object_kind: sequences
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: usage
+      grantable: false
+    - owner: dbmd_acl_owner
+      namespace: secure
+      object_kind: types
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: usage
+      grantable: false
+    - owner: dbmd_acl_owner
+      namespace: secure
+      object_kind: routines
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: execute
+      grantable: false
+    - owner: dbmd_acl_owner
+      namespace: secure
+      object_kind: tables
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: select
+      grantable: true
+    - owner: dbmd_acl_owner
+      namespace: ~
+      object_kind: large_objects
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: select
+      grantable: false
+    - owner: dbmd_acl_owner
+      namespace: ~
+      object_kind: large_objects
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: update
+      grantable: false
+    - owner: dbmd_acl_owner
+      namespace: ~
+      object_kind: large_objects
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: select
+      grantable: false
+    - owner: dbmd_acl_owner
+      namespace: ~
+      object_kind: schemas
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: create
+      grantable: false
+    - owner: dbmd_acl_owner
+      namespace: ~
+      object_kind: schemas
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_owner
+      privilege: usage
+      grantable: false
+    - owner: dbmd_acl_owner
+      namespace: ~
+      object_kind: schemas
+      grantor: dbmd_acl_owner
+      grantee: dbmd_acl_reader
+      privilege: usage
+      grantable: false
+  security_labels: []
+  large_objects:
+    - oid: 424242
+      owner: dbmd_acl_owner
+      comment: Fixture document payload
+      contents_omitted: true
+  roles:
+    - name: dbmd_acl_owner
+      superuser: false
+      inherit: true
+      create_role: false
+      create_database: false
+      login: false
+      replication: false
+      bypass_row_level_security: false
+      connection_limit: -1
+      valid_until: ~
+      password_configured: true
+      configuration: []
+      memberships: []
+      comment: ~
+    - name: dbmd_acl_reader
+      superuser: false
+      inherit: true
+      create_role: false
+      create_database: false
+      login: false
+      replication: false
+      bypass_row_level_security: false
+      connection_limit: -1
+      valid_until: ~
+      password_configured: true
+      configuration: []
+      memberships: []
+      comment: ~
+  role_database_settings:
+    - database: dbmd_test_5d5be19f658d3fe2
+      role: dbmd_acl_reader
+      settings:
+        - lock_timeout=3s
+  collations: []

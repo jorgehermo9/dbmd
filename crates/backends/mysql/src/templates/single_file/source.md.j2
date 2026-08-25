@@ -29,6 +29,7 @@ Backend: `{{ source.backend }}`
 
 {% for object in source.data.views -%}
 {% set heading = source.data.object_heading -%}
+{% set detail_heading = source.data.detail_heading -%}
 {% include "view.md.j2" %}
 
 {% endfor -%}
@@ -60,3 +61,27 @@ Backend: `{{ source.backend }}`
 
 {% endfor -%}
 {% endif -%}
+{% for section in [
+    ("Libraries", source.data.libraries),
+    ("Servers", source.data.servers),
+    ("Spatial Reference Systems", source.data.spatial_reference_systems),
+    ("Tablespaces", source.data.tablespaces),
+    ("Resource Groups", source.data.resource_groups),
+    ("Loadable Functions", source.data.loadable_functions),
+    ("Plugins", source.data.plugins),
+    ("Components", source.data.components),
+    ("Accounts", source.data.accounts),
+    ("Role Grants", source.data.role_grants),
+    ("Default Roles", source.data.default_roles),
+    ("Privileges", source.data.privileges)
+] -%}
+{% if section[1] -%}
+{{ source.data.section_heading }} {{ section[0] }}
+
+{% for object in section[1] -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% endfor -%}

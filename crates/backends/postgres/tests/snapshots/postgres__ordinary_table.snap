@@ -5,43 +5,114 @@ expression: snapshot
 id: app
 display_name: ~
 catalog:
+  database:
+    name: dbmd_test_2ce4e7b700027fc0
+    owner: postgres
+    encoding: UTF8
+    locale_provider: libc
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    locale: ~
+    icu_rules: ~
+    collation_version: ~
+    tablespace: pg_default
+    template: false
+    allow_connections: true
+    connection_limit: -1
+    configuration: []
+    comment: ~
+  cluster_databases: []
+  tablespaces: []
   namespaces:
     - name: app
+      owner: postgres
+      extension: ~
       comment: ~
     - name: public
+      owner: pg_database_owner
+      extension: ~
       comment: standard public schema
     - name: zeta
+      owner: postgres
+      extension: ~
       comment: ~
   enums: []
+  composite_types: []
+  domains: []
+  base_types: []
+  range_types: []
+  sequences:
+    - namespace: app
+      name: accounts_id_seq
+      owner: postgres
+      extension: ~
+      data_type: bigint
+      start: 1
+      minimum: 1
+      maximum: 9223372036854775807
+      increment: 1
+      cache: 1
+      cycle: false
+      persistence: permanent
+      owned_by: app.accounts.id
+      comment: ~
+      definition: "CREATE SEQUENCE \"app\".\"accounts_id_seq\" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE OWNED BY app.accounts.id;"
   tables:
     - namespace: app
       name: accounts
+      extension: ~
       comment: Application accounts
       columns:
         - name: id
           data_type: bigint
+          collation: ~
           nullable: false
           default: ~
           comment: ~
           enum_values: []
           identity: always
           generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
         - name: email
           data_type: text
+          collation: "pg_catalog.\"default\""
           nullable: false
           default: "'unknown@example.invalid'::text"
           comment: Canonical login address
           enum_values: []
           identity: ~
           generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
         - name: normalized_email
           data_type: text
+          collation: "pg_catalog.\"default\""
           nullable: true
           default: ~
           comment: ~
           enum_values: []
           identity: ~
-          generated: lower(email)
+          generated:
+            expression: lower(email)
+            kind: stored
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
       constraints:
         - name: accounts_email_nonempty
           kind: check
@@ -50,19 +121,57 @@ catalog:
           expression: "email <> ''::text"
           references: ~
           definition: "CHECK (email <> ''::text)"
+          exclusion_operators: []
           deferrable: false
           initially_deferred: false
+          enforced: true
           validated: true
           locally_defined: true
           no_inherit: false
+          temporal: false
+          comment: ~
+        - name: accounts_email_not_null
+          kind: not_null
+          columns:
+            - email
+          expression: ~
+          references: ~
+          definition: NOT NULL email
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: accounts_id_not_null
+          kind: not_null
+          columns:
+            - id
+          expression: ~
+          references: ~
+          definition: NOT NULL id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
       indexes:
         - name: accounts_normalized_email_idx
+          extension: ~
           unique: true
           terms:
             - target:
                 expression: lower(email)
               collation: "pg_catalog.\"default\""
               operator_class: pg_catalog.text_ops
+              operator_class_parameters: []
               order: descending
               nulls_order: first
           predicate: "email <> ''::text"
@@ -74,7 +183,21 @@ catalog:
           ready: true
           clustered: false
           replica_identity: false
+          owner: postgres
+          tablespace: ~
+          options: []
+          partitioned: false
+          parent_index: ~
+          constraint: ~
+          comment: ~
       kind: table
+      owner: postgres
+      persistence: permanent
+      access_method: heap
+      typed_table: ~
+      replica_identity: default
+      options: []
+      foreign: ~
       tablespace: ~
       inherits: []
       partition_key: ~
@@ -85,27 +208,67 @@ catalog:
       policies: []
     - namespace: zeta
       name: audit_log
+      extension: ~
       comment: ~
       columns:
         - name: id
           data_type: bigint
+          collation: ~
           nullable: false
           default: ~
           comment: ~
           enum_values: []
           identity: ~
           generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
         - name: recorded_at
           data_type: timestamp with time zone
+          collation: ~
           nullable: true
           default: CURRENT_TIMESTAMP
           comment: ~
           enum_values: []
           identity: ~
           generated: ~
-      constraints: []
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints:
+        - name: audit_log_id_not_null
+          kind: not_null
+          columns:
+            - id
+          expression: ~
+          references: ~
+          definition: NOT NULL id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
       indexes: []
       kind: table
+      owner: postgres
+      persistence: permanent
+      access_method: heap
+      typed_table: ~
+      replica_identity: default
+      options: []
+      foreign: ~
       tablespace: ~
       inherits: []
       partition_key: ~
@@ -117,3 +280,89 @@ catalog:
   views: []
   triggers: []
   functions: []
+  procedures: []
+  aggregates: []
+  casts: []
+  conversions: []
+  operators: []
+  operator_families: []
+  operator_classes: []
+  access_methods: []
+  languages:
+    - name: plpgsql
+      owner: postgres
+      extension: plpgsql
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: PL/pgSQL procedural language
+  transforms: []
+  rules: []
+  event_triggers: []
+  statistics: []
+  foreign_data_wrappers: []
+  foreign_servers: []
+  user_mappings: []
+  text_search_parsers: []
+  text_search_templates: []
+  text_search_dictionaries: []
+  text_search_configurations: []
+  extensions:
+    - name: plpgsql
+      owner: postgres
+      namespace: pg_catalog
+      relocatable: false
+      version: "1.0"
+      configuration: []
+      members:
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_call_handler
+          arguments: []
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_inline_handler
+          arguments:
+            - pg_catalog.internal
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_validator
+          arguments:
+            - pg_catalog.oid
+        - object_type: language
+          names:
+            - plpgsql
+          arguments: []
+      comment: PL/pgSQL procedural language
+  publications: []
+  subscriptions: []
+  privileges:
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: create
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: usage
+      grantable: false
+  default_privileges: []
+  security_labels: []
+  large_objects: []
+  roles: []
+  role_database_settings: []
+  collations: []

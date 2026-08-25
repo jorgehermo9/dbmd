@@ -12,14 +12,73 @@ sources:
     directory_template: backends/postgres/directory/source.md.j2
     nested: false
     data:
+      access_methods: []
+      aggregates: []
+      base_types: []
+      casts: []
+      cluster_databases: []
+      collations: []
+      composite_types: []
+      conversions: []
+      database:
+        comment: ~
+        definition: ~
+        facts:
+          - label: Owner
+            value: "`postgres`"
+          - label: Encoding
+            value: "`UTF8`"
+          - label: Locale provider
+            value: "`libc`"
+          - label: LC_COLLATE
+            value: "`en_US.utf8`"
+          - label: LC_CTYPE
+            value: "`en_US.utf8`"
+          - label: Tablespace
+            value: "`pg_default`"
+          - label: Template
+            value: "no"
+          - label: Allows connections
+            value: "yes"
+          - label: Connection limit
+            value: "-1"
+        file_name: database.dbmd_test_10c716fb330a68da.md
+        qualified_name: "`dbmd_test_10c716fb330a68da`"
+      default_privileges: []
       detail_heading: "####"
+      domains: []
       enums: []
+      event_triggers: []
+      extensions:
+        - comment: PL/pgSQL procedural language
+          definition: ~
+          facts:
+            - label: Owner
+              value: "`postgres`"
+            - label: Schema
+              value: "`pg_catalog`"
+            - label: Version
+              value: "`1.0`"
+            - label: Relocatable
+              value: "no"
+            - label: Owned objects
+              value: "4 (`function`: 3, `language`: 1)"
+          file_name: extensions.plpgsql.md
+          qualified_name: "`plpgsql`"
+      foreign_data_wrappers: []
+      foreign_servers: []
       functions:
         - comment: ~
           definition: "```sql\nCREATE OR REPLACE FUNCTION audit.capture_row_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n\n```"
           facts:
+            - label: Kind
+              value: "`ordinary`"
+            - label: Arguments
+              value: "``"
             - label: Returns
               value: "`trigger`"
+            - label: Owner
+              value: "`postgres`"
             - label: Language
               value: "`plpgsql`"
             - label: Volatility
@@ -28,13 +87,27 @@ sources:
               value: "`unsafe`"
             - label: Security
               value: "`invoker`"
+            - label: Null input
+              value: called
+            - label: Leakproof
+              value: "no"
+            - label: Returns set
+              value: "no"
+            - label: Cost
+              value: "100"
           file_name: audit.capture_row_change%28%29.md
           qualified_name: "`audit.capture_row_change()`"
         - comment: ~
           definition: "```sql\nCREATE OR REPLACE FUNCTION audit.capture_statement_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    RETURN NULL;\nEND;\n$function$\n\n```"
           facts:
+            - label: Kind
+              value: "`ordinary`"
+            - label: Arguments
+              value: "``"
             - label: Returns
               value: "`trigger`"
+            - label: Owner
+              value: "`postgres`"
             - label: Language
               value: "`plpgsql`"
             - label: Volatility
@@ -43,36 +116,148 @@ sources:
               value: "`unsafe`"
             - label: Security
               value: "`invoker`"
+            - label: Null input
+              value: called
+            - label: Leakproof
+              value: "no"
+            - label: Returns set
+              value: "no"
+            - label: Cost
+              value: "100"
           file_name: audit.capture_statement_change%28%29.md
           qualified_name: "`audit.capture_statement_change()`"
+      languages: []
+      large_objects: []
       namespaces:
         - comment: ~
           name: "`audit`"
+          owner: "`postgres`"
         - comment: standard public schema
           name: "`public`"
+          owner: "`pg_database_owner`"
       object_heading: "###"
+      operator_classes: []
+      operator_families: []
+      operators: []
+      privileges:
+        - comment: ~
+          definition: ~
+          facts:
+            - label: Object type
+              value: "`schema`"
+            - label: Object
+              value: "`public`"
+            - label: Grantor
+              value: "`pg_database_owner`"
+            - label: Grantee
+              value: "`PUBLIC`"
+            - label: Privilege
+              value: "`USAGE`"
+          file_name: schema.public-pg_database_owner-PUBLIC-USAGE.md
+          qualified_name: "`schema public → PUBLIC USAGE`"
+        - comment: ~
+          definition: ~
+          facts:
+            - label: Object type
+              value: "`schema`"
+            - label: Object
+              value: "`public`"
+            - label: Grantor
+              value: "`pg_database_owner`"
+            - label: Grantee
+              value: "`pg_database_owner`"
+            - label: Privilege
+              value: "`CREATE`"
+          file_name: schema.public-pg_database_owner-pg_database_owner-CREATE.md
+          qualified_name: "`schema public → pg_database_owner CREATE`"
+        - comment: ~
+          definition: ~
+          facts:
+            - label: Object type
+              value: "`schema`"
+            - label: Object
+              value: "`public`"
+            - label: Grantor
+              value: "`pg_database_owner`"
+            - label: Grantee
+              value: "`pg_database_owner`"
+            - label: Privilege
+              value: "`USAGE`"
+          file_name: schema.public-pg_database_owner-pg_database_owner-USAGE.md
+          qualified_name: "`schema public → pg_database_owner USAGE`"
+      procedures: []
+      publications: []
+      range_types: []
+      role_database_settings: []
+      roles: []
+      rules: []
       section_heading: "##"
+      security_labels: []
+      sequences:
+        - comment: ~
+          definition: "```sql\nCREATE SEQUENCE \"audit\".\"accounts_id_seq\" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE OWNED BY audit.accounts.id;\n```"
+          facts:
+            - label: Owner
+              value: "`postgres`"
+            - label: Type
+              value: "`bigint`"
+            - label: Start
+              value: "1"
+            - label: Minimum
+              value: "1"
+            - label: Maximum
+              value: "9223372036854775807"
+            - label: Increment
+              value: "1"
+            - label: Cache
+              value: "1"
+            - label: Cycle
+              value: "no"
+            - label: Persistence
+              value: "`permanent`"
+            - label: Owned by
+              value: "`audit.accounts.id`"
+          file_name: audit.accounts_id_seq.md
+          qualified_name: "`audit.accounts_id_seq`"
+      statistics: []
+      subscriptions: []
       tables:
         - backend:
             definition: ~
             facts:
               - label: Kind
                 value: "`table`"
+              - label: Owner
+                value: "`postgres`"
+              - label: Persistence
+                value: "`permanent`"
+              - label: Replica identity
+                value: "`default`"
+              - label: Access method
+                value: "`heap`"
             notices: []
             title: PostgreSQL
           columns:
             - data_type: "`bigint`"
               default: "-"
               name: "`account_id`"
-              notes: ""
+              notes: "storage `plain`"
               nullable: "no"
             - data_type: "`integer`"
               default: "-"
               name: "`minimum_balance`"
-              notes: ""
+              notes: "storage `plain`"
               nullable: "no"
           comment: ~
           constraints:
+            - columns: "`account_id`"
+              details: "`NOT NULL account_id`"
+              kind: "`not_null`"
+              name: "`account_limits_account_id_not_null`"
+            - columns: "`minimum_balance`"
+              details: "`NOT NULL minimum_balance`"
+              kind: "`not_null`"
+              name: "`account_limits_minimum_balance_not_null`"
             - columns: "`account_id`"
               details: "`PRIMARY KEY (account_id)`; no inherit"
               kind: "`primary_key`"
@@ -80,7 +265,7 @@ sources:
           file_name: audit.account_limits.md
           indexes:
             - name: "`account_limits_pkey`"
-              origin: "postgres `btree`"
+              origin: "postgres `btree`; owner `postgres`; constraint `account_limits_pkey`"
               predicate: "-"
               terms: "`account_id` ascending opclass `pg_catalog.int8_ops` nulls `last`"
               unique: "yes"
@@ -90,26 +275,46 @@ sources:
             facts:
               - label: Kind
                 value: "`table`"
+              - label: Owner
+                value: "`postgres`"
+              - label: Persistence
+                value: "`permanent`"
+              - label: Replica identity
+                value: "`default`"
+              - label: Access method
+                value: "`heap`"
             notices: []
             title: PostgreSQL
           columns:
             - data_type: "`bigint`"
               default: "-"
               name: "`id`"
-              notes: "identity `always`"
+              notes: "identity `always`; storage `plain`"
               nullable: "no"
             - data_type: "`text`"
               default: "-"
               name: "`email`"
-              notes: ""
+              notes: "collation `pg_catalog.\"default\"`; storage `extended`"
               nullable: "no"
             - data_type: "`integer`"
               default: "`0`"
               name: "`balance`"
-              notes: ""
+              notes: "storage `plain`"
               nullable: "no"
           comment: ~
           constraints:
+            - columns: "`balance`"
+              details: "`NOT NULL balance`"
+              kind: "`not_null`"
+              name: "`accounts_balance_not_null`"
+            - columns: "`email`"
+              details: "`NOT NULL email`"
+              kind: "`not_null`"
+              name: "`accounts_email_not_null`"
+            - columns: "`id`"
+              details: "`NOT NULL id`"
+              kind: "`not_null`"
+              name: "`accounts_id_not_null`"
             - columns: "`id`"
               details: "`PRIMARY KEY (id)`; no inherit"
               kind: "`primary_key`"
@@ -117,7 +322,7 @@ sources:
           file_name: audit.accounts.md
           indexes:
             - name: "`accounts_pkey`"
-              origin: "postgres `btree`"
+              origin: "postgres `btree`; owner `postgres`; constraint `accounts_pkey`"
               predicate: "-"
               terms: "`id` ascending opclass `pg_catalog.int8_ops` nulls `last`"
               unique: "yes"
@@ -127,6 +332,12 @@ sources:
             facts:
               - label: Kind
                 value: "`partitioned_table`"
+              - label: Owner
+                value: "`postgres`"
+              - label: Persistence
+                value: "`permanent`"
+              - label: Replica identity
+                value: "`default`"
               - label: Partition key
                 value: "`RANGE (occurred_on)`"
             notices: []
@@ -135,15 +346,23 @@ sources:
             - data_type: "`bigint`"
               default: "-"
               name: "`id`"
-              notes: ""
+              notes: "storage `plain`"
               nullable: "no"
             - data_type: "`date`"
               default: "-"
               name: "`occurred_on`"
-              notes: ""
+              notes: "storage `plain`"
               nullable: "no"
           comment: ~
-          constraints: []
+          constraints:
+            - columns: "`id`"
+              details: "`NOT NULL id`"
+              kind: "`not_null`"
+              name: "`partitioned_events_id_not_null`"
+            - columns: "`occurred_on`"
+              details: "`NOT NULL occurred_on`"
+              kind: "`not_null`"
+              name: "`partitioned_events_occurred_on_not_null`"
           file_name: audit.partitioned_events.md
           indexes: []
           qualified_name: "`audit.partitioned_events`"
@@ -152,6 +371,14 @@ sources:
             facts:
               - label: Kind
                 value: "`partition`"
+              - label: Owner
+                value: "`postgres`"
+              - label: Persistence
+                value: "`permanent`"
+              - label: Replica identity
+                value: "`default`"
+              - label: Access method
+                value: "`heap`"
               - label: Inherits
                 value: "`audit.partitioned_events`"
               - label: Partition parent
@@ -164,18 +391,32 @@ sources:
             - data_type: "`bigint`"
               default: "-"
               name: "`id`"
-              notes: ""
+              notes: "storage `plain`; inherited only"
               nullable: "no"
             - data_type: "`date`"
               default: "-"
               name: "`occurred_on`"
-              notes: ""
+              notes: "storage `plain`; inherited only"
               nullable: "no"
           comment: ~
-          constraints: []
+          constraints:
+            - columns: "`id`"
+              details: "`NOT NULL id`; inherited"
+              kind: "`not_null`"
+              name: "`partitioned_events_id_not_null`"
+            - columns: "`occurred_on`"
+              details: "`NOT NULL occurred_on`; inherited"
+              kind: "`not_null`"
+              name: "`partitioned_events_occurred_on_not_null`"
           file_name: audit.partitioned_events_2026.md
           indexes: []
           qualified_name: "`audit.partitioned_events_2026`"
+      tablespaces: []
+      text_search_configurations: []
+      text_search_dictionaries: []
+      text_search_parsers: []
+      text_search_templates: []
+      transforms: []
       triggers:
         - comment: ~
           definition: "```sql\nCREATE TRIGGER account_emails_write INSTEAD OF INSERT OR DELETE OR UPDATE ON audit.account_emails FOR EACH ROW EXECUTE FUNCTION audit.capture_row_change('view')\n```"
@@ -293,22 +534,28 @@ sources:
           qualified_name: "`audit.partitioned_events_2026.partitioned_events_change`"
           target: "`audit.partitioned_events_2026`"
           when_expression: ~
+      user_mappings: []
       views:
         - columns:
             - data_type: "`bigint`"
               default: "-"
               name: "`id`"
-              notes: ""
+              notes: "storage `plain`"
               nullable: "yes"
             - data_type: "`text`"
               default: "-"
               name: "`email`"
-              notes: ""
+              notes: "collation `pg_catalog.\"default\"`; storage `extended`"
               nullable: "yes"
           comment: Writable account email projection
           definition: "```sql\n SELECT id,\n    email\n   FROM audit.accounts;\n```"
           facts:
             - label: Kind
               value: "`view`"
+            - label: Owner
+              value: "`postgres`"
+            - label: Persistence
+              value: "`permanent`"
           file_name: audit.account_emails.md
+          indexes: []
           qualified_name: "`audit.account_emails`"

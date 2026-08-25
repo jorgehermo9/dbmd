@@ -267,6 +267,7 @@ sources:
           definition: "```sql\nCREATE VIEW document_summaries (document_id, heading) AS\nSELECT id, title FROM documents\n```"
           facts: []
           file_name: main.document_summaries.md
+          indexes: []
           qualified_name: "`main.document_summaries`"
         - columns:
             - data_type: "`INTEGER`"
@@ -288,4 +289,5 @@ sources:
           definition: "```sql\nCREATE VIEW document_titles AS\nSELECT id, title, length(body) AS body_length FROM documents\n```"
           facts: []
           file_name: main.document_titles.md
+          indexes: []
           qualified_name: "`main.document_titles`"

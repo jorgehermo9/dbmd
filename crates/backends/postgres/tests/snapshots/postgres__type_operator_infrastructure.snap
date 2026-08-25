@@ -1,0 +1,457 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: snapshot
+---
+id: infrastructure
+display_name: ~
+catalog:
+  database:
+    name: dbmd_test_408d5f230f335760
+    owner: postgres
+    encoding: UTF8
+    locale_provider: libc
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    locale: ~
+    icu_rules: ~
+    collation_version: ~
+    tablespace: pg_default
+    template: false
+    allow_connections: true
+    connection_limit: -1
+    configuration: []
+    comment: ~
+  cluster_databases: []
+  tablespaces: []
+  namespaces:
+    - name: infrastructure
+      owner: postgres
+      extension: ~
+      comment: ~
+    - name: public
+      owner: pg_database_owner
+      extension: ~
+      comment: standard public schema
+  enums:
+    - namespace: infrastructure
+      name: label_a
+      owner: postgres
+      extension: ~
+      comment: ~
+      values:
+        - a
+        - b
+    - namespace: infrastructure
+      name: label_b
+      owner: postgres
+      extension: ~
+      comment: ~
+      values:
+        - a
+        - b
+  composite_types: []
+  domains: []
+  base_types:
+    - namespace: infrastructure
+      name: label_c
+      owner: postgres
+      extension: ~
+      defined: true
+      details:
+        internal_length: 4
+        passed_by_value: true
+        category: U
+        preferred: false
+        delimiter: ","
+        input: infrastructure.label_c_in
+        output: infrastructure.label_c_out
+        receive: ~
+        send: ~
+        type_modifier_input: ~
+        type_modifier_output: ~
+        analyze: ~
+        subscript: ~
+        element_type: ~
+        alignment: int
+        storage: plain
+        collatable: false
+        default: ~
+      array_type: infrastructure._label_c
+      comment: ~
+      definition: "CREATE TYPE \"infrastructure\".\"label_c\" (\n    INPUT = infrastructure.label_c_in,\n    OUTPUT = infrastructure.label_c_out,\n    INTERNALLENGTH = 4,\n    PASSEDBYVALUE,\n    ALIGNMENT = int4,\n    STORAGE = plain,\n    CATEGORY = 'U',\n    ARRAY_TYPE = infrastructure._label_c\n);"
+  range_types: []
+  sequences: []
+  tables: []
+  views: []
+  triggers: []
+  functions:
+    - namespace: infrastructure
+      name: fixture_btree_handler
+      extension: ~
+      signature: (internal)
+      arguments: internal
+      definition: "CREATE OR REPLACE FUNCTION infrastructure.fixture_btree_handler(internal)\n RETURNS index_am_handler\n LANGUAGE internal\n STRICT\nAS $function$bthandler$function$\n"
+      comment: ~
+      return_type: index_am_handler
+      owner: postgres
+      kind: ordinary
+      language: internal
+      volatility: volatile
+      parallel: unsafe
+      security_definer: false
+      strict: true
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "1"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: infrastructure
+      name: label_a_to_b
+      extension: ~
+      signature: (infrastructure.label_a)
+      arguments: infrastructure.label_a
+      definition: "CREATE OR REPLACE FUNCTION infrastructure.label_a_to_b(infrastructure.label_a)\n RETURNS infrastructure.label_b\n LANGUAGE sql\n IMMUTABLE STRICT\nRETURN (($1)::text)::infrastructure.label_b\n"
+      comment: ~
+      return_type: infrastructure.label_b
+      owner: postgres
+      kind: ordinary
+      language: sql
+      volatility: immutable
+      parallel: unsafe
+      security_definer: false
+      strict: true
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: infrastructure
+      name: label_c_in
+      extension: ~
+      signature: (cstring)
+      arguments: cstring
+      definition: "CREATE OR REPLACE FUNCTION infrastructure.label_c_in(cstring)\n RETURNS infrastructure.label_c\n LANGUAGE internal\n IMMUTABLE STRICT\nAS $function$int4in$function$\n"
+      comment: ~
+      return_type: infrastructure.label_c
+      owner: postgres
+      kind: ordinary
+      language: internal
+      volatility: immutable
+      parallel: unsafe
+      security_definer: false
+      strict: true
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "1"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: infrastructure
+      name: label_c_out
+      extension: ~
+      signature: (infrastructure.label_c)
+      arguments: infrastructure.label_c
+      definition: "CREATE OR REPLACE FUNCTION infrastructure.label_c_out(infrastructure.label_c)\n RETURNS cstring\n LANGUAGE internal\n IMMUTABLE STRICT\nAS $function$int4out$function$\n"
+      comment: ~
+      return_type: cstring
+      owner: postgres
+      kind: ordinary
+      language: internal
+      volatility: immutable
+      parallel: unsafe
+      security_definer: false
+      strict: true
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "1"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: infrastructure
+      name: nonzero
+      extension: ~
+      signature: (integer)
+      arguments: integer
+      definition: "CREATE OR REPLACE FUNCTION infrastructure.nonzero(integer)\n RETURNS boolean\n LANGUAGE sql\n IMMUTABLE STRICT\nRETURN ($1 <> 0)\n"
+      comment: ~
+      return_type: boolean
+      owner: postgres
+      kind: ordinary
+      language: sql
+      volatility: immutable
+      parallel: unsafe
+      security_definer: false
+      strict: true
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: infrastructure
+      name: same_integer
+      extension: ~
+      signature: "(integer, integer)"
+      arguments: "integer, integer"
+      definition: "CREATE OR REPLACE FUNCTION infrastructure.same_integer(integer, integer)\n RETURNS boolean\n LANGUAGE sql\n IMMUTABLE STRICT\nRETURN ($1 = $2)\n"
+      comment: ~
+      return_type: boolean
+      owner: postgres
+      kind: ordinary
+      language: sql
+      volatility: immutable
+      parallel: unsafe
+      security_definer: false
+      strict: true
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
+  procedures:
+    - namespace: infrastructure
+      name: accept_integer
+      extension: ~
+      signature: (IN value integer)
+      arguments: IN value integer
+      definition: "CREATE OR REPLACE PROCEDURE infrastructure.accept_integer(IN value integer)\n TRANSFORM FOR TYPE integer\n LANGUAGE fixture_pl\nAS $procedure$\nBEGIN\n    NULL;\nEND;\n$procedure$\n"
+      comment: ~
+      owner: postgres
+      language: fixture_pl
+      security_definer: false
+      configuration: []
+      transforms:
+        - integer
+  aggregates: []
+  casts:
+    - source_type: infrastructure.label_a
+      target_type: infrastructure.label_b
+      extension: ~
+      context: implicit
+      method: function
+      function: infrastructure.label_a_to_b(infrastructure.label_a)
+      comment: Fixture implicit cast
+    - source_type: infrastructure.label_b
+      target_type: infrastructure.label_c
+      extension: ~
+      context: assignment
+      method: input_output
+      function: ~
+      comment: ~
+    - source_type: infrastructure.label_c
+      target_type: integer
+      extension: ~
+      context: explicit
+      method: binary
+      function: ~
+      comment: ~
+  conversions:
+    - namespace: infrastructure
+      name: utf8_to_latin1
+      owner: postgres
+      extension: ~
+      source_encoding: UTF8
+      target_encoding: LATIN1
+      function: "pg_catalog.utf8_to_iso8859_1(integer,integer,pg_catalog.cstring,pg_catalog.internal,integer,boolean)"
+      default: true
+      comment: Fixture default encoding conversion
+  operators:
+    - namespace: infrastructure
+      name: "!!"
+      owner: postgres
+      extension: ~
+      kind: prefix
+      left_type: ~
+      right_type: integer
+      result_type: boolean
+      function: infrastructure.nonzero(integer)
+      commutator: ~
+      negator: ~
+      restriction_selectivity: ~
+      join_selectivity: ~
+      can_merge: false
+      can_hash: false
+      comment: ~
+    - namespace: infrastructure
+      name: "==="
+      owner: postgres
+      extension: ~
+      kind: binary
+      left_type: integer
+      right_type: integer
+      result_type: boolean
+      function: "infrastructure.same_integer(integer,integer)"
+      commutator: "infrastructure.===(integer,integer)"
+      negator: ~
+      restriction_selectivity: "pg_catalog.eqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,integer)"
+      join_selectivity: "pg_catalog.eqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,smallint,pg_catalog.internal)"
+      can_merge: true
+      can_hash: true
+      comment: Fixture equality operator
+  operator_families:
+    - namespace: infrastructure
+      name: integer_family
+      owner: postgres
+      extension: ~
+      access_method: btree
+      operators:
+        - left_type: integer
+          right_type: integer
+          strategy: 1
+          purpose: search
+          operator: "pg_catalog.<(integer,integer)"
+          access_method: btree
+          sort_family: ~
+        - left_type: integer
+          right_type: integer
+          strategy: 2
+          purpose: search
+          operator: "pg_catalog.<=(integer,integer)"
+          access_method: btree
+          sort_family: ~
+        - left_type: integer
+          right_type: integer
+          strategy: 3
+          purpose: search
+          operator: "pg_catalog.=(integer,integer)"
+          access_method: btree
+          sort_family: ~
+        - left_type: integer
+          right_type: integer
+          strategy: 4
+          purpose: search
+          operator: "pg_catalog.>=(integer,integer)"
+          access_method: btree
+          sort_family: ~
+        - left_type: integer
+          right_type: integer
+          strategy: 5
+          purpose: search
+          operator: "pg_catalog.>(integer,integer)"
+          access_method: btree
+          sort_family: ~
+      functions:
+        - left_type: integer
+          right_type: integer
+          number: 1
+          function: "pg_catalog.btint4cmp(integer,integer)"
+      comment: Fixture integer operator family
+  operator_classes:
+    - namespace: infrastructure
+      name: integer_class
+      owner: postgres
+      extension: ~
+      access_method: btree
+      family: infrastructure.integer_family
+      input_type: integer
+      default: false
+      key_type: ~
+      comment: Fixture integer operator class
+  access_methods:
+    - name: fixture_btree
+      extension: ~
+      kind: index
+      handler: infrastructure.fixture_btree_handler(pg_catalog.internal)
+      comment: Fixture index access method
+  languages:
+    - name: fixture_pl
+      owner: postgres
+      extension: ~
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: Fixture procedural language
+    - name: plpgsql
+      owner: postgres
+      extension: plpgsql
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: PL/pgSQL procedural language
+  transforms:
+    - data_type: integer
+      language: fixture_pl
+      extension: ~
+      from_sql: pg_catalog.textlike_support(pg_catalog.internal)
+      to_sql: pg_catalog.int4recv(pg_catalog.internal)
+      comment: Fixture integer transform
+  rules: []
+  event_triggers: []
+  statistics: []
+  foreign_data_wrappers: []
+  foreign_servers: []
+  user_mappings: []
+  text_search_parsers: []
+  text_search_templates: []
+  text_search_dictionaries: []
+  text_search_configurations: []
+  extensions:
+    - name: plpgsql
+      owner: postgres
+      namespace: pg_catalog
+      relocatable: false
+      version: "1.0"
+      configuration: []
+      members:
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_call_handler
+          arguments: []
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_inline_handler
+          arguments:
+            - pg_catalog.internal
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_validator
+          arguments:
+            - pg_catalog.oid
+        - object_type: language
+          names:
+            - plpgsql
+          arguments: []
+      comment: PL/pgSQL procedural language
+  publications: []
+  subscriptions: []
+  privileges:
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: create
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: usage
+      grantable: false
+  default_privileges: []
+  security_labels: []
+  large_objects: []
+  roles: []
+  role_database_settings: []
+  collations: []

@@ -1,0 +1,59 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: "format!(\"{extension_markdown}\\n---\\n{table_markdown}\")"
+---
+# `vector`
+
+Vector similarity search support
+
+**Owner:** `postgres`
+
+**Schema:** `public`
+
+**Version:** `0.8.2`
+
+**Relocatable:** yes
+
+**Owned objects:** 237 (`access method`: 2, `aggregate`: 4, `cast`: 23, `function`: 114, `operator`: 40, `operator class`: 24, `operator family`: 24, `type`: 6)
+
+
+---
+# `app.items`
+
+## Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | no | - | storage `plain` |
+| `embedding` | `vector(3)` | no | - | storage `external` |
+
+
+## Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `items_embedding_not_null` | `not_null` | `embedding` | `NOT NULL embedding` |
+| `items_id_not_null` | `not_null` | `id` | `NOT NULL id` |
+| `items_pkey` | `primary_key` | `id` | `PRIMARY KEY (id)`; no inherit |
+
+
+## Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `items_embedding_hnsw_idx` | `embedding` ascending opclass `public.vector_l2_ops` | no | postgres `hnsw`; owner `postgres`; option `m=8`; option `ef_construction=32` | - |
+| `items_embedding_ivfflat_idx` | `embedding` ascending opclass `public.vector_cosine_ops` | no | postgres `ivfflat`; owner `postgres`; option `lists=10` | - |
+| `items_pkey` | `id` ascending opclass `pg_catalog.int8_ops` nulls `last` | yes | postgres `btree`; owner `postgres`; constraint `items_pkey` | - |
+
+
+## PostgreSQL
+
+**Kind:** `table`
+
+**Owner:** `postgres`
+
+**Persistence:** `permanent`
+
+**Replica identity:** `default`
+
+**Access method:** `heap`

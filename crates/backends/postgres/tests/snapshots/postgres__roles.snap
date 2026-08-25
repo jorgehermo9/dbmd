@@ -1,0 +1,278 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: snapshot
+---
+id: access
+display_name: ~
+catalog:
+  database:
+    name: dbmd_test_aac43c6f57e3090d
+    owner: postgres
+    encoding: UTF8
+    locale_provider: libc
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    locale: ~
+    icu_rules: ~
+    collation_version: ~
+    tablespace: pg_default
+    template: false
+    allow_connections: true
+    connection_limit: -1
+    configuration: []
+    comment: ~
+  cluster_databases:
+    - name: dbmd_test_aac43c6f57e3090d
+      owner: postgres
+      encoding: UTF8
+      locale_provider: libc
+      lc_collate: en_US.utf8
+      lc_ctype: en_US.utf8
+      locale: ~
+      icu_rules: ~
+      collation_version: ~
+      tablespace: pg_default
+      template: false
+      allow_connections: true
+      connection_limit: -1
+      configuration: []
+      comment: ~
+    - name: postgres
+      owner: postgres
+      encoding: UTF8
+      locale_provider: libc
+      lc_collate: en_US.utf8
+      lc_ctype: en_US.utf8
+      locale: ~
+      icu_rules: ~
+      collation_version: ~
+      tablespace: pg_default
+      template: false
+      allow_connections: true
+      connection_limit: -1
+      configuration: []
+      comment: default administrative connection database
+    - name: template0
+      owner: postgres
+      encoding: UTF8
+      locale_provider: libc
+      lc_collate: en_US.utf8
+      lc_ctype: en_US.utf8
+      locale: ~
+      icu_rules: ~
+      collation_version: ~
+      tablespace: pg_default
+      template: true
+      allow_connections: false
+      connection_limit: -1
+      configuration: []
+      comment: unmodifiable empty database
+    - name: template1
+      owner: postgres
+      encoding: UTF8
+      locale_provider: libc
+      lc_collate: en_US.utf8
+      lc_ctype: en_US.utf8
+      locale: ~
+      icu_rules: ~
+      collation_version: ~
+      tablespace: pg_default
+      template: true
+      allow_connections: true
+      connection_limit: -1
+      configuration: []
+      comment: default template for new databases
+  tablespaces:
+    - name: pg_default
+      owner: postgres
+      options: []
+      comment: ~
+      location_redacted: true
+    - name: pg_global
+      owner: postgres
+      options: []
+      comment: ~
+      location_redacted: true
+  namespaces:
+    - name: public
+      owner: pg_database_owner
+      extension: ~
+      comment: standard public schema
+  enums: []
+  composite_types: []
+  domains: []
+  base_types: []
+  range_types: []
+  sequences: []
+  tables: []
+  views: []
+  triggers: []
+  functions: []
+  procedures: []
+  aggregates: []
+  casts: []
+  conversions: []
+  operators: []
+  operator_families: []
+  operator_classes: []
+  access_methods: []
+  languages:
+    - name: plpgsql
+      owner: postgres
+      extension: plpgsql
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: PL/pgSQL procedural language
+  transforms: []
+  rules: []
+  event_triggers: []
+  statistics: []
+  foreign_data_wrappers: []
+  foreign_servers: []
+  user_mappings: []
+  text_search_parsers: []
+  text_search_templates: []
+  text_search_dictionaries: []
+  text_search_configurations: []
+  extensions:
+    - name: plpgsql
+      owner: postgres
+      namespace: pg_catalog
+      relocatable: false
+      version: "1.0"
+      configuration: []
+      members:
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_call_handler
+          arguments: []
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_inline_handler
+          arguments:
+            - pg_catalog.internal
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_validator
+          arguments:
+            - pg_catalog.oid
+        - object_type: language
+          names:
+            - plpgsql
+          arguments: []
+      comment: PL/pgSQL procedural language
+  publications: []
+  subscriptions: []
+  privileges:
+    - object_kind: database
+      object_identity: template0
+      grantor: postgres
+      grantee: PUBLIC
+      privilege: connect
+      grantable: false
+    - object_kind: database
+      object_identity: template0
+      grantor: postgres
+      grantee: postgres
+      privilege: create
+      grantable: false
+    - object_kind: database
+      object_identity: template0
+      grantor: postgres
+      grantee: postgres
+      privilege: connect
+      grantable: false
+    - object_kind: database
+      object_identity: template0
+      grantor: postgres
+      grantee: postgres
+      privilege: temporary
+      grantable: false
+    - object_kind: database
+      object_identity: template1
+      grantor: postgres
+      grantee: PUBLIC
+      privilege: connect
+      grantable: false
+    - object_kind: database
+      object_identity: template1
+      grantor: postgres
+      grantee: postgres
+      privilege: create
+      grantable: false
+    - object_kind: database
+      object_identity: template1
+      grantor: postgres
+      grantee: postgres
+      privilege: connect
+      grantable: false
+    - object_kind: database
+      object_identity: template1
+      grantor: postgres
+      grantee: postgres
+      privilege: temporary
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: create
+      grantable: false
+  default_privileges: []
+  security_labels: []
+  large_objects: []
+  roles:
+    - name: analyst
+      superuser: false
+      inherit: true
+      create_role: false
+      create_database: false
+      login: true
+      replication: false
+      bypass_row_level_security: false
+      connection_limit: 3
+      valid_until: "2030-01-02 03:04:05+00"
+      password_configured: true
+      configuration:
+        - statement_timeout=5s
+      memberships:
+        - role: reporting
+          grantor: postgres
+          admin: true
+          inherit: false
+          set: true
+      comment: Human analytics login
+    - name: reporting
+      superuser: false
+      inherit: true
+      create_role: false
+      create_database: false
+      login: false
+      replication: false
+      bypass_row_level_security: false
+      connection_limit: -1
+      valid_until: ~
+      password_configured: true
+      configuration: []
+      memberships: []
+      comment: Read-only reporting capability
+  role_database_settings: []
+  collations: []

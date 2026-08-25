@@ -1,0 +1,283 @@
+---
+source: crates/backends/sqlite/tests/sqlite.rs
+expression: snapshot
+---
+id: app
+display_name: ~
+catalog:
+  namespaces:
+    - name: main
+      comment: ~
+  tables:
+    - namespace: main
+      name: child refs
+      comment: ~
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: shared ref
+          data_type: TEXT
+          nullable: true
+          default: "'missing'"
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: fk code a
+          kind: foreign_key
+          columns:
+            - shared ref
+          expression: ~
+          references:
+            namespace: main
+            table: parent keys
+            columns:
+              - code a
+            on_update: no_action
+            on_delete: cascade
+            match_type: full
+            deferrability:
+              deferrable: true
+              initially: immediate
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: false
+        - name: fk code b
+          kind: foreign_key
+          columns:
+            - shared ref
+          expression: ~
+          references:
+            namespace: main
+            table: parent keys
+            columns:
+              - code b
+            on_update: restrict
+            on_delete: set_default
+            match_type: partial
+            deferrability:
+              deferrable: false
+              initially: immediate
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: false
+      indexes: []
+      without_rowid: false
+      strict: false
+      definition: "CREATE TABLE \"child refs\" (\n    id INTEGER PRIMARY KEY,\n    \"shared ref\" TEXT DEFAULT 'missing',\n    CONSTRAINT \"fk code a\"\n        FOREIGN KEY (\"shared ref\") REFERENCES \"parent keys\" (\"code a\")\n        MATCH FULL\n        ON UPDATE NO ACTION\n        ON DELETE CASCADE\n        DEFERRABLE INITIALLY IMMEDIATE,\n    CONSTRAINT \"fk code b\"\n        FOREIGN KEY (\"shared ref\") REFERENCES \"parent keys\" (\"code b\")\n        MATCH PARTIAL\n        ON UPDATE RESTRICT\n        ON DELETE SET DEFAULT\n        NOT DEFERRABLE\n)"
+      kind:
+        kind: ordinary
+    - namespace: main
+      name: parent keys
+      comment: ~
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: code a
+          data_type: TEXT
+          nullable: true
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: code b
+          data_type: TEXT
+          nullable: true
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: parent_code_a_key
+          kind: unique
+          columns:
+            - code a
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: parent_code_b_key
+          kind: unique
+          columns:
+            - code b
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+      indexes:
+        - name: sqlite_autoindex_parent keys_1
+          unique: true
+          terms:
+            - target:
+                column: code a
+              collation: BINARY
+              order: ascending
+          predicate: ~
+          definition: ~
+          origin: unique_constraint
+        - name: sqlite_autoindex_parent keys_2
+          unique: true
+          terms:
+            - target:
+                column: code b
+              collation: BINARY
+              order: ascending
+          predicate: ~
+          definition: ~
+          origin: unique_constraint
+      without_rowid: false
+      strict: false
+      definition: "CREATE TABLE \"parent keys\" (\n    id INTEGER PRIMARY KEY,\n    \"code a\" TEXT CONSTRAINT parent_code_a_key UNIQUE,\n    \"code b\" TEXT CONSTRAINT parent_code_b_key UNIQUE\n)"
+      kind:
+        kind: ordinary
+    - namespace: main
+      name: sqliteXascending
+      comment: ~
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: payload
+          data_type: TEXT
+          nullable: true
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+      indexes: []
+      without_rowid: false
+      strict: false
+      definition: "CREATE TABLE sqliteXascending (\n    id INTEGER PRIMARY KEY ASC,\n    payload TEXT\n)"
+      kind:
+        kind: ordinary
+    - namespace: main
+      name: sqliteXdescending
+      comment: ~
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: true
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: payload
+          data_type: TEXT
+          nullable: true
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+      indexes:
+        - name: sqlite_autoindex_sqliteXdescending_1
+          unique: true
+          terms:
+            - target:
+                column: id
+              collation: BINARY
+              order: descending
+          predicate: ~
+          definition: ~
+          origin: primary_key
+      without_rowid: false
+      strict: false
+      definition: "CREATE TABLE sqliteXdescending (\n    id INTEGER PRIMARY KEY DESC,\n    payload TEXT\n)"
+      kind:
+        kind: ordinary
+  views:
+    - namespace: main
+      name: sqliteXview
+      definition: "CREATE VIEW sqliteXview AS\nSELECT id, payload FROM sqliteXascending"
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: ~
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: payload
+          data_type: TEXT
+          nullable: ~
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+  triggers:
+    - namespace: main
+      name: sqliteXdefault_timing
+      target_namespace: main
+      target: sqliteXascending
+      timing: before
+      event:
+        event: update
+        columns:
+          - payload
+          - intentionally_missing_column
+      when_expression: ~
+      definition: "CREATE TRIGGER sqliteXdefault_timing\nUPDATE OF payload, intentionally_missing_column ON sqliteXascending\nBEGIN\n    SELECT NEW.payload;\nEND"

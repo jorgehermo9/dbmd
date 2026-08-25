@@ -30,3 +30,4 @@ DROP TABLE discarded;
 CREATE TEMP TABLE connection_only (id INTEGER PRIMARY KEY);
 CREATE TEMP VIEW connection_only_view AS SELECT id FROM connection_only;
 CREATE TEMP TRIGGER connection_only_trigger AFTER INSERT ON connection_only BEGIN SELECT 1; END;
+CREATE TEMP TRIGGER connection_only_main_trigger AFTER UPDATE ON main.records BEGIN SELECT 1; END;

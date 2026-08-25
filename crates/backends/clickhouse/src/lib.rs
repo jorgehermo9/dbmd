@@ -2,6 +2,7 @@
 
 mod catalog;
 mod config;
+mod ddl;
 mod introspect;
 mod render;
 
@@ -9,8 +10,13 @@ use dbmd_core::SourceId;
 use dbmd_render::{RenderSource, TemplateFile};
 
 pub use catalog::{
-    Catalog, Column, ColumnDefaultKind, Constraint, DataSkippingIndex, Database, Projection,
-    Snapshot, Table, TableKind, UserDefinedFunction,
+    AccessTarget, Catalog, Column, ColumnDefaultKind, Constraint, ConstraintKind,
+    DataSkippingIndex, Database, DictionaryDetails, DictionaryField, Grant, NamedCollection,
+    NamedCollectionEntry, Projection, Quota, QuotaLimit, RefreshSchedule, Resource,
+    ResourceOperation, Role, RoleGrant, RowPolicy, SettingsProfile, SettingsProfileElement,
+    Snapshot, Table, TableKind, TableReference, TableTtl, TtlAction, TtlDestination, User,
+    UserDefinedFunction, UserHosts, ViewRefresh, ViewSqlSecurity, WindowView, Workload,
+    WorkloadSetting,
 };
 pub use config::Config;
 pub use introspect::{introspect, ClickHouseSource, IntrospectionError};

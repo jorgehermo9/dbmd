@@ -6,6 +6,8 @@ produces one normalized
 resulting schema surface, not the migration history or the sequence of DDL
 statements that created it.
 
+The executable compatibility target for this coverage matrix is SQLite 3.53.3.
+
 ## Public interface
 
 - `SqliteSource` carries stable source identity, an optional display name, a
@@ -25,22 +27,19 @@ stored sequence.
 
 ## Coverage
 
-The status values mean:
-
-- **Supported**: represented by the public snapshot and proved with a real
-  SQLite fixture.
-- **Partial**: some semantics are represented, but known SQLite forms are not.
-- **Planned**: not yet represented by this adapter.
+`Supported` means represented by the public snapshot and proved with a real
+SQLite fixture. `Intentionally excluded` identifies state that is not part of a
+reopenable persistent SQLite database.
 
 | Schema surface | Status | Current behavior and fixture evidence |
 | --- | --- | --- |
-| Ordinary tables and columns | Supported | Names, declared types, effective nullability, defaults, collations, ordinal order, exact stored definitions, and rowid-primary-key behavior; [ordinary table fixture](tests/fixtures/ordinary_table/schema.sql) and [table-definition fixture](tests/fixtures/table_definition/schema.sql). |
+| Ordinary tables and columns | Supported | Names, quoted identifiers, declared types, effective nullability, defaults, collations, ordinal order, exact stored definitions, and rowid-primary-key behavior—including the documented `INTEGER PRIMARY KEY DESC` exception; [ordinary table fixture](tests/fixtures/ordinary_table/schema.sql), [table-definition fixture](tests/fixtures/table_definition/schema.sql), and [grammar-edge fixture](tests/fixtures/grammar_edges/schema.sql). |
 | Primary keys | Supported | Named/unnamed, column/table, single/composite, conflict policy, `AUTOINCREMENT`, physical index origin, and effective nullability; [table-definition fixture](tests/fixtures/table_definition/schema.sql). |
 | `NOT NULL`, `UNIQUE`, and `CHECK` | Supported | Names, column/table declaration, expressions, conflict algorithms, and backing index origins are preserved; [table-definition fixture](tests/fixtures/table_definition/schema.sql). |
 | Generated columns | Supported | Virtual/stored kinds and generating expressions are preserved; [table-features fixture](tests/fixtures/table_features/schema.sql). |
 | `STRICT` tables | Supported | Preserved from `PRAGMA table_list`; [table features fixture](tests/fixtures/table_features/schema.sql). |
 | `WITHOUT ROWID` tables | Supported | Preserved from `PRAGMA table_list`; [table features fixture](tests/fixtures/table_features/schema.sql). |
-| Foreign keys | Supported | Named/unnamed, column/table, explicit/implicit composite targets, all update/delete actions, `MATCH`, and deferrability are merged from PRAGMAs and stored SQL; [relationships fixture](tests/fixtures/relationships/schema.sql) and [table-definition fixture](tests/fixtures/table_definition/schema.sql). |
+| Foreign keys | Supported | Named/unnamed, column/table, explicit/implicit composite targets, all update/delete actions, `MATCH`, and deferrability are merged from PRAGMAs and stored SQL. Multiple named constraints may share source columns and a target table without their distinct target keys being conflated; [relationships fixture](tests/fixtures/relationships/schema.sql), [table-definition fixture](tests/fixtures/table_definition/schema.sql), and [grammar-edge fixture](tests/fixtures/grammar_edges/schema.sql). |
 | Indexes | Supported | Explicit, unique, partial, expression, collated, ascending/descending, UNIQUE-backed, and primary-key-backed indexes preserve typed terms, origin, predicate, and raw definition; [indexes fixture](tests/fixtures/indexes/schema.sql). |
 | Views | Supported | Qualified identity, derived/declared columns with unknown nullability, and exact definitions; [schema-objects fixture](tests/fixtures/schema_objects/schema.sql). |
 | Triggers | Supported | BEFORE/AFTER/INSTEAD OF timing, INSERT/UPDATE/UPDATE OF/DELETE events, target, `WHEN`, and exact body definition; [schema-objects fixture](tests/fixtures/schema_objects/schema.sql). |
@@ -49,7 +48,8 @@ The status values mean:
 | `CREATE TABLE AS` | Supported as resulting schema | SQLite retains the resulting table definition, not the original SELECT; [schema-evolution fixture](tests/fixtures/schema_evolution/schema.sql). |
 | `ALTER TABLE` | Supported as resulting schema | Rename table/column, add/drop column, and SQLite 3.53 `SET/DROP NOT NULL` are proved through the rewritten stored definition; [schema-evolution fixture](tests/fixtures/schema_evolution/schema.sql). |
 | `DROP TABLE/INDEX/VIEW/TRIGGER` | Supported as resulting absence | Dropped objects are absent from the snapshot; [schema-evolution fixture](tests/fixtures/schema_evolution/schema.sql). |
-| TEMP schema objects | Intentionally excluded | TEMP objects belong to one connection and disappear before a persistent source can be reopened. The schema-evolution fixture creates TEMP table/view/trigger objects and proves they do not enter the persistent snapshot. |
+| TEMP schema objects | Intentionally excluded | TEMP objects belong to one connection and disappear before a persistent source can be reopened. The schema-evolution fixture creates TEMP table/view/trigger objects, including a SQLite 3.53 TEMP trigger targeting `main`, and proves they do not enter the persistent snapshot. |
+| Internal `sqlite_` objects | Intentionally excluded | SQLite reserves the literal `sqlite_` prefix for internal schema objects. The filter uses literal glob semantics; the grammar-edge fixture proves valid `sqliteX*` user tables, views, and triggers remain visible. Constraint-backed `sqlite_autoindex_*` entries are retained as typed index origins because they describe user constraints. |
 
 ## Template context
 

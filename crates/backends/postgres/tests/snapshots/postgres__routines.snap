@@ -1,0 +1,197 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: snapshot
+---
+id: routines
+display_name: ~
+catalog:
+  database:
+    name: dbmd_test_e6912c3e6268abb3
+    owner: postgres
+    encoding: UTF8
+    locale_provider: libc
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    locale: ~
+    icu_rules: ~
+    collation_version: ~
+    tablespace: pg_default
+    template: false
+    allow_connections: true
+    connection_limit: -1
+    configuration: []
+    comment: ~
+  cluster_databases: []
+  tablespaces: []
+  namespaces:
+    - name: public
+      owner: pg_database_owner
+      extension: ~
+      comment: standard public schema
+    - name: routines
+      owner: postgres
+      extension: ~
+      comment: ~
+  enums: []
+  composite_types: []
+  domains: []
+  base_types: []
+  range_types: []
+  sequences: []
+  tables: []
+  views: []
+  triggers: []
+  functions:
+    - namespace: routines
+      name: range_values
+      extension: ~
+      signature: "(first_value integer, last_value integer)"
+      arguments: "first_value integer, last_value integer"
+      definition: "CREATE OR REPLACE FUNCTION routines.range_values(first_value integer, last_value integer)\n RETURNS SETOF integer\n LANGUAGE sql\n STABLE PARALLEL RESTRICTED COST 7 ROWS 25\n SET search_path TO 'pg_catalog'\nAS $function$ SELECT generate_series(first_value, last_value) $function$\n"
+      comment: ~
+      return_type: SETOF integer
+      owner: postgres
+      kind: ordinary
+      language: sql
+      volatility: stable
+      parallel: restricted
+      security_definer: false
+      strict: false
+      leakproof: false
+      returns_set: true
+      support_function: ~
+      cost: "7"
+      rows: "25"
+      configuration:
+        - search_path=pg_catalog
+      transforms: []
+    - namespace: routines
+      name: row_number_clone
+      extension: ~
+      signature: ()
+      arguments: ""
+      definition: "CREATE OR REPLACE FUNCTION routines.row_number_clone()\n RETURNS bigint\n LANGUAGE internal\n WINDOW IMMUTABLE PARALLEL SAFE\nAS $function$window_row_number$function$\n"
+      comment: ~
+      return_type: bigint
+      owner: postgres
+      kind: window
+      language: internal
+      volatility: immutable
+      parallel: safe
+      security_definer: false
+      strict: false
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "1"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: routines
+      name: starts_with
+      extension: ~
+      signature: "(value text, prefix text)"
+      arguments: "value text, prefix text DEFAULT ''::text"
+      definition: "CREATE OR REPLACE FUNCTION routines.starts_with(value text, prefix text DEFAULT ''::text)\n RETURNS boolean\n LANGUAGE internal\n IMMUTABLE PARALLEL SAFE STRICT LEAKPROOF COST 3 SUPPORT text_starts_with_support\nAS $function$text_starts_with$function$\n"
+      comment: Planner-supported strict and leakproof function
+      return_type: boolean
+      owner: postgres
+      kind: ordinary
+      language: internal
+      volatility: immutable
+      parallel: safe
+      security_definer: false
+      strict: true
+      leakproof: true
+      returns_set: false
+      support_function: pg_catalog.text_starts_with_support(pg_catalog.internal)
+      cost: "3"
+      rows: ~
+      configuration: []
+      transforms: []
+  procedures: []
+  aggregates: []
+  casts: []
+  conversions: []
+  operators: []
+  operator_families: []
+  operator_classes: []
+  access_methods: []
+  languages:
+    - name: plpgsql
+      owner: postgres
+      extension: plpgsql
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: PL/pgSQL procedural language
+  transforms: []
+  rules: []
+  event_triggers: []
+  statistics: []
+  foreign_data_wrappers: []
+  foreign_servers: []
+  user_mappings: []
+  text_search_parsers: []
+  text_search_templates: []
+  text_search_dictionaries: []
+  text_search_configurations: []
+  extensions:
+    - name: plpgsql
+      owner: postgres
+      namespace: pg_catalog
+      relocatable: false
+      version: "1.0"
+      configuration: []
+      members:
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_call_handler
+          arguments: []
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_inline_handler
+          arguments:
+            - pg_catalog.internal
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_validator
+          arguments:
+            - pg_catalog.oid
+        - object_type: language
+          names:
+            - plpgsql
+          arguments: []
+      comment: PL/pgSQL procedural language
+  publications: []
+  subscriptions: []
+  privileges:
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: create
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: usage
+      grantable: false
+  default_privileges: []
+  security_labels: []
+  large_objects: []
+  roles: []
+  role_database_settings: []
+  collations: []

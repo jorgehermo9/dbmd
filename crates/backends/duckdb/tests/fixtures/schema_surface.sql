@@ -2,6 +2,9 @@ CREATE SCHEMA analytics;
 
 CREATE TYPE analytics.account_status AS ENUM ('active', 'disabled');
 COMMENT ON TYPE analytics.account_status IS 'Account lifecycle';
+CREATE TYPE analytics.account_pair AS STRUCT(account_id BIGINT, tenant_id BIGINT);
+CREATE TYPE analytics.reference_value AS UNION(account_id BIGINT, external_id VARCHAR);
+CREATE TYPE analytics.positive_integer AS INTEGER;
 
 CREATE SEQUENCE analytics.account_id_seq START 1000 INCREMENT 10;
 COMMENT ON SEQUENCE analytics.account_id_seq IS 'Account identifiers';
@@ -20,6 +23,9 @@ CREATE TABLE analytics.accounts (
     status analytics.account_status NOT NULL DEFAULT 'active',
     balance DECIMAL(18, 2) NOT NULL DEFAULT 0,
     metadata STRUCT(source VARCHAR, tags VARCHAR[]),
+    typed_pair analytics.account_pair,
+    typed_reference analytics.reference_value,
+    retry_count analytics.positive_integer,
     CONSTRAINT accounts_email_uq UNIQUE (tenant_id, email),
     CONSTRAINT accounts_balance_check CHECK (balance >= 0)
 );

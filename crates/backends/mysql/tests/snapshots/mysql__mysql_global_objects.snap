@@ -1,0 +1,1725 @@
+---
+source: crates/backends/mysql/tests/mysql.rs
+expression: first
+---
+id: global
+display_name: ~
+catalog:
+  schemas:
+    - name: test
+      default_character_set: utf8mb4
+      default_collation: utf8mb4_0900_ai_ci
+      default_encryption: false
+      read_only: true
+  tables:
+    - schema: test
+      name: accounts
+      engine: InnoDB
+      row_format: Dynamic
+      collation: utf8mb4_0900_ai_ci
+      comment: ~
+      create_options: ~
+      engine_attribute: ~
+      secondary_engine_attribute: ~
+      columns:
+        - name: account_id
+          position: 1
+          data_type: bigint
+          column_type: bigint unsigned
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
+        - name: email
+          position: 2
+          data_type: varchar
+          column_type: varchar(255)
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          comment: ~
+          visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
+      constraints:
+        - name: PRIMARY
+          kind: primary_key
+          columns:
+            - account_id
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_type: ~
+          on_update: ~
+          on_delete: ~
+          expression: ~
+          enforced: true
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+      indexes:
+        - name: PRIMARY
+          unique: true
+          index_type: BTREE
+          visible: true
+          comment: ~
+          disabled_reason: ~
+          terms:
+            - position: 1
+              column: account_id
+              expression: ~
+              prefix_length: ~
+              sort_order: ascending
+      partitions: []
+      definition: "CREATE TABLE `accounts` (\n  `account_id` bigint unsigned NOT NULL,\n  `email` varchar(255) NOT NULL,\n  PRIMARY KEY (`account_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+  views: []
+  routines:
+    - schema: test
+      name: rotate_accounts
+      kind: procedure
+      return_type: ~
+      body: SQL
+      definition: SELECT COUNT(*) FROM accounts
+      create_statement: "CREATE DEFINER=`root`@`localhost` PROCEDURE `rotate_accounts`()\n    READS SQL DATA\nSELECT COUNT(*) FROM accounts"
+      external_language: SQL
+      deterministic: false
+      data_access: reads_sql_data
+      security: definer
+      definer: root@localhost
+      comment: ~
+      parameters: []
+      sql_mode: "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+      character_set_client: latin1
+      collation_connection: latin1_swedish_ci
+      database_collation: utf8mb4_0900_ai_ci
+      libraries: []
+  triggers: []
+  events: []
+  libraries: []
+  servers:
+    - name: dbmd_remote
+      wrapper: mysql
+      host: 198.51.100.10
+      database: remote_database
+      username: remote_user
+      port: 3306
+      socket: ""
+      owner: dbmd
+      password_configured: true
+  spatial_reference_systems:
+    - id: 33001
+      name: dbmd geographic
+      organization: dbmd
+      organization_id: 33001
+      definition: "GEOGCS[\"dbmd geographic\",DATUM[\"dbmd datum\",SPHEROID[\"dbmd sphere\",6378137,298.257223563]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.017453292519943278],AXIS[\"Latitude\",NORTH],AXIS[\"Longitude\",EAST]]"
+      description: Application-defined fixture SRS
+  tablespaces:
+    - name: dbmd_general
+      engine: InnoDB
+      row_format: Any
+      page_size: 16384
+      autoextend_size: 4194304
+      space_type: General
+      encryption: N
+      engine_attribute: ~
+      file_locations_redacted: true
+    - name: mysql
+      engine: InnoDB
+      row_format: Any
+      page_size: 16384
+      autoextend_size: 0
+      space_type: General
+      encryption: N
+      engine_attribute: ~
+      file_locations_redacted: true
+  resource_groups:
+    - name: dbmd_batch
+      kind: user
+      enabled: false
+      virtual_cpus: 0-7
+      thread_priority: 0
+  loadable_functions:
+    - name: asynchronous_connection_failover_add_managed
+      return_type: character
+      library: ~
+      kind: scalar
+    - name: asynchronous_connection_failover_add_source
+      return_type: character
+      library: ~
+      kind: scalar
+    - name: asynchronous_connection_failover_delete_managed
+      return_type: character
+      library: ~
+      kind: scalar
+    - name: asynchronous_connection_failover_delete_source
+      return_type: character
+      library: ~
+      kind: scalar
+    - name: asynchronous_connection_failover_reset
+      return_type: character
+      library: ~
+      kind: scalar
+    - name: innodb_redo_log_archive_flush
+      return_type: integer
+      library: ~
+      kind: scalar
+    - name: innodb_redo_log_archive_start
+      return_type: integer
+      library: ~
+      kind: scalar
+    - name: innodb_redo_log_archive_stop
+      return_type: integer
+      library: ~
+      kind: scalar
+    - name: innodb_redo_log_consumer_advance
+      return_type: integer
+      library: ~
+      kind: scalar
+    - name: innodb_redo_log_consumer_register
+      return_type: integer
+      library: ~
+      kind: scalar
+    - name: innodb_redo_log_consumer_unregister
+      return_type: integer
+      library: ~
+      kind: scalar
+    - name: innodb_redo_log_sharp_checkpoint
+      return_type: integer
+      library: ~
+      kind: scalar
+    - name: innodb_set_open_files_limit
+      return_type: integer
+      library: ~
+      kind: scalar
+    - name: mysqlx_error
+      return_type: character
+      library: ~
+      kind: scalar
+    - name: mysqlx_generate_document_id
+      return_type: character
+      library: ~
+      kind: scalar
+    - name: mysqlx_get_prepared_statement_id
+      return_type: integer
+      library: ~
+      kind: scalar
+  plugins:
+    - name: ARCHIVE
+      version: "3.0"
+      status: active
+      kind: storage_engine
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Archive storage engine
+      license: gpl
+      load_option: "on"
+    - name: auth_socket
+      version: "1.1"
+      status: active
+      kind: authentication
+      type_version: "2.1"
+      library: auth_socket.so
+      library_version: "1.11"
+      author: Oracle Corporation
+      description: Unix Socket based authentication
+      license: gpl
+      load_option: "on"
+    - name: binlog
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: This is a pseudo storage engine to represent the binlog in a transaction
+      license: gpl
+      load_option: force
+    - name: BLACKHOLE
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: /dev/null storage engine (anything you write to it disappears)
+      license: gpl
+      load_option: "on"
+    - name: caching_sha2_password
+      version: "1.0"
+      status: active
+      kind: authentication
+      type_version: "2.1"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Caching sha2 authentication
+      license: gpl
+      load_option: force
+    - name: CSV
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: CSV storage engine
+      license: gpl
+      load_option: force
+    - name: daemon_keyring_proxy_plugin
+      version: "1.0"
+      status: active
+      kind: daemon
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle
+      description: A plugin that implements the keyring component services atop of the keyring plugin
+      license: gpl
+      load_option: force
+    - name: FEDERATED
+      version: "1.0"
+      status: disabled
+      kind: storage_engine
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Federated MySQL storage engine
+      license: gpl
+      load_option: "off"
+    - name: InnoDB
+      version: "9.7"
+      status: active
+      kind: storage_engine
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: "Supports transactions, row-level locking, and foreign keys"
+      license: gpl
+      load_option: force
+    - name: INNODB_BUFFER_PAGE
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB Buffer Page Information
+      license: gpl
+      load_option: force
+    - name: INNODB_BUFFER_PAGE_LRU
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB Buffer Page in LRU
+      license: gpl
+      load_option: force
+    - name: INNODB_BUFFER_POOL_STATS
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB Buffer Pool Statistics Information
+      license: gpl
+      load_option: force
+    - name: INNODB_CACHED_INDEXES
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB cached indexes
+      license: gpl
+      load_option: force
+    - name: INNODB_CMP
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Statistics for the InnoDB compression
+      license: gpl
+      load_option: force
+    - name: INNODB_CMPMEM
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Statistics for the InnoDB compressed buffer pool
+      license: gpl
+      load_option: force
+    - name: INNODB_CMPMEM_RESET
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Statistics for the InnoDB compressed buffer pool; reset cumulated counts
+      license: gpl
+      load_option: force
+    - name: INNODB_CMP_PER_INDEX
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Statistics for the InnoDB compression (per index)
+      license: gpl
+      load_option: force
+    - name: INNODB_CMP_PER_INDEX_RESET
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Statistics for the InnoDB compression (per index); reset cumulated counts
+      license: gpl
+      load_option: force
+    - name: INNODB_CMP_RESET
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Statistics for the InnoDB compression; reset cumulated counts
+      license: gpl
+      load_option: force
+    - name: INNODB_COLUMNS
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB INNODB_COLUMNS
+      license: gpl
+      load_option: force
+    - name: INNODB_FT_BEING_DELETED
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: INNODB AUXILIARY FTS BEING DELETED TABLE
+      license: gpl
+      load_option: force
+    - name: INNODB_FT_CONFIG
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: INNODB AUXILIARY FTS CONFIG TABLE
+      license: gpl
+      load_option: force
+    - name: INNODB_FT_DEFAULT_STOPWORD
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Default stopword list for InnDB Full Text Search
+      license: gpl
+      load_option: force
+    - name: INNODB_FT_DELETED
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: INNODB AUXILIARY FTS DELETED TABLE
+      license: gpl
+      load_option: force
+    - name: INNODB_FT_INDEX_CACHE
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: INNODB AUXILIARY FTS INDEX CACHED
+      license: gpl
+      load_option: force
+    - name: INNODB_FT_INDEX_TABLE
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: INNODB AUXILIARY FTS INDEX TABLE
+      license: gpl
+      load_option: force
+    - name: INNODB_INDEXES
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB INNODB_INDEXES
+      license: gpl
+      load_option: force
+    - name: INNODB_METRICS
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB Metrics Info
+      license: gpl
+      load_option: force
+    - name: INNODB_SESSION_TEMP_TABLESPACES
+      version: "9.7"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB Session Temporary tablespaces
+      license: gpl
+      load_option: force
+    - name: INNODB_TABLES
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB INNODB_TABLES
+      license: gpl
+      load_option: force
+    - name: INNODB_TABLESPACES
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB INNODB_TABLESPACES
+      license: gpl
+      load_option: force
+    - name: INNODB_TABLESTATS
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB INNODB_TABLESTATS
+      license: gpl
+      load_option: force
+    - name: INNODB_TEMP_TABLE_INFO
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB Temp Table Stats
+      license: gpl
+      load_option: force
+    - name: INNODB_TRX
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB transactions
+      license: gpl
+      load_option: force
+    - name: INNODB_VIRTUAL
+      version: "9.2"
+      status: active
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB INNODB_VIRTUAL
+      license: gpl
+      load_option: force
+    - name: MEMORY
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: "Hash based, stored in memory, useful for temporary tables"
+      license: gpl
+      load_option: force
+    - name: MRG_MYISAM
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Collection of identical MyISAM tables
+      license: gpl
+      load_option: force
+    - name: MyISAM
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: MyISAM storage engine
+      license: gpl
+      load_option: force
+    - name: mysqlx
+      version: "1.0"
+      status: active
+      kind: daemon
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: X Plugin for MySQL
+      license: gpl
+      load_option: "on"
+    - name: mysqlx_cache_cleaner
+      version: "1.0"
+      status: active
+      kind: audit
+      type_version: "4.1"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Cache cleaner for sha2 authentication in X plugin
+      license: gpl
+      load_option: "on"
+    - name: ndbcluster
+      version: "1.0"
+      status: disabled
+      kind: storage_engine
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: "Clustered, fault-tolerant tables"
+      license: gpl
+      load_option: "off"
+    - name: ndbinfo
+      version: "0.1"
+      status: disabled
+      kind: storage_engine
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: MySQL Cluster system information storage engine
+      license: gpl
+      load_option: "off"
+    - name: ndb_transid_mysql_connection_map
+      version: "0.1"
+      status: disabled
+      kind: information_schema
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Map between MySQL connection ID and NDB transaction ID
+      license: gpl
+      load_option: "off"
+    - name: ngram
+      version: "0.1"
+      status: active
+      kind: full_text_parser
+      type_version: "1.1"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Ngram Full-Text Parser
+      license: gpl
+      load_option: "on"
+    - name: PERFORMANCE_SCHEMA
+      version: "0.1"
+      status: active
+      kind: storage_engine
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Performance Schema
+      license: gpl
+      load_option: force
+    - name: sha256_password
+      version: "1.1"
+      status: active
+      kind: authentication
+      type_version: "2.1"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: SHA256 password authentication
+      license: gpl
+      load_option: force
+    - name: TempTable
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "90701.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB temporary storage engine
+      license: gpl
+      load_option: force
+  components:
+    - urn: "file://component_validate_password"
+  accounts:
+    - user: dbmd_app
+      host: "%"
+      authentication_factors:
+        - position: 1
+          plugin: caching_sha2_password
+          credential_configured: true
+          passwordless: false
+          registration_required: false
+      locked: true
+      password_expired: false
+      password_lifetime_days: 90
+      password_reuse_history: ~
+      password_reuse_interval_days: ~
+      require_current_password: ~
+      dual_password_configured: false
+      tls_requirement: any
+      tls_cipher: ~
+      x509_issuer: ~
+      x509_subject: ~
+      max_queries_per_hour: 10
+      max_updates_per_hour: 0
+      max_connections_per_hour: 0
+      max_user_connections: 2
+      comment: dbmd application account
+      attributes_configured: true
+    - user: dbmd_reader
+      host: "%"
+      authentication_factors:
+        - position: 1
+          plugin: caching_sha2_password
+          credential_configured: false
+          passwordless: false
+          registration_required: false
+      locked: true
+      password_expired: true
+      password_lifetime_days: ~
+      password_reuse_history: ~
+      password_reuse_interval_days: ~
+      require_current_password: ~
+      dual_password_configured: false
+      tls_requirement: none
+      tls_cipher: ~
+      x509_issuer: ~
+      x509_subject: ~
+      max_queries_per_hour: 0
+      max_updates_per_hour: 0
+      max_connections_per_hour: 0
+      max_user_connections: 0
+      comment: ~
+      attributes_configured: false
+    - user: root
+      host: "%"
+      authentication_factors:
+        - position: 1
+          plugin: caching_sha2_password
+          credential_configured: false
+          passwordless: false
+          registration_required: false
+      locked: false
+      password_expired: false
+      password_lifetime_days: ~
+      password_reuse_history: ~
+      password_reuse_interval_days: ~
+      require_current_password: ~
+      dual_password_configured: false
+      tls_requirement: none
+      tls_cipher: ~
+      x509_issuer: ~
+      x509_subject: ~
+      max_queries_per_hour: 0
+      max_updates_per_hour: 0
+      max_connections_per_hour: 0
+      max_user_connections: 0
+      comment: ~
+      attributes_configured: false
+    - user: root
+      host: localhost
+      authentication_factors:
+        - position: 1
+          plugin: caching_sha2_password
+          credential_configured: false
+          passwordless: false
+          registration_required: false
+      locked: false
+      password_expired: false
+      password_lifetime_days: ~
+      password_reuse_history: ~
+      password_reuse_interval_days: ~
+      require_current_password: ~
+      dual_password_configured: false
+      tls_requirement: none
+      tls_cipher: ~
+      x509_issuer: ~
+      x509_subject: ~
+      max_queries_per_hour: 0
+      max_updates_per_hour: 0
+      max_connections_per_hour: 0
+      max_user_connections: 0
+      comment: ~
+      attributes_configured: false
+  role_grants:
+    - role_user: dbmd_reader
+      role_host: "%"
+      member_user: dbmd_app
+      member_host: "%"
+      admin_option: true
+  default_roles:
+    - user: dbmd_app
+      host: "%"
+      role_user: dbmd_reader
+      role_host: "%"
+  privileges:
+    - grantee: "'dbmd_app'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: USAGE
+      grantable: true
+    - grantee: "'dbmd_app'@'%'"
+      object_kind: proxy
+      object_identity: "'dbmd_reader'@'%'"
+      privilege: PROXY
+      grantable: true
+    - grantee: "'dbmd_reader'@'%'"
+      object_kind: column
+      object_identity: test.accounts.email
+      privilege: UPDATE
+      grantable: false
+    - grantee: "'dbmd_reader'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: USAGE
+      grantable: false
+    - grantee: "'dbmd_reader'@'%'"
+      object_kind: procedure
+      object_identity: test.rotate_accounts
+      privilege: Execute
+      grantable: false
+    - grantee: "'dbmd_reader'@'%'"
+      object_kind: schema
+      object_identity: test
+      privilege: SELECT
+      grantable: false
+    - grantee: "'mysql.infoschema'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: AUDIT_ABORT_EXEMPT
+      grantable: false
+    - grantee: "'mysql.infoschema'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FIREWALL_EXEMPT
+      grantable: false
+    - grantee: "'mysql.infoschema'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SELECT
+      grantable: false
+    - grantee: "'mysql.infoschema'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SYSTEM_USER
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: AUDIT_ABORT_EXEMPT
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: AUTHENTICATION_POLICY_ADMIN
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: BACKUP_ADMIN
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CLONE_ADMIN
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CONNECTION_ADMIN
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FIREWALL_EXEMPT
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: PERSIST_RO_VARIABLES_ADMIN
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SESSION_VARIABLES_ADMIN
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SHUTDOWN
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SUPER
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SYSTEM_USER
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SYSTEM_VARIABLES_ADMIN
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: schema
+      object_identity: performance_schema
+      privilege: SELECT
+      grantable: false
+    - grantee: "'mysql.session'@'localhost'"
+      object_kind: table
+      object_identity: mysql.user
+      privilege: SELECT
+      grantable: false
+    - grantee: "'mysql.sys'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: AUDIT_ABORT_EXEMPT
+      grantable: false
+    - grantee: "'mysql.sys'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FIREWALL_EXEMPT
+      grantable: false
+    - grantee: "'mysql.sys'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SYSTEM_USER
+      grantable: false
+    - grantee: "'mysql.sys'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: USAGE
+      grantable: false
+    - grantee: "'mysql.sys'@'localhost'"
+      object_kind: schema
+      object_identity: sys
+      privilege: TRIGGER
+      grantable: false
+    - grantee: "'mysql.sys'@'localhost'"
+      object_kind: table
+      object_identity: sys.sys_config
+      privilege: SELECT
+      grantable: false
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: ALLOW_NONEXISTENT_DEFINER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: ALTER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: ALTER ROUTINE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: APPLICATION_PASSWORD_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: AUDIT_ABORT_EXEMPT
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: AUDIT_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: AUTHENTICATION_POLICY_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: BACKUP_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: BINLOG_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: BINLOG_ENCRYPTION_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CLONE_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CONNECTION_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE ROLE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE ROUTINE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE TABLESPACE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE TEMPORARY TABLES
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE USER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE VIEW
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE_SPATIAL_REFERENCE_SYSTEM
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: DELETE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: DROP
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: DROP ROLE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: ENCRYPTION_KEY_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: EVENT
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: EXECUTE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FILE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FIREWALL_EXEMPT
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FLUSH_OPTIMIZER_COSTS
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FLUSH_PRIVILEGES
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FLUSH_STATUS
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FLUSH_TABLES
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FLUSH_USER_RESOURCES
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: GROUP_REPLICATION_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: GROUP_REPLICATION_STREAM
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: INDEX
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: INNODB_REDO_LOG_ARCHIVE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: INNODB_REDO_LOG_ENABLE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: INSERT
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: LOCK TABLES
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: MANAGE_DATA_MASKING_POLICY
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: OPTIMIZE_LOCAL_TABLE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: PASSWORDLESS_USER_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: PERSIST_RO_VARIABLES_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: PROCESS
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: REFERENCES
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: RELOAD
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: REPLICATION CLIENT
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: REPLICATION SLAVE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: REPLICATION_APPLIER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: REPLICATION_SLAVE_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: RESOURCE_GROUP_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: RESOURCE_GROUP_USER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: ROLE_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SELECT
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SENSITIVE_VARIABLES_OBSERVER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SERVICE_CONNECTION_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SESSION_VARIABLES_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SET_ANY_DEFINER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SHOW DATABASES
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SHOW VIEW
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SHOW_ROUTINE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SHUTDOWN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SUPER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SYSTEM_USER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SYSTEM_VARIABLES_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: TABLE_ENCRYPTION_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: TELEMETRY_LOG_ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: TRANSACTION_GTID_TAG
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: TRIGGER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: UPDATE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: XA_RECOVER_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: ALLOW_NONEXISTENT_DEFINER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: ALTER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: ALTER ROUTINE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: APPLICATION_PASSWORD_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: AUDIT_ABORT_EXEMPT
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: AUDIT_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: AUTHENTICATION_POLICY_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: BACKUP_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: BINLOG_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: BINLOG_ENCRYPTION_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CLONE_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CONNECTION_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE ROLE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE ROUTINE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE TABLESPACE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE TEMPORARY TABLES
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE USER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE VIEW
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: CREATE_SPATIAL_REFERENCE_SYSTEM
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: DELETE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: DROP
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: DROP ROLE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: ENCRYPTION_KEY_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: EVENT
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: EXECUTE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FILE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FIREWALL_EXEMPT
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FLUSH_OPTIMIZER_COSTS
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FLUSH_PRIVILEGES
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FLUSH_STATUS
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FLUSH_TABLES
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: FLUSH_USER_RESOURCES
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: GROUP_REPLICATION_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: GROUP_REPLICATION_STREAM
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: INDEX
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: INNODB_REDO_LOG_ARCHIVE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: INNODB_REDO_LOG_ENABLE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: INSERT
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: LOCK TABLES
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: MANAGE_DATA_MASKING_POLICY
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: OPTIMIZE_LOCAL_TABLE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: PASSWORDLESS_USER_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: PERSIST_RO_VARIABLES_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: PROCESS
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: REFERENCES
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: RELOAD
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: REPLICATION CLIENT
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: REPLICATION SLAVE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: REPLICATION_APPLIER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: REPLICATION_SLAVE_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: RESOURCE_GROUP_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: RESOURCE_GROUP_USER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: ROLE_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SELECT
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SENSITIVE_VARIABLES_OBSERVER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SERVICE_CONNECTION_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SESSION_VARIABLES_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SET_ANY_DEFINER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SHOW DATABASES
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SHOW VIEW
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SHOW_ROUTINE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SHUTDOWN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SUPER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SYSTEM_USER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: SYSTEM_VARIABLES_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: TABLE_ENCRYPTION_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: TELEMETRY_LOG_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: TRANSACTION_GTID_TAG
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: TRIGGER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: UPDATE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      object_identity: "*.*"
+      privilege: XA_RECOVER_ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: proxy
+      object_identity: "''@''"
+      privilege: PROXY
+      grantable: true

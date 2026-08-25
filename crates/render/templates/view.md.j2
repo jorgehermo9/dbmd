@@ -15,4 +15,14 @@
 | {{ column.name }} | {{ column.data_type }} | {{ column.nullable }} |
 {% endfor %}
 
+{% if object.indexes -%}
+{{ detail_heading }} Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+{% for index in object.indexes -%}
+| {{ index.name }} | {{ index.terms }} | {{ index.unique }} | {{ index.origin }} | {{ index.predicate }} |
+{% endfor %}
+
+{% endif -%}
 {{ object.definition }}

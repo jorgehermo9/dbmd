@@ -9,6 +9,8 @@ catalog:
     - name: test
       default_character_set: utf8mb4
       default_collation: utf8mb4_0900_ai_ci
+      default_encryption: false
+      read_only: false
   tables:
     - schema: test
       name: accounts
@@ -17,6 +19,8 @@ catalog:
       collation: utf8mb4_0900_ai_ci
       comment: User accounts
       create_options: row_format=DYNAMIC
+      engine_attribute: ~
+      secondary_engine_attribute: ~
       columns:
         - name: tenant_id
           position: 1
@@ -30,6 +34,10 @@ catalog:
           collation: ~
           comment: ~
           visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
         - name: account_id
           position: 2
           data_type: bigint
@@ -42,6 +50,10 @@ catalog:
           collation: ~
           comment: ~
           visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
         - name: email
           position: 3
           data_type: varchar
@@ -54,6 +66,10 @@ catalog:
           collation: utf8mb4_0900_ai_ci
           comment: ~
           visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
         - name: normalized_email
           position: 4
           data_type: varchar
@@ -66,6 +82,10 @@ catalog:
           collation: utf8mb4_0900_ai_ci
           comment: ~
           visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
         - name: secret_token
           position: 5
           data_type: varchar
@@ -78,6 +98,10 @@ catalog:
           collation: utf8mb4_0900_ai_ci
           comment: ~
           visible: false
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
         - name: status
           position: 6
           data_type: enum
@@ -90,8 +114,60 @@ catalog:
           collation: utf8mb4_0900_ai_ci
           comment: ~
           visible: true
-        - name: updated_at
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
+        - name: embedding
           position: 7
+          data_type: vector
+          column_type: vector(3)
+          nullable: true
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
+        - name: default_embedding
+          position: 8
+          data_type: vector
+          column_type: vector(2048)
+          nullable: true
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
+        - name: home
+          position: 9
+          data_type: point
+          column_type: point
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          srs_id: 4326
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
+        - name: updated_at
+          position: 10
           data_type: timestamp
           column_type: timestamp
           nullable: false
@@ -102,6 +178,10 @@ catalog:
           collation: ~
           comment: ~
           visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
       constraints:
         - name: PRIMARY
           kind: primary_key
@@ -110,22 +190,39 @@ catalog:
           referenced_schema: ~
           referenced_table: ~
           referenced_columns: []
-          match_option: ~
-          update_rule: ~
-          delete_rule: ~
+          match_type: ~
+          on_update: ~
+          on_delete: ~
           expression: ~
           enforced: true
+          engine_attribute: ~
+          secondary_engine_attribute: ~
         - name: accounts_email_check
           kind: check
           columns: []
           referenced_schema: ~
           referenced_table: ~
           referenced_columns: []
-          match_option: ~
-          update_rule: ~
-          delete_rule: ~
+          match_type: ~
+          on_update: ~
+          on_delete: ~
           expression: "(`email` <> _latin1\\'\\')"
           enforced: true
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+        - name: accounts_status_check
+          kind: check
+          columns: []
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_type: ~
+          on_update: ~
+          on_delete: ~
+          expression: "(`status` in (_latin1\\'active\\',_latin1\\'disabled\\'))"
+          enforced: false
+          engine_attribute: ~
+          secondary_engine_attribute: ~
         - name: accounts_tenant_email_uq
           kind: unique
           columns:
@@ -134,11 +231,13 @@ catalog:
           referenced_schema: ~
           referenced_table: ~
           referenced_columns: []
-          match_option: ~
-          update_rule: ~
-          delete_rule: ~
+          match_type: ~
+          on_update: ~
+          on_delete: ~
           expression: ~
           enforced: true
+          engine_attribute: ~
+          secondary_engine_attribute: ~
         - name: accounts_tenant_fk
           kind: foreign_key
           columns:
@@ -147,63 +246,348 @@ catalog:
           referenced_table: tenants
           referenced_columns:
             - tenant_id
-          match_option: NONE
-          update_rule: CASCADE
-          delete_rule: RESTRICT
+          match_type: ~
+          on_update: cascade
+          on_delete: restrict
           expression: ~
           enforced: true
+          engine_attribute: ~
+          secondary_engine_attribute: ~
       indexes:
         - name: PRIMARY
           unique: true
           index_type: BTREE
           visible: true
           comment: ~
+          disabled_reason: ~
           terms:
             - position: 1
               column: account_id
               expression: ~
               prefix_length: ~
-              descending: false
+              sort_order: ascending
         - name: accounts_email_desc_idx
           unique: false
           index_type: BTREE
           visible: false
-          comment: ~
+          comment: Descending email lookup
+          disabled_reason: ~
           terms:
             - position: 1
               column: email
               expression: ~
               prefix_length: ~
-              descending: true
+              sort_order: descending
+        - name: accounts_email_ft
+          unique: false
+          index_type: FULLTEXT
+          visible: true
+          comment: ~
+          disabled_reason: ~
+          terms:
+            - position: 1
+              column: email
+              expression: ~
+              prefix_length: ~
+              sort_order: ~
+        - name: accounts_home_spatial
+          unique: false
+          index_type: SPATIAL
+          visible: true
+          comment: ~
+          disabled_reason: ~
+          terms:
+            - position: 1
+              column: home
+              expression: ~
+              prefix_length: 32
+              sort_order: ascending
         - name: accounts_normalized_idx
           unique: false
           index_type: BTREE
           visible: true
           comment: ~
+          disabled_reason: ~
           terms:
             - position: 1
               column: ~
               expression: "lower(`email`)"
               prefix_length: ~
-              descending: false
+              sort_order: ascending
         - name: accounts_tenant_email_uq
           unique: true
           index_type: BTREE
           visible: true
           comment: ~
+          disabled_reason: ~
           terms:
             - position: 1
               column: tenant_id
               expression: ~
               prefix_length: ~
-              descending: false
+              sort_order: ascending
             - position: 2
               column: email
               expression: ~
               prefix_length: 120
-              descending: false
+              sort_order: ascending
       partitions: []
-      definition: "CREATE TABLE `accounts` (\n  `tenant_id` bigint unsigned NOT NULL,\n  `account_id` bigint unsigned NOT NULL AUTO_INCREMENT,\n  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,\n  `normalized_email` varchar(255) GENERATED ALWAYS AS (lower(`email`)) STORED,\n  `secret_token` varchar(64) DEFAULT NULL /*!80023 INVISIBLE */,\n  `status` enum('active','disabled') NOT NULL DEFAULT 'active',\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`account_id`),\n  UNIQUE KEY `accounts_tenant_email_uq` (`tenant_id`,`email`(120)),\n  KEY `accounts_email_desc_idx` (`email` DESC) /*!80000 INVISIBLE */,\n  KEY `accounts_normalized_idx` ((lower(`email`))),\n  CONSTRAINT `accounts_tenant_fk` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`) ON DELETE RESTRICT ON UPDATE CASCADE,\n  CONSTRAINT `accounts_email_check` CHECK ((`email` <> _latin1''))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='User accounts'"
+      definition: "CREATE TABLE `accounts` (\n  `tenant_id` bigint unsigned NOT NULL,\n  `account_id` bigint unsigned NOT NULL AUTO_INCREMENT,\n  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,\n  `normalized_email` varchar(255) GENERATED ALWAYS AS (lower(`email`)) STORED,\n  `secret_token` varchar(64) DEFAULT NULL /*!80023 INVISIBLE */,\n  `status` enum('active','disabled') NOT NULL DEFAULT 'active',\n  `embedding` vector(3) DEFAULT NULL,\n  `default_embedding` vector(2048) DEFAULT NULL,\n  `home` point NOT NULL /*!80003 SRID 4326 */,\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`account_id`),\n  UNIQUE KEY `accounts_tenant_email_uq` (`tenant_id`,`email`(120)),\n  KEY `accounts_email_desc_idx` (`email` DESC) COMMENT 'Descending email lookup' /*!80000 INVISIBLE */,\n  SPATIAL KEY `accounts_home_spatial` (`home`),\n  KEY `accounts_normalized_idx` ((lower(`email`))),\n  FULLTEXT KEY `accounts_email_ft` (`email`),\n  CONSTRAINT `accounts_tenant_fk` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`) ON DELETE RESTRICT ON UPDATE CASCADE,\n  CONSTRAINT `accounts_email_check` CHECK ((`email` <> _latin1'')),\n  CONSTRAINT `accounts_status_check` CHECK ((`status` in (_latin1'active',_latin1'disabled'))) /*!80016 NOT ENFORCED */\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC COMMENT='User accounts'"
+    - schema: test
+      name: generated_primary_key
+      engine: InnoDB
+      row_format: Dynamic
+      collation: utf8mb4_0900_ai_ci
+      comment: ~
+      create_options: ~
+      engine_attribute: ~
+      secondary_engine_attribute: ~
+      columns:
+        - name: my_row_id
+          position: 1
+          data_type: bigint
+          column_type: bigint unsigned
+          nullable: false
+          default: ~
+          extra: auto_increment INVISIBLE
+          generation_expression: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: false
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
+        - name: payload
+          position: 2
+          data_type: varchar
+          column_type: varchar(64)
+          nullable: true
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          comment: ~
+          visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
+      constraints:
+        - name: PRIMARY
+          kind: primary_key
+          columns:
+            - my_row_id
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_type: ~
+          on_update: ~
+          on_delete: ~
+          expression: ~
+          enforced: true
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+      indexes:
+        - name: PRIMARY
+          unique: true
+          index_type: BTREE
+          visible: true
+          comment: ~
+          disabled_reason: ~
+          terms:
+            - position: 1
+              column: my_row_id
+              expression: ~
+              prefix_length: ~
+              sort_order: ascending
+      partitions: []
+      definition: "CREATE TABLE `generated_primary_key` (\n  `my_row_id` bigint unsigned NOT NULL AUTO_INCREMENT /*!80023 INVISIBLE */,\n  `payload` varchar(64) DEFAULT NULL,\n  PRIMARY KEY (`my_row_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    - schema: test
+      name: inline_memberships
+      engine: InnoDB
+      row_format: Dynamic
+      collation: utf8mb4_0900_ai_ci
+      comment: Exercises MySQL 9 inline implicit-parent foreign keys
+      create_options: ~
+      engine_attribute: ~
+      secondary_engine_attribute: ~
+      columns:
+        - name: membership_id
+          position: 1
+          data_type: bigint
+          column_type: bigint unsigned
+          nullable: false
+          default: ~
+          extra: auto_increment
+          generation_expression: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
+        - name: tenant_id
+          position: 2
+          data_type: bigint
+          column_type: bigint unsigned
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
+      constraints:
+        - name: PRIMARY
+          kind: primary_key
+          columns:
+            - membership_id
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_type: ~
+          on_update: ~
+          on_delete: ~
+          expression: ~
+          enforced: true
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+        - name: inline_memberships_ibfk_1
+          kind: foreign_key
+          columns:
+            - tenant_id
+          referenced_schema: test
+          referenced_table: tenants
+          referenced_columns:
+            - tenant_id
+          match_type: ~
+          on_update: no_action
+          on_delete: cascade
+          expression: ~
+          enforced: true
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+      indexes:
+        - name: PRIMARY
+          unique: true
+          index_type: BTREE
+          visible: true
+          comment: ~
+          disabled_reason: ~
+          terms:
+            - position: 1
+              column: membership_id
+              expression: ~
+              prefix_length: ~
+              sort_order: ascending
+        - name: tenant_id
+          unique: false
+          index_type: BTREE
+          visible: true
+          comment: ~
+          disabled_reason: ~
+          terms:
+            - position: 1
+              column: tenant_id
+              expression: ~
+              prefix_length: ~
+              sort_order: ascending
+      partitions: []
+      definition: "CREATE TABLE `inline_memberships` (\n  `membership_id` bigint unsigned NOT NULL AUTO_INCREMENT,\n  `tenant_id` bigint unsigned NOT NULL,\n  PRIMARY KEY (`membership_id`),\n  KEY `tenant_id` (`tenant_id`),\n  CONSTRAINT `inline_memberships_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Exercises MySQL 9 inline implicit-parent foreign keys'"
+    - schema: test
+      name: memory_lookup
+      engine: MEMORY
+      row_format: Fixed
+      collation: utf8mb4_0900_ai_ci
+      comment: ~
+      create_options: ~
+      engine_attribute: ~
+      secondary_engine_attribute: ~
+      columns:
+        - name: lookup_key
+          position: 1
+          data_type: varchar
+          column_type: varchar(64)
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          comment: ~
+          visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
+        - name: payload
+          position: 2
+          data_type: varchar
+          column_type: varchar(255)
+          nullable: true
+          default: ~
+          extra: ""
+          generation_expression: ~
+          character_set: utf8mb4
+          collation: utf8mb4_0900_ai_ci
+          comment: ~
+          visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
+      constraints:
+        - name: PRIMARY
+          kind: primary_key
+          columns:
+            - lookup_key
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_type: ~
+          on_update: ~
+          on_delete: ~
+          expression: ~
+          enforced: true
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+      indexes:
+        - name: PRIMARY
+          unique: true
+          index_type: HASH
+          visible: true
+          comment: ~
+          disabled_reason: ~
+          terms:
+            - position: 1
+              column: lookup_key
+              expression: ~
+              prefix_length: ~
+              sort_order: ~
+        - name: memory_payload_hash
+          unique: false
+          index_type: HASH
+          visible: true
+          comment: ~
+          disabled_reason: ~
+          terms:
+            - position: 1
+              column: payload
+              expression: ~
+              prefix_length: ~
+              sort_order: ~
+      partitions: []
+      definition: "CREATE TABLE `memory_lookup` (\n  `lookup_key` varchar(64) NOT NULL,\n  `payload` varchar(255) DEFAULT NULL,\n  PRIMARY KEY (`lookup_key`),\n  KEY `memory_payload_hash` (`payload`) USING HASH\n) ENGINE=MEMORY DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
     - schema: test
       name: monthly_metrics
       engine: InnoDB
@@ -211,6 +595,8 @@ catalog:
       collation: utf8mb4_0900_ai_ci
       comment: ~
       create_options: partitioned
+      engine_attribute: ~
+      secondary_engine_attribute: ~
       columns:
         - name: occurred_on
           position: 1
@@ -224,6 +610,10 @@ catalog:
           collation: ~
           comment: ~
           visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
         - name: metric
           position: 2
           data_type: varchar
@@ -236,6 +626,10 @@ catalog:
           collation: utf8mb4_0900_ai_ci
           comment: ~
           visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
         - name: value
           position: 3
           data_type: bigint
@@ -248,6 +642,10 @@ catalog:
           collation: ~
           comment: ~
           visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
       constraints:
         - name: PRIMARY
           kind: primary_key
@@ -257,42 +655,81 @@ catalog:
           referenced_schema: ~
           referenced_table: ~
           referenced_columns: []
-          match_option: ~
-          update_rule: ~
-          delete_rule: ~
+          match_type: ~
+          on_update: ~
+          on_delete: ~
           expression: ~
           enforced: true
+          engine_attribute: ~
+          secondary_engine_attribute: ~
       indexes:
         - name: PRIMARY
           unique: true
           index_type: BTREE
           visible: true
           comment: ~
+          disabled_reason: ~
           terms:
             - position: 1
               column: occurred_on
               expression: ~
               prefix_length: ~
-              descending: false
+              sort_order: ascending
             - position: 2
               column: metric
               expression: ~
               prefix_length: ~
-              descending: false
+              sort_order: ascending
       partitions:
         - name: p2025
-          subpartition: ~
+          subpartition: p2025_h0
           method: RANGE
+          subpartition_method: HASH
           expression: "year(`occurred_on`)"
+          subpartition_expression: "month(`occurred_on`)"
           description: "2026"
           ordinal: 1
-        - name: pmax
-          subpartition: ~
+          subpartition_ordinal: 1
+          tablespace: ~
+          comment: ~
+          nodegroup: default
+        - name: p2025
+          subpartition: p2025_h1
           method: RANGE
+          subpartition_method: HASH
           expression: "year(`occurred_on`)"
+          subpartition_expression: "month(`occurred_on`)"
+          description: "2026"
+          ordinal: 1
+          subpartition_ordinal: 2
+          tablespace: ~
+          comment: ~
+          nodegroup: default
+        - name: pmax
+          subpartition: pmax_h0
+          method: RANGE
+          subpartition_method: HASH
+          expression: "year(`occurred_on`)"
+          subpartition_expression: "month(`occurred_on`)"
           description: MAXVALUE
           ordinal: 2
-      definition: "CREATE TABLE `monthly_metrics` (\n  `occurred_on` date NOT NULL,\n  `metric` varchar(64) NOT NULL,\n  `value` bigint NOT NULL,\n  PRIMARY KEY (`occurred_on`,`metric`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n/*!50100 PARTITION BY RANGE (year(`occurred_on`))\n(PARTITION p2025 VALUES LESS THAN (2026) ENGINE = InnoDB,\n PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = InnoDB) */"
+          subpartition_ordinal: 1
+          tablespace: ~
+          comment: ~
+          nodegroup: default
+        - name: pmax
+          subpartition: pmax_h1
+          method: RANGE
+          subpartition_method: HASH
+          expression: "year(`occurred_on`)"
+          subpartition_expression: "month(`occurred_on`)"
+          description: MAXVALUE
+          ordinal: 2
+          subpartition_ordinal: 2
+          tablespace: ~
+          comment: ~
+          nodegroup: default
+      definition: "CREATE TABLE `monthly_metrics` (\n  `occurred_on` date NOT NULL,\n  `metric` varchar(64) NOT NULL,\n  `value` bigint NOT NULL,\n  PRIMARY KEY (`occurred_on`,`metric`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n/*!50100 PARTITION BY RANGE (year(`occurred_on`))\nSUBPARTITION BY HASH (month(`occurred_on`))\n(PARTITION p2025 VALUES LESS THAN (2026)\n (SUBPARTITION p2025_h0 ENGINE = InnoDB,\n  SUBPARTITION p2025_h1 ENGINE = InnoDB),\n PARTITION pmax VALUES LESS THAN MAXVALUE\n (SUBPARTITION pmax_h0 ENGINE = InnoDB,\n  SUBPARTITION pmax_h1 ENGINE = InnoDB)) */"
     - schema: test
       name: tenants
       engine: InnoDB
@@ -300,6 +737,8 @@ catalog:
       collation: utf8mb4_0900_ai_ci
       comment: Application tenants
       create_options: ~
+      engine_attribute: ~
+      secondary_engine_attribute: ~
       columns:
         - name: tenant_id
           position: 1
@@ -313,6 +752,10 @@ catalog:
           collation: ~
           comment: ~
           visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
         - name: name
           position: 2
           data_type: varchar
@@ -325,6 +768,10 @@ catalog:
           collation: utf8mb4_0900_ai_ci
           comment: Tenant display name
           visible: true
+          srs_id: ~
+          engine_attribute: ~
+          secondary_engine_attribute: ~
+          masking_policy_configured: false
       constraints:
         - name: PRIMARY
           kind: primary_key
@@ -333,11 +780,13 @@ catalog:
           referenced_schema: ~
           referenced_table: ~
           referenced_columns: []
-          match_option: ~
-          update_rule: ~
-          delete_rule: ~
+          match_type: ~
+          on_update: ~
+          on_delete: ~
           expression: ~
           enforced: true
+          engine_attribute: ~
+          secondary_engine_attribute: ~
         - name: tenants_name_uq
           kind: unique
           columns:
@@ -345,74 +794,172 @@ catalog:
           referenced_schema: ~
           referenced_table: ~
           referenced_columns: []
-          match_option: ~
-          update_rule: ~
-          delete_rule: ~
+          match_type: ~
+          on_update: ~
+          on_delete: ~
           expression: ~
           enforced: true
+          engine_attribute: ~
+          secondary_engine_attribute: ~
       indexes:
         - name: PRIMARY
           unique: true
           index_type: BTREE
           visible: true
           comment: ~
+          disabled_reason: ~
           terms:
             - position: 1
               column: tenant_id
               expression: ~
               prefix_length: ~
-              descending: false
+              sort_order: ascending
         - name: tenants_name_uq
           unique: true
           index_type: BTREE
           visible: true
           comment: ~
+          disabled_reason: ~
           terms:
             - position: 1
               column: name
               expression: ~
               prefix_length: ~
-              descending: false
+              sort_order: ascending
       partitions: []
       definition: "CREATE TABLE `tenants` (\n  `tenant_id` bigint unsigned NOT NULL AUTO_INCREMENT,\n  `name` varchar(120) NOT NULL COMMENT 'Tenant display name',\n  PRIMARY KEY (`tenant_id`),\n  UNIQUE KEY `tenants_name_uq` (`name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Application tenants'"
   views:
     - schema: test
       name: active_accounts
+      kind: sql
       definition: "select `test`.`accounts`.`tenant_id` AS `tenant_id`,`test`.`accounts`.`account_id` AS `account_id`,`test`.`accounts`.`email` AS `email` from `test`.`accounts` where (`test`.`accounts`.`status` = 'active')"
-      check_option: CASCADED
+      check_option: cascaded
       updatable: true
-      security_type: INVOKER
+      security: invoker
       definer: root@localhost
       character_set: latin1
       collation: latin1_swedish_ci
       create_statement: "CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `active_accounts` AS select `accounts`.`tenant_id` AS `tenant_id`,`accounts`.`account_id` AS `account_id`,`accounts`.`email` AS `email` from `accounts` where (`accounts`.`status` = 'active') WITH CASCADED CHECK OPTION"
+      duality: ~
+    - schema: test
+      name: tenant_documents
+      kind: json_relational_duality
+      definition: "select json_duality_object('_id':`test`.`tenants`.`tenant_id`,'name':`test`.`tenants`.`name`) AS `JSON_DUALITY_OBJECT('_id':tenant_id, 'name':name)` from `test`.`tenants`"
+      check_option: none
+      updatable: true
+      security: definer
+      definer: root@localhost
+      character_set: latin1
+      collation: latin1_swedish_ci
+      create_statement: "CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER JSON RELATIONAL DUALITY VIEW `tenant_documents` AS select json_duality_object('_id':`tenants`.`tenant_id`,'name':`tenants`.`name`) AS `JSON_DUALITY_OBJECT('_id':tenant_id, 'name':name)` from `tenants`"
+      duality:
+        json_column_name: data
+        root_table_schema: test
+        root_table_name: tenants
+        allow_insert: false
+        allow_update: false
+        allow_delete: false
+        read_only: true
+        status: valid
+        tables:
+          - schema: test
+            name: tenants
+            where_clause: ~
+            allow_insert: false
+            allow_update: false
+            allow_delete: false
+            read_only: true
+            root: true
+            id: 0
+            parent_id: ~
+            parent_relationship: ~
+        columns:
+          - table_schema: test
+            table_name: tenants
+            root_table: true
+            table_id: 0
+            column_name: tenant_id
+            json_key_name: _id
+            allow_insert: false
+            allow_update: false
+            allow_delete: false
+            read_only: true
+          - table_schema: test
+            table_name: tenants
+            root_table: true
+            table_id: 0
+            column_name: name
+            json_key_name: name
+            allow_insert: false
+            allow_update: false
+            allow_delete: false
+            read_only: true
+        links: []
   routines:
     - schema: test
       name: disable_account
-      kind: PROCEDURE
+      kind: procedure
       return_type: ~
       body: SQL
       definition: "UPDATE accounts SET status = 'disabled' WHERE account_id = target_id"
+      create_statement: "CREATE DEFINER=`root`@`localhost` PROCEDURE `disable_account`(IN target_id BIGINT UNSIGNED)\n    MODIFIES SQL DATA\nUPDATE accounts SET status = 'disabled' WHERE account_id = target_id"
+      external_language: SQL
       deterministic: false
-      sql_data_access: MODIFIES SQL DATA
-      security_type: DEFINER
+      data_access: modifies_sql_data
+      security: definer
       definer: root@localhost
       comment: ~
       parameters:
         - position: 1
-          mode: IN
+          mode: in
           name: target_id
           data_type: bigint
           dtd_identifier: bigint unsigned
+      sql_mode: "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+      character_set_client: latin1
+      collation_connection: latin1_swedish_ci
+      database_collation: utf8mb4_0900_ai_ci
+      libraries: []
+    - schema: test
+      name: next_account_id
+      kind: procedure
+      return_type: ~
+      body: SQL
+      definition: SET next_id = current_id + 1
+      create_statement: "CREATE DEFINER=`root`@`localhost` PROCEDURE `next_account_id`(IN current_id BIGINT UNSIGNED, OUT next_id BIGINT UNSIGNED)\n    NO SQL\nSET next_id = current_id + 1"
+      external_language: SQL
+      deterministic: false
+      data_access: no_sql
+      security: definer
+      definer: root@localhost
+      comment: ~
+      parameters:
+        - position: 1
+          mode: in
+          name: current_id
+          data_type: bigint
+          dtd_identifier: bigint unsigned
+        - position: 2
+          mode: out
+          name: next_id
+          data_type: bigint
+          dtd_identifier: bigint unsigned
+      sql_mode: "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+      character_set_client: latin1
+      collation_connection: latin1_swedish_ci
+      database_collation: utf8mb4_0900_ai_ci
+      libraries: []
     - schema: test
       name: normalize_email
-      kind: FUNCTION
+      kind: function
       return_type: varchar(255)
       body: SQL
       definition: RETURN lower(value)
+      create_statement: "CREATE DEFINER=`root`@`localhost` FUNCTION `normalize_email`(value VARCHAR(255)) RETURNS varchar(255) CHARSET utf8mb4\n    NO SQL\n    DETERMINISTIC\nRETURN lower(value)"
+      external_language: SQL
       deterministic: true
-      sql_data_access: NO SQL
-      security_type: DEFINER
+      data_access: no_sql
+      security: definer
       definer: root@localhost
       comment: ~
       parameters:
@@ -422,35 +969,94 @@ catalog:
           data_type: varchar
           dtd_identifier: varchar(255)
         - position: 1
-          mode: IN
+          mode: in
           name: value
           data_type: varchar
           dtd_identifier: varchar(255)
+      sql_mode: "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+      character_set_client: latin1
+      collation_connection: latin1_swedish_ci
+      database_collation: utf8mb4_0900_ai_ci
+      libraries: []
   triggers:
     - schema: test
       name: accounts_updated
       table: accounts
-      event: UPDATE
-      timing: BEFORE
-      orientation: ROW
+      event: update
+      timing: before
+      orientation: row
       statement: SET NEW.updated_at = CURRENT_TIMESTAMP
       action_order: 1
       sql_mode: "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
       definer: root@localhost
       character_set: latin1
       collation: latin1_swedish_ci
+      database_collation: utf8mb4_0900_ai_ci
+      create_statement: "CREATE DEFINER=`root`@`localhost` TRIGGER `accounts_updated` BEFORE UPDATE ON `accounts` FOR EACH ROW SET NEW.updated_at = CURRENT_TIMESTAMP"
+    - schema: test
+      name: accounts_update_marker
+      table: accounts
+      event: update
+      timing: before
+      orientation: row
+      statement: SET @dbmd_last_account = NEW.account_id
+      action_order: 2
+      sql_mode: "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+      definer: root@localhost
+      character_set: latin1
+      collation: latin1_swedish_ci
+      database_collation: utf8mb4_0900_ai_ci
+      create_statement: "CREATE DEFINER=`root`@`localhost` TRIGGER `accounts_update_marker` BEFORE UPDATE ON `accounts` FOR EACH ROW SET @dbmd_last_account = NEW.account_id"
   events:
+    - schema: test
+      name: archive_accounts_once
+      definer: root@localhost
+      time_zone: SYSTEM
+      kind: one_time
+      execute_at: "2031-01-01 00:00:00"
+      interval_value: ~
+      interval_field: ~
+      starts: ~
+      ends: ~
+      status: disabled
+      completion: preserve
+      comment: ~
+      definition: SET @dbmd_archive_requested = 1
+      sql_mode: "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+      originator: 1
+      character_set_client: latin1
+      collation_connection: latin1_swedish_ci
+      database_collation: utf8mb4_0900_ai_ci
+      create_statement: "CREATE DEFINER=`root`@`localhost` EVENT `archive_accounts_once` ON SCHEDULE AT '2031-01-01 00:00:00' ON COMPLETION PRESERVE DISABLE DO SET @dbmd_archive_requested = 1"
     - schema: test
       name: purge_disabled_accounts
       definer: root@localhost
       time_zone: SYSTEM
-      event_type: RECURRING
+      kind: recurring
       execute_at: ~
       interval_value: "1"
       interval_field: DAY
       starts: "2030-01-01 00:00:00"
       ends: ~
-      status: DISABLED
-      on_completion: PRESERVE
+      status: disabled
+      completion: preserve
       comment: Remove old disabled accounts
       definition: "DELETE FROM accounts WHERE status = 'disabled' AND updated_at < CURRENT_TIMESTAMP - INTERVAL 365 DAY"
+      sql_mode: "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+      originator: 1
+      character_set_client: latin1
+      collation_connection: latin1_swedish_ci
+      database_collation: utf8mb4_0900_ai_ci
+      create_statement: "CREATE DEFINER=`root`@`localhost` EVENT `purge_disabled_accounts` ON SCHEDULE EVERY 1 DAY STARTS '2030-01-01 00:00:00' ON COMPLETION PRESERVE DISABLE COMMENT 'Remove old disabled accounts' DO DELETE FROM accounts WHERE status = 'disabled' AND updated_at < CURRENT_TIMESTAMP - INTERVAL 365 DAY"
+  libraries: []
+  servers: []
+  spatial_reference_systems: []
+  tablespaces: []
+  resource_groups: []
+  loadable_functions: []
+  plugins: []
+  components: []
+  accounts: []
+  role_grants: []
+  default_roles: []
+  privileges: []

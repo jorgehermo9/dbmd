@@ -9,6 +9,8 @@ use super::PostgresSource;
 pub struct Config {
     url: String,
     display_name: Option<String>,
+    #[serde(default)]
+    include_cluster_objects: bool,
 }
 
 impl Config {
@@ -32,6 +34,7 @@ impl Config {
         if let Some(display_name) = &self.display_name {
             source = source.with_display_name(display_name);
         }
+        source = source.with_cluster_objects(self.include_cluster_objects);
         Ok(source)
     }
 }

@@ -5,34 +5,125 @@ expression: snapshot
 id: audit
 display_name: ~
 catalog:
+  database:
+    name: dbmd_test_10c716fb330a68da
+    owner: postgres
+    encoding: UTF8
+    locale_provider: libc
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    locale: ~
+    icu_rules: ~
+    collation_version: ~
+    tablespace: pg_default
+    template: false
+    allow_connections: true
+    connection_limit: -1
+    configuration: []
+    comment: ~
+  cluster_databases: []
+  tablespaces: []
   namespaces:
     - name: audit
+      owner: postgres
+      extension: ~
       comment: ~
     - name: public
+      owner: pg_database_owner
+      extension: ~
       comment: standard public schema
   enums: []
+  composite_types: []
+  domains: []
+  base_types: []
+  range_types: []
+  sequences:
+    - namespace: audit
+      name: accounts_id_seq
+      owner: postgres
+      extension: ~
+      data_type: bigint
+      start: 1
+      minimum: 1
+      maximum: 9223372036854775807
+      increment: 1
+      cache: 1
+      cycle: false
+      persistence: permanent
+      owned_by: audit.accounts.id
+      comment: ~
+      definition: "CREATE SEQUENCE \"audit\".\"accounts_id_seq\" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE OWNED BY audit.accounts.id;"
   tables:
     - namespace: audit
       name: account_limits
+      extension: ~
       comment: ~
       columns:
         - name: account_id
           data_type: bigint
+          collation: ~
           nullable: false
           default: ~
           comment: ~
           enum_values: []
           identity: ~
           generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
         - name: minimum_balance
           data_type: integer
+          collation: ~
           nullable: false
           default: ~
           comment: ~
           enum_values: []
           identity: ~
           generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
       constraints:
+        - name: account_limits_account_id_not_null
+          kind: not_null
+          columns:
+            - account_id
+          expression: ~
+          references: ~
+          definition: NOT NULL account_id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: account_limits_minimum_balance_not_null
+          kind: not_null
+          columns:
+            - minimum_balance
+          expression: ~
+          references: ~
+          definition: NOT NULL minimum_balance
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
         - name: account_limits_pkey
           kind: primary_key
           columns:
@@ -40,19 +131,25 @@ catalog:
           expression: ~
           references: ~
           definition: PRIMARY KEY (account_id)
+          exclusion_operators: []
           deferrable: false
           initially_deferred: false
+          enforced: true
           validated: true
           locally_defined: true
           no_inherit: true
+          temporal: false
+          comment: ~
       indexes:
         - name: account_limits_pkey
+          extension: ~
           unique: true
           terms:
             - target:
                 column: account_id
               collation: ~
               operator_class: pg_catalog.int8_ops
+              operator_class_parameters: []
               order: ascending
               nulls_order: last
           predicate: ~
@@ -64,7 +161,21 @@ catalog:
           ready: true
           clustered: false
           replica_identity: false
+          owner: postgres
+          tablespace: ~
+          options: []
+          partitioned: false
+          parent_index: ~
+          constraint: account_limits_pkey
+          comment: ~
       kind: table
+      owner: postgres
+      persistence: permanent
+      access_method: heap
+      typed_table: ~
+      replica_identity: default
+      options: []
+      foreign: ~
       tablespace: ~
       inherits: []
       partition_key: ~
@@ -75,33 +186,106 @@ catalog:
       policies: []
     - namespace: audit
       name: accounts
+      extension: ~
       comment: ~
       columns:
         - name: id
           data_type: bigint
+          collation: ~
           nullable: false
           default: ~
           comment: ~
           enum_values: []
           identity: always
           generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
         - name: email
           data_type: text
+          collation: "pg_catalog.\"default\""
           nullable: false
           default: ~
           comment: ~
           enum_values: []
           identity: ~
           generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
         - name: balance
           data_type: integer
+          collation: ~
           nullable: false
           default: "0"
           comment: ~
           enum_values: []
           identity: ~
           generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
       constraints:
+        - name: accounts_balance_not_null
+          kind: not_null
+          columns:
+            - balance
+          expression: ~
+          references: ~
+          definition: NOT NULL balance
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: accounts_email_not_null
+          kind: not_null
+          columns:
+            - email
+          expression: ~
+          references: ~
+          definition: NOT NULL email
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: accounts_id_not_null
+          kind: not_null
+          columns:
+            - id
+          expression: ~
+          references: ~
+          definition: NOT NULL id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
         - name: accounts_pkey
           kind: primary_key
           columns:
@@ -109,19 +293,25 @@ catalog:
           expression: ~
           references: ~
           definition: PRIMARY KEY (id)
+          exclusion_operators: []
           deferrable: false
           initially_deferred: false
+          enforced: true
           validated: true
           locally_defined: true
           no_inherit: true
+          temporal: false
+          comment: ~
       indexes:
         - name: accounts_pkey
+          extension: ~
           unique: true
           terms:
             - target:
                 column: id
               collation: ~
               operator_class: pg_catalog.int8_ops
+              operator_class_parameters: []
               order: ascending
               nulls_order: last
           predicate: ~
@@ -133,7 +323,21 @@ catalog:
           ready: true
           clustered: false
           replica_identity: false
+          owner: postgres
+          tablespace: ~
+          options: []
+          partitioned: false
+          parent_index: ~
+          constraint: accounts_pkey
+          comment: ~
       kind: table
+      owner: postgres
+      persistence: permanent
+      access_method: heap
+      typed_table: ~
+      replica_identity: default
+      options: []
+      foreign: ~
       tablespace: ~
       inherits: []
       partition_key: ~
@@ -144,27 +348,83 @@ catalog:
       policies: []
     - namespace: audit
       name: partitioned_events
+      extension: ~
       comment: ~
       columns:
         - name: id
           data_type: bigint
+          collation: ~
           nullable: false
           default: ~
           comment: ~
           enum_values: []
           identity: ~
           generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
         - name: occurred_on
           data_type: date
+          collation: ~
           nullable: false
           default: ~
           comment: ~
           enum_values: []
           identity: ~
           generated: ~
-      constraints: []
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints:
+        - name: partitioned_events_id_not_null
+          kind: not_null
+          columns:
+            - id
+          expression: ~
+          references: ~
+          definition: NOT NULL id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: partitioned_events_occurred_on_not_null
+          kind: not_null
+          columns:
+            - occurred_on
+          expression: ~
+          references: ~
+          definition: NOT NULL occurred_on
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
       indexes: []
       kind: partitioned_table
+      owner: postgres
+      persistence: permanent
+      access_method: ~
+      typed_table: ~
+      replica_identity: default
+      options: []
+      foreign: ~
       tablespace: ~
       inherits: []
       partition_key: RANGE (occurred_on)
@@ -175,27 +435,83 @@ catalog:
       policies: []
     - namespace: audit
       name: partitioned_events_2026
+      extension: ~
       comment: ~
       columns:
         - name: id
           data_type: bigint
+          collation: ~
           nullable: false
           default: ~
           comment: ~
           enum_values: []
           identity: ~
           generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: false
+          inheritance_count: 1
         - name: occurred_on
           data_type: date
+          collation: ~
           nullable: false
           default: ~
           comment: ~
           enum_values: []
           identity: ~
           generated: ~
-      constraints: []
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: false
+          inheritance_count: 1
+      constraints:
+        - name: partitioned_events_id_not_null
+          kind: not_null
+          columns:
+            - id
+          expression: ~
+          references: ~
+          definition: NOT NULL id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: false
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: partitioned_events_occurred_on_not_null
+          kind: not_null
+          columns:
+            - occurred_on
+          expression: ~
+          references: ~
+          definition: NOT NULL occurred_on
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: false
+          no_inherit: false
+          temporal: false
+          comment: ~
       indexes: []
       kind: partition
+      owner: postgres
+      persistence: permanent
+      access_method: heap
+      typed_table: ~
+      replica_identity: default
+      options: []
+      foreign: ~
       tablespace: ~
       inherits:
         - audit.partitioned_events
@@ -208,29 +524,57 @@ catalog:
   views:
     - namespace: audit
       name: account_emails
+      extension: ~
       definition: " SELECT id,\n    email\n   FROM audit.accounts;"
       materialized: false
       comment: Writable account email projection
       columns:
         - name: id
           data_type: bigint
+          collation: ~
           nullable: true
           default: ~
           comment: ~
           enum_values: []
           identity: ~
           generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
         - name: email
           data_type: text
+          collation: "pg_catalog.\"default\""
           nullable: true
           default: ~
           comment: ~
           enum_values: []
           identity: ~
           generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      indexes: []
+      owner: postgres
+      persistence: permanent
+      access_method: ~
+      tablespace: ~
+      options: []
+      populated: true
+      security_barrier: false
+      security_invoker: false
+      check_option: ~
   triggers:
     - namespace: audit
       name: account_emails_write
+      extension: ~
       target_namespace: audit
       target: account_emails
       timing: instead_of
@@ -253,6 +597,7 @@ catalog:
       parent_trigger: ~
     - namespace: audit
       name: accounts_balance_constraint
+      extension: ~
       target_namespace: audit
       target: accounts
       timing: after
@@ -277,6 +622,7 @@ catalog:
       parent_trigger: ~
     - namespace: audit
       name: accounts_transition
+      extension: ~
       target_namespace: audit
       target: accounts
       timing: after
@@ -296,6 +642,7 @@ catalog:
       parent_trigger: ~
     - namespace: audit
       name: accounts_truncate
+      extension: ~
       target_namespace: audit
       target: accounts
       timing: after
@@ -314,6 +661,7 @@ catalog:
       parent_trigger: ~
     - namespace: audit
       name: zz_accounts_change
+      extension: ~
       target_namespace: audit
       target: accounts
       timing: before
@@ -339,6 +687,7 @@ catalog:
       parent_trigger: ~
     - namespace: audit
       name: partitioned_events_change
+      extension: ~
       target_namespace: audit
       target: partitioned_events
       timing: before
@@ -360,6 +709,7 @@ catalog:
       parent_trigger: ~
     - namespace: audit
       name: partitioned_events_change
+      extension: ~
       target_namespace: audit
       target: partitioned_events_2026
       timing: before
@@ -382,21 +732,131 @@ catalog:
   functions:
     - namespace: audit
       name: capture_row_change
+      extension: ~
       signature: ()
+      arguments: ""
       definition: "CREATE OR REPLACE FUNCTION audit.capture_row_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    RETURN COALESCE(NEW, OLD);\nEND;\n$function$\n"
       comment: ~
       return_type: trigger
+      owner: postgres
+      kind: ordinary
       language: plpgsql
       volatility: volatile
       parallel: unsafe
       security_definer: false
+      strict: false
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
     - namespace: audit
       name: capture_statement_change
+      extension: ~
       signature: ()
+      arguments: ""
       definition: "CREATE OR REPLACE FUNCTION audit.capture_statement_change()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    RETURN NULL;\nEND;\n$function$\n"
       comment: ~
       return_type: trigger
+      owner: postgres
+      kind: ordinary
       language: plpgsql
       volatility: volatile
       parallel: unsafe
       security_definer: false
+      strict: false
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
+  procedures: []
+  aggregates: []
+  casts: []
+  conversions: []
+  operators: []
+  operator_families: []
+  operator_classes: []
+  access_methods: []
+  languages:
+    - name: plpgsql
+      owner: postgres
+      extension: plpgsql
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: PL/pgSQL procedural language
+  transforms: []
+  rules: []
+  event_triggers: []
+  statistics: []
+  foreign_data_wrappers: []
+  foreign_servers: []
+  user_mappings: []
+  text_search_parsers: []
+  text_search_templates: []
+  text_search_dictionaries: []
+  text_search_configurations: []
+  extensions:
+    - name: plpgsql
+      owner: postgres
+      namespace: pg_catalog
+      relocatable: false
+      version: "1.0"
+      configuration: []
+      members:
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_call_handler
+          arguments: []
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_inline_handler
+          arguments:
+            - pg_catalog.internal
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_validator
+          arguments:
+            - pg_catalog.oid
+        - object_type: language
+          names:
+            - plpgsql
+          arguments: []
+      comment: PL/pgSQL procedural language
+  publications: []
+  subscriptions: []
+  privileges:
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: create
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: usage
+      grantable: false
+  default_privileges: []
+  security_labels: []
+  large_objects: []
+  roles: []
+  role_database_settings: []
+  collations: []

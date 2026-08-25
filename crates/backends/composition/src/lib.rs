@@ -257,17 +257,17 @@ pub enum SourceValidationError {
 #[non_exhaustive]
 pub enum Catalog {
     /// ClickHouse-owned catalog.
-    Clickhouse(clickhouse::Catalog),
+    Clickhouse(Box<clickhouse::Catalog>),
     /// DuckDB-owned catalog.
-    Duckdb(duckdb::Catalog),
+    Duckdb(Box<duckdb::Catalog>),
     /// MariaDB-owned catalog.
-    Mariadb(mariadb::Catalog),
+    Mariadb(Box<mariadb::Catalog>),
     /// MySQL-owned catalog.
-    Mysql(mysql::Catalog),
+    Mysql(Box<mysql::Catalog>),
     /// SQLite-owned catalog.
-    Sqlite(sqlite::Catalog),
+    Sqlite(Box<sqlite::Catalog>),
     /// PostgreSQL-owned catalog.
-    Postgres(postgres::Catalog),
+    Postgres(Box<postgres::Catalog>),
 }
 
 impl Catalog {
@@ -298,22 +298,32 @@ pub type DatabaseContext = dbmd_core::DatabaseContext<Catalog>;
 pub fn introspect(source: &Source) -> Result<Snapshot, IntrospectionError> {
     match source {
         Source::Clickhouse(source) => clickhouse::introspect(source)
-            .map(|snapshot| compose_snapshot(snapshot, Catalog::Clickhouse))
+            .map(|snapshot| {
+                compose_snapshot(snapshot, |catalog| Catalog::Clickhouse(Box::new(catalog)))
+            })
             .map_err(IntrospectionError::from),
         Source::Duckdb(source) => duckdb::introspect(source)
-            .map(|snapshot| compose_snapshot(snapshot, Catalog::Duckdb))
+            .map(|snapshot| {
+                compose_snapshot(snapshot, |catalog| Catalog::Duckdb(Box::new(catalog)))
+            })
             .map_err(IntrospectionError::from),
         Source::Mariadb(source) => mariadb::introspect(source)
-            .map(|snapshot| compose_snapshot(snapshot, Catalog::Mariadb))
+            .map(|snapshot| {
+                compose_snapshot(snapshot, |catalog| Catalog::Mariadb(Box::new(catalog)))
+            })
             .map_err(IntrospectionError::from),
         Source::Mysql(source) => mysql::introspect(source)
-            .map(|snapshot| compose_snapshot(snapshot, Catalog::Mysql))
+            .map(|snapshot| compose_snapshot(snapshot, |catalog| Catalog::Mysql(Box::new(catalog))))
             .map_err(IntrospectionError::from),
         Source::Sqlite(source) => sqlite::introspect(source)
-            .map(|snapshot| compose_snapshot(snapshot, Catalog::Sqlite))
+            .map(|snapshot| {
+                compose_snapshot(snapshot, |catalog| Catalog::Sqlite(Box::new(catalog)))
+            })
             .map_err(IntrospectionError::from),
         Source::Postgres(source) => postgres::introspect(source)
-            .map(|snapshot| compose_snapshot(snapshot, Catalog::Postgres))
+            .map(|snapshot| {
+                compose_snapshot(snapshot, |catalog| Catalog::Postgres(Box::new(catalog)))
+            })
             .map_err(IntrospectionError::from),
     }
 }

@@ -83,6 +83,31 @@ predicates, view/function/trigger definitions, partition expressions, and other
 SQL until structured parsing enables correctness, linking, or lint behavior.
 Preserve raw definitions when adding parsed fields.
 
+### Native-code normalization
+
+Engine catalog codes do not belong in backend catalog interfaces. Each backend
+adapter translates native discriminator values at the introspection seam:
+
+- Closed native sets become backend-owned enums or validated value types. For
+  example, PostgreSQL ACL letters, relation-kind codes, and trigger enablement
+  codes must not escape as strings.
+- Unknown closed-set values fail introspection with the source and catalog field
+  identified. They are not silently flattened into an `Other(String)` variant.
+- Names, qualified identities, SQL expressions, extension-defined option names,
+  and other genuinely open values remain strings.
+- Server-normalized object identities may be retained as strings when they
+  preserve quoting, overload signatures, or backend grammar; their object family
+  is still represented semantically.
+- Backend semantic types may expose a canonical human-facing name when that name
+  is part of the backend vocabulary. Render mapping owns placement and Markdown
+  formatting. Templates must not decode native database identifiers or invent
+  catalog meaning.
+
+This translation is backend-local because equal-looking native codes do not
+establish equivalent semantics across database families. A leaf enum moves to
+`dbmd-relational` only when at least two backends demonstrably share the same
+meaning, not merely the same spelling.
+
 ## Deterministic normalization
 
 Each backend owns stable ordering for its catalog:

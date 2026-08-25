@@ -14,7 +14,7 @@ use dbmd_relational::presentation::{
     IndexView as RenderIndex, NamespaceView, TableDetailsView as RenderTableDetails,
     TableView as RenderTable, TriggerView as RenderTrigger, ViewPresentation as RenderView,
 };
-use dbmd_relational::{ForeignKeyAction, ForeignKeyInitialTiming, IndexSortOrder};
+use dbmd_relational::{ForeignKeyAction, ForeignKeyInitialTiming, ForeignKeyMatch, IndexSortOrder};
 
 pub(super) const SINGLE_FILE_TEMPLATE: &str = "backends/sqlite/single_file/source.md.j2";
 pub(super) const DIRECTORY_TEMPLATE: &str = "backends/sqlite/directory/source.md.j2";
@@ -223,7 +223,16 @@ fn relational_constraint_details(constraint: &Constraint) -> String {
             inline_code(foreign_key_action(reference.on_update)),
             inline_code(foreign_key_action(reference.on_delete))
         );
-        if let Some(match_name) = &reference.match_name {
+        if let Some(match_type) = &reference.match_type {
+            let match_name = match match_type {
+                ForeignKeyMatch::Simple => "simple",
+                ForeignKeyMatch::Partial => "partial",
+                ForeignKeyMatch::Full => "full",
+                ForeignKeyMatch::Named(name) => name,
+                _ => {
+                    unreachable!("new foreign-key match variants require SQLite rendering support")
+                }
+            };
             let _ = write!(details, "; match {}", inline_code(match_name));
         }
         if reference.deferrability.deferrable {

@@ -174,7 +174,7 @@ catalog:
               - title
             on_update: cascade
             on_delete: restrict
-            match_name: ~
+            match_type: ~
             deferrability:
               deferrable: false
               initially: immediate

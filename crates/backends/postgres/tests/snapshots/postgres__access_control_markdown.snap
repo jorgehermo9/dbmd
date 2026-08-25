@@ -1,0 +1,2171 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: markdown
+---
+# Database: `access-control`
+
+## Database
+
+### `dbmd_test_5d5be19f658d3fe2`
+
+**Owner:** `postgres`
+
+**Encoding:** `UTF8`
+
+**Locale provider:** `libc`
+
+**LC_COLLATE:** `en_US.utf8`
+
+**LC_CTYPE:** `en_US.utf8`
+
+**Tablespace:** `pg_default`
+
+**Template:** no
+
+**Allows connections:** yes
+
+**Connection limit:** -1
+
+
+
+## Cluster Databases
+
+### `dbmd_test_5d5be19f658d3fe2`
+
+**Owner:** `postgres`
+
+**Encoding:** `UTF8`
+
+**Locale provider:** `libc`
+
+**LC_COLLATE:** `en_US.utf8`
+
+**LC_CTYPE:** `en_US.utf8`
+
+**Tablespace:** `pg_default`
+
+**Template:** no
+
+**Allows connections:** yes
+
+**Connection limit:** -1
+
+
+
+### `postgres`
+
+default administrative connection database
+
+**Owner:** `postgres`
+
+**Encoding:** `UTF8`
+
+**Locale provider:** `libc`
+
+**LC_COLLATE:** `en_US.utf8`
+
+**LC_CTYPE:** `en_US.utf8`
+
+**Tablespace:** `pg_default`
+
+**Template:** no
+
+**Allows connections:** yes
+
+**Connection limit:** -1
+
+
+
+### `template0`
+
+unmodifiable empty database
+
+**Owner:** `postgres`
+
+**Encoding:** `UTF8`
+
+**Locale provider:** `libc`
+
+**LC_COLLATE:** `en_US.utf8`
+
+**LC_CTYPE:** `en_US.utf8`
+
+**Tablespace:** `pg_default`
+
+**Template:** yes
+
+**Allows connections:** no
+
+**Connection limit:** -1
+
+
+
+### `template1`
+
+default template for new databases
+
+**Owner:** `postgres`
+
+**Encoding:** `UTF8`
+
+**Locale provider:** `libc`
+
+**LC_COLLATE:** `en_US.utf8`
+
+**LC_CTYPE:** `en_US.utf8`
+
+**Tablespace:** `pg_default`
+
+**Template:** yes
+
+**Allows connections:** yes
+
+**Connection limit:** -1
+
+
+
+## Tablespaces
+
+### `pg_default`
+
+**Owner:** `postgres`
+
+**Location:** `<redacted>`
+
+
+
+### `pg_global`
+
+**Owner:** `postgres`
+
+**Location:** `<redacted>`
+
+
+
+## Namespaces
+
+| Name | Owner | Comment |
+|---|---|---|
+| `public` | `pg_database_owner` | standard public schema |
+| `secure` | `dbmd_acl_owner` | - |
+
+
+## Enum Types
+
+| Type | Owner | Values | Comment |
+|---|---|---|---|
+| `secure.event_state` | `dbmd_acl_owner` | `pending, complete` | - |
+
+
+## Domains
+
+### `secure.event_code`
+
+**Base type:** `text`
+
+**Nullable:** yes
+
+**Owner:** `dbmd_acl_owner`
+
+**Collation:** `pg_catalog."default"`
+
+**Constraint:** `event_code_check`: `CHECK (VALUE <> ''::text)`
+
+```sql
+CREATE DOMAIN "secure"."event_code"
+    AS text
+    COLLATE pg_catalog."default"
+    CONSTRAINT "event_code_check" CHECK (VALUE <> ''::text);
+```
+
+
+## Sequences
+
+### `secure.event_sequence`
+
+**Owner:** `dbmd_acl_owner`
+
+**Type:** `bigint`
+
+**Start:** 1
+
+**Minimum:** 1
+
+**Maximum:** 9223372036854775807
+
+**Increment:** 1
+
+**Cache:** 1
+
+**Cycle:** no
+
+**Persistence:** `permanent`
+
+```sql
+CREATE SEQUENCE "secure"."event_sequence" AS bigint INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1 NO CYCLE OWNED BY NONE;
+```
+
+
+## Tables
+
+### `secure.events`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | no | - | storage `plain` |
+| `payload` | `text` | yes | - | collation `pg_catalog."default"`; storage `extended` |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `events_id_not_null` | `not_null` | `id` | `NOT NULL id` |
+| `events_pkey` | `primary_key` | `id` | `PRIMARY KEY (id)`; no inherit |
+
+
+#### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `events_pkey` | `id` ascending opclass `pg_catalog.int8_ops` nulls `last` | yes | postgres `btree`; owner `dbmd_acl_owner`; constraint `events_pkey` | - |
+
+
+#### PostgreSQL
+
+**Kind:** `table`
+
+**Owner:** `dbmd_acl_owner`
+
+**Persistence:** `permanent`
+
+**Replica identity:** `default`
+
+**Access method:** `heap`
+
+
+
+### `secure.remote_events`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | yes | - | storage `plain` |
+| `payload` | `text` | yes | - | collation `pg_catalog."default"`; storage `extended` |
+
+
+#### PostgreSQL
+
+**Kind:** `foreign_table`
+
+**Owner:** `dbmd_acl_owner`
+
+**Persistence:** `permanent`
+
+**Replica identity:** `nothing`
+
+**Foreign server:** `secure_server`
+
+**Foreign-data wrapper:** `postgres_fdw`
+
+**Foreign option:** `table_name=events`
+
+
+
+## Views
+
+### `secure.event_rollup`
+
+**Kind:** `materialized_view`
+
+**Owner:** `dbmd_acl_owner`
+
+**Persistence:** `permanent`
+
+**Populated:** no
+
+**Access method:** `heap`
+
+| Column | Type | Nullable |
+|---|---|---|
+| `event_count` | `bigint` | yes |
+
+
+```sql
+ SELECT count(*) AS event_count
+   FROM secure.events;
+```
+
+### `secure.event_view`
+
+**Kind:** `view`
+
+**Owner:** `dbmd_acl_owner`
+
+**Persistence:** `permanent`
+
+| Column | Type | Nullable |
+|---|---|---|
+| `id` | `bigint` | yes |
+| `payload` | `text` | yes |
+
+
+```sql
+ SELECT id,
+    payload
+   FROM secure.events;
+```
+
+## Functions
+
+### `secure.event_count()`
+
+**Kind:** `ordinary`
+
+**Arguments:** ``
+
+**Returns:** `bigint`
+
+**Owner:** `dbmd_acl_owner`
+
+**Language:** `sql`
+
+**Volatility:** `volatile`
+
+**Parallel:** `unsafe`
+
+**Security:** `invoker`
+
+**Null input:** called
+
+**Leakproof:** no
+
+**Returns set:** no
+
+**Cost:** 100
+
+```sql
+CREATE OR REPLACE FUNCTION secure.event_count()
+ RETURNS bigint
+ LANGUAGE sql
+RETURN (SELECT count(*) AS count FROM secure.events)
+
+```
+
+
+## Procedures
+
+### `secure.clear_events()`
+
+**Arguments:** ``
+
+**Owner:** `dbmd_acl_owner`
+
+**Language:** `sql`
+
+**Security:** `invoker`
+
+```sql
+CREATE OR REPLACE PROCEDURE secure.clear_events()
+ LANGUAGE sql
+AS $procedure$DELETE FROM secure.events$procedure$
+
+```
+
+
+## Aggregates
+
+### `secure.total_int(integer)`
+
+**Kind:** `normal`
+
+**Arguments:** `integer`
+
+**Owner:** `dbmd_acl_owner`
+
+**Returns:** `integer`
+
+**Direct arguments:** 0
+
+**Transition function:** `pg_catalog.int4pl(integer,integer)`
+
+**Transition type:** `integer`
+
+**Transition space:** 0
+
+**Final modify:** `read_only`
+
+**Parallel:** `unsafe`
+
+**Initial condition:** `0`
+
+
+
+## Foreign Servers
+
+### `secure_server`
+
+**Owner:** `dbmd_acl_owner`
+
+**Foreign-data wrapper:** `postgres_fdw`
+
+**Option:** `host=127.0.0.1`
+
+**Option:** `dbname=postgres`
+
+
+
+## Roles
+
+### `dbmd_acl_owner`
+
+**Login:** no
+
+**Superuser:** no
+
+**Inherit:** yes
+
+**Create role:** no
+
+**Create database:** no
+
+**Replication:** no
+
+**Bypass row-level security:** no
+
+**Connection limit:** -1
+
+**Password configured:** yes
+
+
+
+### `dbmd_acl_reader`
+
+**Login:** no
+
+**Superuser:** no
+
+**Inherit:** yes
+
+**Create role:** no
+
+**Create database:** no
+
+**Replication:** no
+
+**Bypass row-level security:** no
+
+**Connection limit:** -1
+
+**Password configured:** yes
+
+
+
+## Role Database Settings
+
+### `dbmd_acl_reader in dbmd_test_5d5be19f658d3fe2`
+
+**Setting:** `lock_timeout=3s`
+
+
+
+## Object Privileges
+
+### `database dbmd_test_5d5be19f658d3fe2 → PUBLIC CONNECT`
+
+**Object type:** `database`
+
+**Object:** `dbmd_test_5d5be19f658d3fe2`
+
+**Grantor:** `postgres`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `CONNECT`
+
+
+
+### `database dbmd_test_5d5be19f658d3fe2 → PUBLIC TEMPORARY`
+
+**Object type:** `database`
+
+**Object:** `dbmd_test_5d5be19f658d3fe2`
+
+**Grantor:** `postgres`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `TEMPORARY`
+
+
+
+### `database dbmd_test_5d5be19f658d3fe2 → dbmd_acl_reader CREATE`
+
+**Object type:** `database`
+
+**Object:** `dbmd_test_5d5be19f658d3fe2`
+
+**Grantor:** `postgres`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `CREATE`
+
+
+
+### `database dbmd_test_5d5be19f658d3fe2 → dbmd_acl_reader CONNECT`
+
+**Object type:** `database`
+
+**Object:** `dbmd_test_5d5be19f658d3fe2`
+
+**Grantor:** `postgres`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `CONNECT`
+
+
+
+### `database dbmd_test_5d5be19f658d3fe2 → dbmd_acl_reader TEMPORARY`
+
+**Object type:** `database`
+
+**Object:** `dbmd_test_5d5be19f658d3fe2`
+
+**Grantor:** `postgres`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `TEMPORARY`
+
+
+
+### `database dbmd_test_5d5be19f658d3fe2 → postgres CREATE`
+
+**Object type:** `database`
+
+**Object:** `dbmd_test_5d5be19f658d3fe2`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `CREATE`
+
+
+
+### `database dbmd_test_5d5be19f658d3fe2 → postgres CONNECT`
+
+**Object type:** `database`
+
+**Object:** `dbmd_test_5d5be19f658d3fe2`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `CONNECT`
+
+
+
+### `database dbmd_test_5d5be19f658d3fe2 → postgres TEMPORARY`
+
+**Object type:** `database`
+
+**Object:** `dbmd_test_5d5be19f658d3fe2`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `TEMPORARY`
+
+
+
+### `database template0 → PUBLIC CONNECT`
+
+**Object type:** `database`
+
+**Object:** `template0`
+
+**Grantor:** `postgres`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `CONNECT`
+
+
+
+### `database template0 → postgres CREATE`
+
+**Object type:** `database`
+
+**Object:** `template0`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `CREATE`
+
+
+
+### `database template0 → postgres CONNECT`
+
+**Object type:** `database`
+
+**Object:** `template0`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `CONNECT`
+
+
+
+### `database template0 → postgres TEMPORARY`
+
+**Object type:** `database`
+
+**Object:** `template0`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `TEMPORARY`
+
+
+
+### `database template1 → PUBLIC CONNECT`
+
+**Object type:** `database`
+
+**Object:** `template1`
+
+**Grantor:** `postgres`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `CONNECT`
+
+
+
+### `database template1 → postgres CREATE`
+
+**Object type:** `database`
+
+**Object:** `template1`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `CREATE`
+
+
+
+### `database template1 → postgres CONNECT`
+
+**Object type:** `database`
+
+**Object:** `template1`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `CONNECT`
+
+
+
+### `database template1 → postgres TEMPORARY`
+
+**Object type:** `database`
+
+**Object:** `template1`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `TEMPORARY`
+
+
+
+### `schema public → PUBLIC USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `USAGE`
+
+
+
+### `schema public → pg_database_owner USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `USAGE`
+
+
+
+### `schema public → pg_database_owner CREATE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `CREATE`
+
+
+
+### `schema secure → dbmd_acl_owner USAGE`
+
+**Object type:** `schema`
+
+**Object:** `secure`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `USAGE`
+
+
+
+### `schema secure → dbmd_acl_owner CREATE`
+
+**Object type:** `schema`
+
+**Object:** `secure`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `CREATE`
+
+
+
+### `schema secure → dbmd_acl_reader USAGE`
+
+**Object type:** `schema`
+
+**Object:** `secure`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `USAGE`
+
+**Grant option:** yes
+
+
+
+### `table secure.events → dbmd_acl_owner SELECT`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `SELECT`
+
+
+
+### `table secure.events → dbmd_acl_owner INSERT`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `INSERT`
+
+
+
+### `table secure.events → dbmd_acl_owner UPDATE`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `UPDATE`
+
+
+
+### `table secure.events → dbmd_acl_owner DELETE`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `DELETE`
+
+
+
+### `table secure.events → dbmd_acl_owner TRUNCATE`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `TRUNCATE`
+
+
+
+### `table secure.events → dbmd_acl_owner REFERENCES`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `REFERENCES`
+
+
+
+### `table secure.events → dbmd_acl_owner TRIGGER`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `TRIGGER`
+
+
+
+### `table secure.events → dbmd_acl_owner MAINTAIN`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `MAINTAIN`
+
+
+
+### `table secure.events → dbmd_acl_reader SELECT`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `SELECT`
+
+
+
+### `table secure.events → dbmd_acl_reader INSERT`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `INSERT`
+
+
+
+### `table secure.events → dbmd_acl_reader UPDATE`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `UPDATE`
+
+
+
+### `table secure.events → dbmd_acl_reader DELETE`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `DELETE`
+
+
+
+### `table secure.events → dbmd_acl_reader TRUNCATE`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `TRUNCATE`
+
+
+
+### `table secure.events → dbmd_acl_reader REFERENCES`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `REFERENCES`
+
+
+
+### `table secure.events → dbmd_acl_reader TRIGGER`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `TRIGGER`
+
+
+
+### `table secure.events → dbmd_acl_reader MAINTAIN`
+
+**Object type:** `table`
+
+**Object:** `secure.events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `MAINTAIN`
+
+
+
+### `table column secure.events.payload → dbmd_acl_reader UPDATE`
+
+**Object type:** `table column`
+
+**Object:** `secure.events.payload`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `UPDATE`
+
+**Grant option:** yes
+
+
+
+### `sequence secure.event_sequence → dbmd_acl_owner SELECT`
+
+**Object type:** `sequence`
+
+**Object:** `secure.event_sequence`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `SELECT`
+
+
+
+### `sequence secure.event_sequence → dbmd_acl_owner UPDATE`
+
+**Object type:** `sequence`
+
+**Object:** `secure.event_sequence`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `UPDATE`
+
+
+
+### `sequence secure.event_sequence → dbmd_acl_owner USAGE`
+
+**Object type:** `sequence`
+
+**Object:** `secure.event_sequence`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `USAGE`
+
+
+
+### `sequence secure.event_sequence → dbmd_acl_reader SELECT`
+
+**Object type:** `sequence`
+
+**Object:** `secure.event_sequence`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `SELECT`
+
+
+
+### `sequence secure.event_sequence → dbmd_acl_reader UPDATE`
+
+**Object type:** `sequence`
+
+**Object:** `secure.event_sequence`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `UPDATE`
+
+
+
+### `sequence secure.event_sequence → dbmd_acl_reader USAGE`
+
+**Object type:** `sequence`
+
+**Object:** `secure.event_sequence`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `USAGE`
+
+
+
+### `view secure.event_view → dbmd_acl_owner SELECT`
+
+**Object type:** `view`
+
+**Object:** `secure.event_view`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `SELECT`
+
+
+
+### `view secure.event_view → dbmd_acl_owner INSERT`
+
+**Object type:** `view`
+
+**Object:** `secure.event_view`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `INSERT`
+
+
+
+### `view secure.event_view → dbmd_acl_owner UPDATE`
+
+**Object type:** `view`
+
+**Object:** `secure.event_view`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `UPDATE`
+
+
+
+### `view secure.event_view → dbmd_acl_owner DELETE`
+
+**Object type:** `view`
+
+**Object:** `secure.event_view`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `DELETE`
+
+
+
+### `view secure.event_view → dbmd_acl_owner TRUNCATE`
+
+**Object type:** `view`
+
+**Object:** `secure.event_view`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `TRUNCATE`
+
+
+
+### `view secure.event_view → dbmd_acl_owner REFERENCES`
+
+**Object type:** `view`
+
+**Object:** `secure.event_view`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `REFERENCES`
+
+
+
+### `view secure.event_view → dbmd_acl_owner TRIGGER`
+
+**Object type:** `view`
+
+**Object:** `secure.event_view`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `TRIGGER`
+
+
+
+### `view secure.event_view → dbmd_acl_owner MAINTAIN`
+
+**Object type:** `view`
+
+**Object:** `secure.event_view`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `MAINTAIN`
+
+
+
+### `view secure.event_view → dbmd_acl_reader SELECT`
+
+**Object type:** `view`
+
+**Object:** `secure.event_view`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `SELECT`
+
+
+
+### `materialized view secure.event_rollup → dbmd_acl_owner SELECT`
+
+**Object type:** `materialized view`
+
+**Object:** `secure.event_rollup`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `SELECT`
+
+
+
+### `materialized view secure.event_rollup → dbmd_acl_owner INSERT`
+
+**Object type:** `materialized view`
+
+**Object:** `secure.event_rollup`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `INSERT`
+
+
+
+### `materialized view secure.event_rollup → dbmd_acl_owner UPDATE`
+
+**Object type:** `materialized view`
+
+**Object:** `secure.event_rollup`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `UPDATE`
+
+
+
+### `materialized view secure.event_rollup → dbmd_acl_owner DELETE`
+
+**Object type:** `materialized view`
+
+**Object:** `secure.event_rollup`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `DELETE`
+
+
+
+### `materialized view secure.event_rollup → dbmd_acl_owner TRUNCATE`
+
+**Object type:** `materialized view`
+
+**Object:** `secure.event_rollup`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `TRUNCATE`
+
+
+
+### `materialized view secure.event_rollup → dbmd_acl_owner REFERENCES`
+
+**Object type:** `materialized view`
+
+**Object:** `secure.event_rollup`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `REFERENCES`
+
+
+
+### `materialized view secure.event_rollup → dbmd_acl_owner TRIGGER`
+
+**Object type:** `materialized view`
+
+**Object:** `secure.event_rollup`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `TRIGGER`
+
+
+
+### `materialized view secure.event_rollup → dbmd_acl_owner MAINTAIN`
+
+**Object type:** `materialized view`
+
+**Object:** `secure.event_rollup`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `MAINTAIN`
+
+
+
+### `materialized view secure.event_rollup → dbmd_acl_reader SELECT`
+
+**Object type:** `materialized view`
+
+**Object:** `secure.event_rollup`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `SELECT`
+
+
+
+### `foreign table secure.remote_events → dbmd_acl_owner SELECT`
+
+**Object type:** `foreign table`
+
+**Object:** `secure.remote_events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `SELECT`
+
+
+
+### `foreign table secure.remote_events → dbmd_acl_owner INSERT`
+
+**Object type:** `foreign table`
+
+**Object:** `secure.remote_events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `INSERT`
+
+
+
+### `foreign table secure.remote_events → dbmd_acl_owner UPDATE`
+
+**Object type:** `foreign table`
+
+**Object:** `secure.remote_events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `UPDATE`
+
+
+
+### `foreign table secure.remote_events → dbmd_acl_owner DELETE`
+
+**Object type:** `foreign table`
+
+**Object:** `secure.remote_events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `DELETE`
+
+
+
+### `foreign table secure.remote_events → dbmd_acl_owner TRUNCATE`
+
+**Object type:** `foreign table`
+
+**Object:** `secure.remote_events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `TRUNCATE`
+
+
+
+### `foreign table secure.remote_events → dbmd_acl_owner REFERENCES`
+
+**Object type:** `foreign table`
+
+**Object:** `secure.remote_events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `REFERENCES`
+
+
+
+### `foreign table secure.remote_events → dbmd_acl_owner TRIGGER`
+
+**Object type:** `foreign table`
+
+**Object:** `secure.remote_events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `TRIGGER`
+
+
+
+### `foreign table secure.remote_events → dbmd_acl_owner MAINTAIN`
+
+**Object type:** `foreign table`
+
+**Object:** `secure.remote_events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `MAINTAIN`
+
+
+
+### `foreign table secure.remote_events → dbmd_acl_reader SELECT`
+
+**Object type:** `foreign table`
+
+**Object:** `secure.remote_events`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `SELECT`
+
+
+
+### `function secure.event_count() → PUBLIC EXECUTE`
+
+**Object type:** `function`
+
+**Object:** `secure.event_count()`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `EXECUTE`
+
+
+
+### `function secure.event_count() → dbmd_acl_owner EXECUTE`
+
+**Object type:** `function`
+
+**Object:** `secure.event_count()`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `EXECUTE`
+
+
+
+### `function secure.event_count() → dbmd_acl_reader EXECUTE`
+
+**Object type:** `function`
+
+**Object:** `secure.event_count()`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `EXECUTE`
+
+
+
+### `procedure secure.clear_events() → PUBLIC EXECUTE`
+
+**Object type:** `procedure`
+
+**Object:** `secure.clear_events()`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `EXECUTE`
+
+
+
+### `procedure secure.clear_events() → dbmd_acl_owner EXECUTE`
+
+**Object type:** `procedure`
+
+**Object:** `secure.clear_events()`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `EXECUTE`
+
+
+
+### `procedure secure.clear_events() → dbmd_acl_reader EXECUTE`
+
+**Object type:** `procedure`
+
+**Object:** `secure.clear_events()`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `EXECUTE`
+
+
+
+### `aggregate secure.total_int(integer) → PUBLIC EXECUTE`
+
+**Object type:** `aggregate`
+
+**Object:** `secure.total_int(integer)`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `EXECUTE`
+
+
+
+### `aggregate secure.total_int(integer) → dbmd_acl_owner EXECUTE`
+
+**Object type:** `aggregate`
+
+**Object:** `secure.total_int(integer)`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `EXECUTE`
+
+
+
+### `aggregate secure.total_int(integer) → dbmd_acl_reader EXECUTE`
+
+**Object type:** `aggregate`
+
+**Object:** `secure.total_int(integer)`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `EXECUTE`
+
+
+
+### `type secure.event_code → PUBLIC USAGE`
+
+**Object type:** `type`
+
+**Object:** `secure.event_code`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `USAGE`
+
+
+
+### `type secure.event_code → dbmd_acl_owner USAGE`
+
+**Object type:** `type`
+
+**Object:** `secure.event_code`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `USAGE`
+
+
+
+### `type secure.event_code → dbmd_acl_reader USAGE`
+
+**Object type:** `type`
+
+**Object:** `secure.event_code`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `USAGE`
+
+
+
+### `type secure.event_state → PUBLIC USAGE`
+
+**Object type:** `type`
+
+**Object:** `secure.event_state`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `USAGE`
+
+
+
+### `type secure.event_state → dbmd_acl_owner USAGE`
+
+**Object type:** `type`
+
+**Object:** `secure.event_state`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `USAGE`
+
+
+
+### `type secure.event_state → dbmd_acl_reader USAGE`
+
+**Object type:** `type`
+
+**Object:** `secure.event_state`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `USAGE`
+
+
+
+### `language plpgsql → PUBLIC USAGE`
+
+**Object type:** `language`
+
+**Object:** `plpgsql`
+
+**Grantor:** `postgres`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `USAGE`
+
+
+
+### `language plpgsql → dbmd_acl_reader USAGE`
+
+**Object type:** `language`
+
+**Object:** `plpgsql`
+
+**Grantor:** `postgres`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `USAGE`
+
+
+
+### `language plpgsql → postgres USAGE`
+
+**Object type:** `language`
+
+**Object:** `plpgsql`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `USAGE`
+
+
+
+### `large object 424242 → dbmd_acl_owner SELECT`
+
+**Object type:** `large object`
+
+**Object:** `424242`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `SELECT`
+
+
+
+### `large object 424242 → dbmd_acl_owner UPDATE`
+
+**Object type:** `large object`
+
+**Object:** `424242`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `UPDATE`
+
+
+
+### `large object 424242 → dbmd_acl_reader SELECT`
+
+**Object type:** `large object`
+
+**Object:** `424242`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `SELECT`
+
+
+
+### `large object 424242 → dbmd_acl_reader UPDATE`
+
+**Object type:** `large object`
+
+**Object:** `424242`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `UPDATE`
+
+
+
+### `foreign-data wrapper postgres_fdw → dbmd_acl_reader USAGE`
+
+**Object type:** `foreign-data wrapper`
+
+**Object:** `postgres_fdw`
+
+**Grantor:** `postgres`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `USAGE`
+
+
+
+### `foreign-data wrapper postgres_fdw → postgres USAGE`
+
+**Object type:** `foreign-data wrapper`
+
+**Object:** `postgres_fdw`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `USAGE`
+
+
+
+### `foreign server secure_server → dbmd_acl_owner USAGE`
+
+**Object type:** `foreign server`
+
+**Object:** `secure_server`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `USAGE`
+
+
+
+### `foreign server secure_server → dbmd_acl_reader USAGE`
+
+**Object type:** `foreign server`
+
+**Object:** `secure_server`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `USAGE`
+
+
+
+### `parameter statement_timeout → dbmd_acl_reader ALTER SYSTEM`
+
+**Object type:** `parameter`
+
+**Object:** `statement_timeout`
+
+**Grantor:** `postgres`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `ALTER SYSTEM`
+
+
+
+### `parameter statement_timeout → postgres SET`
+
+**Object type:** `parameter`
+
+**Object:** `statement_timeout`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `SET`
+
+
+
+### `parameter statement_timeout → postgres ALTER SYSTEM`
+
+**Object type:** `parameter`
+
+**Object:** `statement_timeout`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `ALTER SYSTEM`
+
+
+
+### `parameter work_mem → dbmd_acl_reader SET`
+
+**Object type:** `parameter`
+
+**Object:** `work_mem`
+
+**Grantor:** `postgres`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `SET`
+
+
+
+### `parameter work_mem → postgres SET`
+
+**Object type:** `parameter`
+
+**Object:** `work_mem`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `SET`
+
+
+
+### `parameter work_mem → postgres ALTER SYSTEM`
+
+**Object type:** `parameter`
+
+**Object:** `work_mem`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `ALTER SYSTEM`
+
+
+
+### `tablespace pg_default → dbmd_acl_reader CREATE`
+
+**Object type:** `tablespace`
+
+**Object:** `pg_default`
+
+**Grantor:** `postgres`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `CREATE`
+
+
+
+### `tablespace pg_default → postgres CREATE`
+
+**Object type:** `tablespace`
+
+**Object:** `pg_default`
+
+**Grantor:** `postgres`
+
+**Grantee:** `postgres`
+
+**Privilege:** `CREATE`
+
+
+
+## Default Privileges
+
+### `dbmd_acl_owner / secure / sequences → dbmd_acl_reader USAGE`
+
+**Owner:** `dbmd_acl_owner`
+
+**Scope:** `secure`
+
+**Object family:** `sequences`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `USAGE`
+
+
+
+### `dbmd_acl_owner / secure / types → dbmd_acl_reader USAGE`
+
+**Owner:** `dbmd_acl_owner`
+
+**Scope:** `secure`
+
+**Object family:** `types`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `USAGE`
+
+
+
+### `dbmd_acl_owner / secure / routines → dbmd_acl_reader EXECUTE`
+
+**Owner:** `dbmd_acl_owner`
+
+**Scope:** `secure`
+
+**Object family:** `routines`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `EXECUTE`
+
+
+
+### `dbmd_acl_owner / secure / tables → dbmd_acl_reader SELECT`
+
+**Owner:** `dbmd_acl_owner`
+
+**Scope:** `secure`
+
+**Object family:** `tables`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `SELECT`
+
+**Grant option:** yes
+
+
+
+### `dbmd_acl_owner / database-wide / large objects → dbmd_acl_owner SELECT`
+
+**Owner:** `dbmd_acl_owner`
+
+**Scope:** `database-wide`
+
+**Object family:** `large objects`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `SELECT`
+
+
+
+### `dbmd_acl_owner / database-wide / large objects → dbmd_acl_owner UPDATE`
+
+**Owner:** `dbmd_acl_owner`
+
+**Scope:** `database-wide`
+
+**Object family:** `large objects`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `UPDATE`
+
+
+
+### `dbmd_acl_owner / database-wide / large objects → dbmd_acl_reader SELECT`
+
+**Owner:** `dbmd_acl_owner`
+
+**Scope:** `database-wide`
+
+**Object family:** `large objects`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `SELECT`
+
+
+
+### `dbmd_acl_owner / database-wide / schemas → dbmd_acl_owner CREATE`
+
+**Owner:** `dbmd_acl_owner`
+
+**Scope:** `database-wide`
+
+**Object family:** `schemas`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `CREATE`
+
+
+
+### `dbmd_acl_owner / database-wide / schemas → dbmd_acl_owner USAGE`
+
+**Owner:** `dbmd_acl_owner`
+
+**Scope:** `database-wide`
+
+**Object family:** `schemas`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_owner`
+
+**Privilege:** `USAGE`
+
+
+
+### `dbmd_acl_owner / database-wide / schemas → dbmd_acl_reader USAGE`
+
+**Owner:** `dbmd_acl_owner`
+
+**Scope:** `database-wide`
+
+**Object family:** `schemas`
+
+**Grantor:** `dbmd_acl_owner`
+
+**Grantee:** `dbmd_acl_reader`
+
+**Privilege:** `USAGE`
+
+
+
+## Large Objects
+
+### `424242`
+
+Fixture document payload
+
+**Owner:** `dbmd_acl_owner`
+
+**Contents:** `omitted`
+
+
+
+## Extensions
+
+### `plpgsql`
+
+PL/pgSQL procedural language
+
+**Owner:** `postgres`
+
+**Schema:** `pg_catalog`
+
+**Version:** `1.0`
+
+**Relocatable:** no
+
+**Owned objects:** 4 (`function`: 3, `language`: 1)
+
+
+
+### `postgres_fdw`
+
+foreign-data wrapper for remote PostgreSQL servers
+
+**Owner:** `postgres`
+
+**Schema:** `public`
+
+**Version:** `1.2`
+
+**Relocatable:** yes
+
+**Owned objects:** 6 (`foreign-data wrapper`: 1, `function`: 5)

@@ -5,9 +5,14 @@ use dbmd_test_support::ClickHouseServer;
 
 #[test]
 fn renders_clickhouse_through_the_application_operation() {
-    let server = ClickHouseServer::start(include_str!(
-        "../../backends/clickhouse/tests/fixtures/schema_surface.sql"
-    ))
+    let server = ClickHouseServer::start_with_settings(
+        include_str!("../../backends/clickhouse/tests/fixtures/schema_surface.sql"),
+        &[
+            ("allow_experimental_codecs", "1"),
+            ("allow_experimental_window_view", "1"),
+            ("allow_experimental_analyzer", "0"),
+        ],
+    )
     .expect("ClickHouse fixture should start");
     let project = tempfile::tempdir().expect("temporary project should exist");
     let config = project.path().join("dbmd.toml");

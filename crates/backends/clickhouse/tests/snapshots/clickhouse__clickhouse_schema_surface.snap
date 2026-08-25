@@ -8,29 +8,57 @@ catalog:
   databases:
     - name: analytics
       engine: Atomic
+      uuid: 10000000-0000-0000-0000-000000000001
+      engine_full: Atomic
+      external: false
       comment: Analytical application data
   tables:
     - database: analytics
       name: active_events
+      uuid: 20000000-0000-0000-0000-000000000004
       kind: view
       engine: View
       engine_full: ""
+      engine_arguments: []
+      engine_parameters: {}
+      settings: {}
+      ttl_rules: []
+      temporary: false
       partition_key: ""
       sorting_key: ""
       primary_key: ""
       sampling_key: ""
+      unique_key: ""
       storage_policy: ""
       target: ~
+      refresh: ~
+      window: ~
+      as_select: "SELECT tenant_id, event_id, occurred_at, event_type FROM analytics.events WHERE deleted = 0"
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: default
+      sql_security:
+        kind: invoker
       comment: Non-deleted events
       columns:
         - name: tenant_id
           data_type: UInt32
           position: 1
+          character_octet_length: ~
+          numeric_precision: 32
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
@@ -38,11 +66,19 @@ catalog:
         - name: event_id
           data_type: UUID
           position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
@@ -50,11 +86,19 @@ catalog:
         - name: occurred_at
           data_type: "DateTime64(3, 'UTC')"
           position: 3
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 3
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
@@ -62,11 +106,19 @@ catalog:
         - name: event_type
           data_type: LowCardinality(String)
           position: 4
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
@@ -74,40 +126,115 @@ catalog:
       data_skipping_indexes: []
       projections: []
       constraints: []
-      definition: "CREATE VIEW analytics.active_events (`tenant_id` UInt32, `event_id` UUID, `occurred_at` DateTime64(3, 'UTC'), `event_type` LowCardinality(String)) AS (SELECT tenant_id, event_id, occurred_at, event_type FROM analytics.events WHERE deleted = 0) COMMENT 'Non-deleted events'"
+      dictionary: ~
+      definition: "CREATE VIEW analytics.active_events (`tenant_id` UInt32, `event_id` UUID, `occurred_at` DateTime64(3, 'UTC'), `event_type` LowCardinality(String)) DEFINER = default SQL SECURITY INVOKER COMMENT 'Non-deleted events' AS SELECT tenant_id, event_id, occurred_at, event_type FROM analytics.events WHERE deleted = 0"
     - database: analytics
       name: country_names
+      uuid: 20000000-0000-0000-0000-000000000006
       kind: dictionary
       engine: Dictionary
       engine_full: ""
+      engine_arguments: []
+      engine_parameters: {}
+      settings: {}
+      ttl_rules: []
+      temporary: false
       partition_key: ""
       sorting_key: ""
       primary_key: ""
       sampling_key: ""
+      unique_key: ""
       storage_policy: ""
       target: ~
+      refresh: ~
+      window: ~
+      as_select: ~
+      parameters: []
+      dependencies: []
+      loading_dependencies:
+        - database: analytics
+          table: country_source
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
       comment: ~
       columns:
         - name: country_id
           data_type: UInt64
           position: 1
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: parent_id
+          data_type: UInt64
+          position: 2
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
           in_sampling_key: false
         - name: country_name
           data_type: String
-          position: 2
+          position: 3
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: normalized_name
+          data_type: String
+          position: 4
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
@@ -115,40 +242,335 @@ catalog:
       data_skipping_indexes: []
       projections: []
       constraints: []
-      definition: "CREATE DICTIONARY analytics.country_names (`country_id` UInt64, `country_name` String) PRIMARY KEY country_id SOURCE(CLICKHOUSE(HOST 'localhost' PORT 9000 USER 'default' DB 'analytics' TABLE 'country_source')) LIFETIME(MIN 0 MAX 0) LAYOUT(HASHED())"
+      dictionary:
+        layout: HASHED
+        keys:
+          - name: country_id
+            data_type: UInt64
+            default_expression: ~
+            expression: ~
+            hierarchical: false
+            injective: false
+            object_id: true
+        attributes:
+          - name: parent_id
+            data_type: UInt64
+            default_expression: "0"
+            expression: ~
+            hierarchical: true
+            injective: false
+            object_id: false
+          - name: country_name
+            data_type: String
+            default_expression: "'unknown'"
+            expression: ~
+            hierarchical: false
+            injective: true
+            object_id: false
+          - name: normalized_name
+            data_type: String
+            default_expression: ~
+            expression: lowerUTF8(country_name)
+            hierarchical: false
+            injective: false
+            object_id: false
+        source: ""
+        lifetime_min_seconds: 30
+        lifetime_max_seconds: 60
+        range_min: ~
+        range_max: ~
+        settings:
+          max_threads_for_updates: "4"
+      definition: "CREATE DICTIONARY analytics.country_names (`country_id` UInt64 IS_OBJECT_ID, `parent_id` UInt64 DEFAULT 0 HIERARCHICAL, `country_name` String DEFAULT 'unknown' INJECTIVE, `normalized_name` String EXPRESSION lowerUTF8(country_name)) PRIMARY KEY country_id SOURCE(CLICKHOUSE(HOST 'localhost' PORT 9000 USER 'default' PASSWORD '[HIDDEN]' DB 'analytics' TABLE 'country_source')) LIFETIME(MIN 30 MAX 60) LAYOUT(HASHED()) SETTINGS(max_threads_for_updates = 4)"
+    - database: analytics
+      name: country_rates
+      uuid: 20000000-0000-0000-0000-000000000016
+      kind: dictionary
+      engine: Dictionary
+      engine_full: ""
+      engine_arguments: []
+      engine_parameters: {}
+      settings: {}
+      ttl_rules: []
+      temporary: false
+      partition_key: ""
+      sorting_key: ""
+      primary_key: ""
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: ""
+      target: ~
+      refresh: ~
+      window: ~
+      as_select: ~
+      parameters: []
+      dependencies: []
+      loading_dependencies:
+        - database: analytics
+          table: country_source
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
+      comment: ~
+      columns:
+        - name: country_id
+          data_type: UInt64
+          position: 1
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: valid_from
+          data_type: Date
+          position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 0
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: valid_to
+          data_type: Date
+          position: 3
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 0
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: rate
+          data_type: Float64
+          position: 4
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary:
+        layout: RANGE_HASHED
+        keys:
+          - name: country_id
+            data_type: UInt64
+            default_expression: ~
+            expression: ~
+            hierarchical: false
+            injective: false
+            object_id: false
+        attributes:
+          - name: rate
+            data_type: Float64
+            default_expression: "0"
+            expression: ~
+            hierarchical: false
+            injective: false
+            object_id: false
+        source: ""
+        lifetime_min_seconds: 0
+        lifetime_max_seconds: 0
+        range_min: valid_from
+        range_max: valid_to
+        settings: {}
+      definition: "CREATE DICTIONARY analytics.country_rates (`country_id` UInt64, `valid_from` Date, `valid_to` Date, `rate` Float64 DEFAULT 0) PRIMARY KEY country_id SOURCE(CLICKHOUSE(HOST 'localhost' PORT 9000 USER 'default' PASSWORD '[HIDDEN]' DB 'analytics' TABLE 'country_source')) LIFETIME(MIN 0 MAX 0) LAYOUT(RANGE_HASHED()) RANGE(MIN valid_from MAX valid_to)"
     - database: analytics
       name: country_source
+      uuid: 20000000-0000-0000-0000-000000000005
       kind: table
       engine: MergeTree
       engine_full: MergeTree ORDER BY country_id SETTINGS index_granularity = 8192
+      engine_arguments: []
+      engine_parameters: {}
+      settings:
+        index_granularity: "8192"
+      ttl_rules: []
+      temporary: false
       partition_key: ""
       sorting_key: country_id
       primary_key: country_id
       sampling_key: ""
+      unique_key: ""
       storage_policy: default
       target: ~
+      refresh: ~
+      window: ~
+      as_select: ~
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents:
+        - database: analytics
+          table: country_rates
+        - database: analytics
+          table: country_names
+      definer: ~
+      sql_security: ~
       comment: ~
       columns:
         - name: country_id
           data_type: UInt64
           position: 1
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
           in_partition_key: false
           in_sorting_key: true
           in_primary_key: true
           in_sampling_key: false
-        - name: country_name
-          data_type: String
+        - name: parent_id
+          data_type: UInt64
           position: 2
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: country_name
+          data_type: String
+          position: 3
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: Uniq(auto)
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: valid_from
+          data_type: Date
+          position: 4
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 0
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: valid_to
+          data_type: Date
+          position: 5
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 0
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: rate
+          data_type: Float64
+          position: 6
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
@@ -156,28 +578,54 @@ catalog:
       data_skipping_indexes: []
       projections: []
       constraints: []
-      definition: "CREATE TABLE analytics.country_source (`country_id` UInt64, `country_name` String) ENGINE = MergeTree ORDER BY country_id SETTINGS index_granularity = 8192"
+      dictionary: ~
+      definition: "CREATE TABLE analytics.country_source (`country_id` UInt64, `parent_id` UInt64, `country_name` String, `valid_from` Date, `valid_to` Date, `rate` Float64) ENGINE = MergeTree ORDER BY country_id SETTINGS index_granularity = 8192"
     - database: analytics
       name: event_counts
+      uuid: 20000000-0000-0000-0000-000000000002
       kind: table
       engine: AggregatingMergeTree
       engine_full: AggregatingMergeTree ORDER BY event_type SETTINGS index_granularity = 8192
+      engine_arguments: []
+      engine_parameters: {}
+      settings:
+        index_granularity: "8192"
+      ttl_rules: []
+      temporary: false
       partition_key: ""
       sorting_key: event_type
       primary_key: event_type
       sampling_key: ""
+      unique_key: ""
       storage_policy: default
       target: ~
+      refresh: ~
+      window: ~
+      as_select: ~
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
       comment: ~
       columns:
         - name: event_type
           data_type: LowCardinality(String)
           position: 1
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: ~
+          statistics: Uniq(auto)
+          ttl: ~
           in_partition_key: false
           in_sorting_key: true
           in_primary_key: true
@@ -185,11 +633,19 @@ catalog:
         - name: total
           data_type: AggregateFunction(count)
           position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
@@ -197,28 +653,53 @@ catalog:
       data_skipping_indexes: []
       projections: []
       constraints: []
+      dictionary: ~
       definition: "CREATE TABLE analytics.event_counts (`event_type` LowCardinality(String), `total` AggregateFunction(count)) ENGINE = AggregatingMergeTree ORDER BY event_type SETTINGS index_granularity = 8192"
     - database: analytics
       name: event_counts_mv
+      uuid: 20000000-0000-0000-0000-000000000003
       kind: materialized_view
       engine: MaterializedView
       engine_full: ""
+      engine_arguments: []
+      engine_parameters: {}
+      settings: {}
+      ttl_rules: []
+      temporary: false
       partition_key: ""
       sorting_key: ""
       primary_key: ""
       sampling_key: ""
+      unique_key: ""
       storage_policy: ""
       target: analytics.event_counts
+      refresh: ~
+      window: ~
+      as_select: "SELECT event_type, countState() AS total FROM analytics.events GROUP BY event_type"
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
       comment: ~
       columns:
         - name: event_type
           data_type: LowCardinality(String)
           position: 1
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
@@ -226,11 +707,19 @@ catalog:
         - name: total
           data_type: AggregateFunction(count)
           position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
@@ -238,28 +727,66 @@ catalog:
       data_skipping_indexes: []
       projections: []
       constraints: []
+      dictionary: ~
       definition: "CREATE MATERIALIZED VIEW analytics.event_counts_mv TO analytics.event_counts (`event_type` LowCardinality(String), `total` AggregateFunction(count)) AS SELECT event_type, countState() AS total FROM analytics.events GROUP BY event_type"
     - database: analytics
       name: events
+      uuid: 20000000-0000-0000-0000-000000000001
       kind: table
       engine: ReplacingMergeTree
-      engine_full: "ReplacingMergeTree(version, deleted) PARTITION BY toYYYYMM(occurred_at) PRIMARY KEY (tenant_id, event_id) ORDER BY (tenant_id, event_id, occurred_at) TTL toDateTime(occurred_at) + toIntervalDay(365) SETTINGS index_granularity = 4096, deduplicate_merge_projection_mode = 'drop'"
+      engine_full: "ReplacingMergeTree(version, deleted) PARTITION BY toYYYYMM(occurred_at) PRIMARY KEY (tenant_id, event_id) ORDER BY (tenant_id, event_id, occurred_at) TTL toDateTime(occurred_at) + toIntervalDay(365) SETTINGS index_granularity = 4096, deduplicate_merge_projection_mode = 'drop', auto_statistics_types = 'minmax', add_minmax_index_for_temporal_columns = 1"
+      engine_arguments:
+        - version
+        - deleted
+      engine_parameters: {}
+      settings:
+        add_minmax_index_for_temporal_columns: "1"
+        auto_statistics_types: "'minmax'"
+        deduplicate_merge_projection_mode: "'drop'"
+        index_granularity: "4096"
+      ttl_rules:
+        - expression: toDateTime(occurred_at) + toIntervalDay(365)
+          action:
+            kind: delete
+            predicate: ~
+          raw: toDateTime(occurred_at) + toIntervalDay(365)
+      temporary: false
       partition_key: toYYYYMM(occurred_at)
       sorting_key: "tenant_id, event_id, occurred_at"
       primary_key: "tenant_id, event_id"
       sampling_key: ""
+      unique_key: ""
       storage_policy: default
       target: ~
+      refresh: ~
+      window: ~
+      as_select: ~
+      parameters: []
+      dependencies:
+        - database: analytics
+          table: event_counts_mv
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
       comment: Immutable analytical events
       columns:
         - name: tenant_id
           data_type: UInt32
           position: 1
+          character_octet_length: ~
+          numeric_precision: 32
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: Owning tenant
           compression_codec: ~
+          serialization_hint: Default
+          statistics: minmax(auto)
+          ttl: ~
           in_partition_key: false
           in_sorting_key: true
           in_primary_key: true
@@ -267,11 +794,19 @@ catalog:
         - name: event_id
           data_type: UUID
           position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: Default
+          statistics: ~
+          ttl: ~
           in_partition_key: false
           in_sorting_key: true
           in_primary_key: true
@@ -279,11 +814,19 @@ catalog:
         - name: occurred_at
           data_type: "DateTime64(3, 'UTC')"
           position: 3
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 3
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: "CODEC(DoubleDelta, ZSTD(1))"
+          serialization_hint: Default
+          statistics: minmax(auto)
+          ttl: ~
           in_partition_key: true
           in_sorting_key: true
           in_primary_key: false
@@ -291,11 +834,19 @@ catalog:
         - name: event_type
           data_type: LowCardinality(String)
           position: 4
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
           default_kind:
             kind: default
           default_expression: "'unknown'"
           comment: ~
           compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
@@ -303,68 +854,1369 @@ catalog:
         - name: payload
           data_type: String
           position: 5
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: CODEC(ZSTD(3))
+          serialization_hint: Default
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: vector
+          data_type: "QBit(Float32, 8)"
+          position: 6
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
           in_sampling_key: false
         - name: expires_at
           data_type: DateTime
-          position: 6
+          position: 7
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 0
           default_kind:
             kind: materialized
           default_expression: toDateTime(occurred_at) + toIntervalDay(30)
           comment: ~
           compression_codec: ~
+          serialization_hint: Default
+          statistics: minmax(auto)
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
           in_sampling_key: false
         - name: version
           data_type: UInt64
-          position: 7
+          position: 8
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
           default_kind:
             kind: none
           default_expression: ~
           comment: ~
           compression_codec: ~
+          serialization_hint: Default
+          statistics: minmax(auto)
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
           in_sampling_key: false
         - name: deleted
           data_type: UInt8
-          position: 8
+          position: 9
+          character_octet_length: ~
+          numeric_precision: 8
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
           default_kind:
             kind: default
           default_expression: "0"
           comment: ~
           compression_codec: ~
+          serialization_hint: Default
+          statistics: minmax(auto)
+          ttl: ~
           in_partition_key: false
           in_sorting_key: false
           in_primary_key: false
           in_sampling_key: false
       data_skipping_indexes:
+        - name: auto_minmax_index_expires_at
+          expression: expires_at
+          index_type: minmax
+          type_full: minmax()
+          implicit: true
+          granularity: 1
+        - name: auto_minmax_index_occurred_at
+          expression: occurred_at
+          index_type: minmax
+          type_full: minmax()
+          implicit: true
+          granularity: 1
+        - name: payload_text
+          expression: payload
+          index_type: text
+          type_full: "text(tokenizer = 'splitByNonAlpha')"
+          implicit: false
+          granularity: 100000000
         - name: payload_tokens
           expression: lower(payload)
           index_type: tokenbf_v1
           type_full: "tokenbf_v1(1024, 3, 0)"
-          implicit: ~
+          implicit: false
           granularity: 4
       projections:
         - name: by_event_type
           projection_type: Aggregate
           sorting_key: event_type
           query: "SELECT event_type, count() GROUP BY event_type"
+          settings: {}
+          index: ~
+        - name: by_time
+          projection_type: Normal
+          sorting_key: occurred_at
+          query: occurred_at
+          settings: {}
+          index:
+            expression: occurred_at
+            index_type: basic
       constraints:
+        - name: positive_tenant
+          kind: assume
+          expression: tenant_id > 0
         - name: valid_deleted
-          constraint_type: CHECK
+          kind: check
           expression: "deleted IN (0, 1)"
-      definition: "CREATE TABLE analytics.events (`tenant_id` UInt32 COMMENT 'Owning tenant', `event_id` UUID, `occurred_at` DateTime64(3, 'UTC') CODEC(DoubleDelta, ZSTD(1)), `event_type` LowCardinality(String) DEFAULT 'unknown', `payload` String CODEC(ZSTD(3)), `expires_at` DateTime MATERIALIZED toDateTime(occurred_at) + toIntervalDay(30), `version` UInt64, `deleted` UInt8 DEFAULT 0, INDEX payload_tokens lower(payload) TYPE tokenbf_v1(1024, 3, 0) GRANULARITY 4, CONSTRAINT valid_deleted CHECK deleted IN (0, 1), PROJECTION by_event_type (SELECT event_type, count() GROUP BY event_type)) ENGINE = ReplacingMergeTree(version, deleted) PARTITION BY toYYYYMM(occurred_at) PRIMARY KEY (tenant_id, event_id) ORDER BY (tenant_id, event_id, occurred_at) TTL toDateTime(occurred_at) + toIntervalDay(365) SETTINGS index_granularity = 4096, deduplicate_merge_projection_mode = 'drop' COMMENT 'Immutable analytical events'"
+      dictionary: ~
+      definition: "CREATE TABLE analytics.events (`tenant_id` UInt32 COMMENT 'Owning tenant', `event_id` UUID, `occurred_at` DateTime64(3, 'UTC') CODEC(DoubleDelta, ZSTD(1)), `event_type` LowCardinality(String) DEFAULT 'unknown', `payload` String CODEC(ZSTD(3)), `vector` QBit(Float32, 8), `expires_at` DateTime MATERIALIZED toDateTime(occurred_at) + toIntervalDay(30), `version` UInt64, `deleted` UInt8 DEFAULT 0, INDEX payload_tokens lower(payload) TYPE tokenbf_v1(1024, 3, 0) GRANULARITY 4, INDEX payload_text payload TYPE text(tokenizer = 'splitByNonAlpha') GRANULARITY 100000000, CONSTRAINT valid_deleted CHECK deleted IN (0, 1), CONSTRAINT positive_tenant ASSUME tenant_id > 0, PROJECTION by_event_type (SELECT event_type, count() GROUP BY event_type), PROJECTION by_time INDEX occurred_at TYPE basic) ENGINE = ReplacingMergeTree(version, deleted) PARTITION BY toYYYYMM(occurred_at) PRIMARY KEY (tenant_id, event_id) ORDER BY (tenant_id, event_id, occurred_at) TTL toDateTime(occurred_at) + toIntervalDay(365) SETTINGS index_granularity = 4096, deduplicate_merge_projection_mode = 'drop', auto_statistics_types = 'minmax', add_minmax_index_for_temporal_columns = 1 COMMENT 'Immutable analytical events'"
+    - database: analytics
+      name: events_by_tenant
+      uuid: 20000000-0000-0000-0000-000000000017
+      kind: view
+      engine: View
+      engine_full: ""
+      engine_arguments: []
+      engine_parameters: {}
+      settings: {}
+      ttl_rules: []
+      temporary: false
+      partition_key: ""
+      sorting_key: ""
+      primary_key: ""
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: ""
+      target: ~
+      refresh: ~
+      window: ~
+      as_select: "SELECT tenant_id, event_id, occurred_at, event_type FROM analytics.events WHERE tenant_id = {requested_tenant:UInt32}"
+      parameters:
+        - name: requested_tenant
+          type: UInt32
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
+      comment: ~
+      columns: []
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary: ~
+      definition: "CREATE VIEW analytics.events_by_tenant AS SELECT tenant_id, event_id, occurred_at, event_type FROM analytics.events WHERE tenant_id = {requested_tenant:UInt32}"
+    - database: analytics
+      name: modern_storage
+      uuid: 20000000-0000-0000-0000-000000000014
+      kind: table
+      engine: CoalescingMergeTree
+      engine_full: "CoalescingMergeTree ORDER BY id SETTINGS map_serialization_version = 'with_buckets', map_serialization_version_for_zero_level_parts = 'basic', map_buckets_strategy = 'linear', map_buckets_coefficient = 0.5, map_buckets_min_avg_size = 0, max_buckets_in_map = 64, index_granularity = 8192"
+      engine_arguments: []
+      engine_parameters: {}
+      settings:
+        index_granularity: "8192"
+        map_buckets_coefficient: "0.5"
+        map_buckets_min_avg_size: "0"
+        map_buckets_strategy: "'linear'"
+        map_serialization_version: "'with_buckets'"
+        map_serialization_version_for_zero_level_parts: "'basic'"
+        max_buckets_in_map: "64"
+      ttl_rules: []
+      temporary: false
+      partition_key: ""
+      sorting_key: id
+      primary_key: id
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: default
+      target: ~
+      refresh: ~
+      window: ~
+      as_select: ~
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
+      comment: ~
+      columns:
+        - name: id
+          data_type: UInt64
+          position: 1
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: true
+          in_primary_key: true
+          in_sampling_key: false
+        - name: measurement
+          data_type: Float64
+          position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: "CODEC(ALP, ZSTD(1))"
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: attributes
+          data_type: "Map(String, String)"
+          position: 3
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary: ~
+      definition: "CREATE TABLE analytics.modern_storage (`id` UInt64, `measurement` Float64 CODEC(ALP, ZSTD(1)), `attributes` Map(String, String)) ENGINE = CoalescingMergeTree ORDER BY id SETTINGS map_serialization_version = 'with_buckets', map_serialization_version_for_zero_level_parts = 'basic', map_buckets_strategy = 'linear', map_buckets_coefficient = 0.5, map_buckets_min_avg_size = 0, max_buckets_in_map = 64, index_granularity = 8192"
+    - database: analytics
+      name: refresh_base
+      uuid: 20000000-0000-0000-0000-000000000012
+      kind: materialized_view
+      engine: MaterializedView
+      engine_full: ""
+      engine_arguments: []
+      engine_parameters: {}
+      settings: {}
+      ttl_rules: []
+      temporary: false
+      partition_key: ""
+      sorting_key: ""
+      primary_key: ""
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: ""
+      target: analytics.refresh_snapshots
+      refresh:
+        schedule:
+          kind: every
+          interval: 1 HOUR
+        offset: 5 MINUTE
+        randomize_for: 1 MINUTE
+        dependencies: []
+        settings:
+          refresh_retries: "5"
+        append: true
+      window: ~
+      as_select: "SELECT tenant_id, now() AS captured_at FROM analytics.events"
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: default
+      sql_security:
+        kind: definer
+      comment: ~
+      columns:
+        - name: tenant_id
+          data_type: UInt32
+          position: 1
+          character_octet_length: ~
+          numeric_precision: 32
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: captured_at
+          data_type: DateTime
+          position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 0
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary: ~
+      definition: "CREATE MATERIALIZED VIEW analytics.refresh_base REFRESH EVERY 1 HOUR OFFSET 5 MINUTE RANDOMIZE FOR 1 MINUTE SETTINGS refresh_retries = 5 APPEND TO analytics.refresh_snapshots (`tenant_id` UInt32, `captured_at` DateTime) DEFINER = default SQL SECURITY DEFINER AS SELECT tenant_id, now() AS captured_at FROM analytics.events"
+    - database: analytics
+      name: refresh_dependent
+      uuid: 20000000-0000-0000-0000-000000000013
+      kind: materialized_view
+      engine: MaterializedView
+      engine_full: ""
+      engine_arguments: []
+      engine_parameters: {}
+      settings: {}
+      ttl_rules: []
+      temporary: false
+      partition_key: ""
+      sorting_key: ""
+      primary_key: ""
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: ""
+      target: analytics.refresh_rollups
+      refresh:
+        schedule:
+          kind: after
+          interval: 2 HOUR
+        offset: ~
+        randomize_for: ~
+        dependencies:
+          - database: analytics
+            table: refresh_base
+        settings:
+          refresh_retries: "3"
+        append: false
+      window: ~
+      as_select: "SELECT tenant_id, count() AS total FROM analytics.events GROUP BY tenant_id"
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: default
+      sql_security:
+        kind: definer
+      comment: ~
+      columns:
+        - name: tenant_id
+          data_type: UInt32
+          position: 1
+          character_octet_length: ~
+          numeric_precision: 32
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: total
+          data_type: UInt64
+          position: 2
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary: ~
+      definition: "CREATE MATERIALIZED VIEW analytics.refresh_dependent REFRESH AFTER 2 HOUR DEPENDS ON analytics.refresh_base SETTINGS refresh_retries = 3 TO analytics.refresh_rollups (`tenant_id` UInt32, `total` UInt64) DEFINER = default SQL SECURITY DEFINER AS SELECT tenant_id, count() AS total FROM analytics.events GROUP BY tenant_id"
+    - database: analytics
+      name: refresh_rollups
+      uuid: 20000000-0000-0000-0000-000000000011
+      kind: table
+      engine: MergeTree
+      engine_full: MergeTree ORDER BY tenant_id SETTINGS index_granularity = 8192
+      engine_arguments: []
+      engine_parameters: {}
+      settings:
+        index_granularity: "8192"
+      ttl_rules: []
+      temporary: false
+      partition_key: ""
+      sorting_key: tenant_id
+      primary_key: tenant_id
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: default
+      target: ~
+      refresh: ~
+      window: ~
+      as_select: ~
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
+      comment: ~
+      columns:
+        - name: tenant_id
+          data_type: UInt32
+          position: 1
+          character_octet_length: ~
+          numeric_precision: 32
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: true
+          in_primary_key: true
+          in_sampling_key: false
+        - name: total
+          data_type: UInt64
+          position: 2
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary: ~
+      definition: "CREATE TABLE analytics.refresh_rollups (`tenant_id` UInt32, `total` UInt64) ENGINE = MergeTree ORDER BY tenant_id SETTINGS index_granularity = 8192"
+    - database: analytics
+      name: refresh_snapshots
+      uuid: 20000000-0000-0000-0000-000000000010
+      kind: table
+      engine: MergeTree
+      engine_full: MergeTree ORDER BY tenant_id SETTINGS index_granularity = 8192
+      engine_arguments: []
+      engine_parameters: {}
+      settings:
+        index_granularity: "8192"
+      ttl_rules: []
+      temporary: false
+      partition_key: ""
+      sorting_key: tenant_id
+      primary_key: tenant_id
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: default
+      target: ~
+      refresh: ~
+      window: ~
+      as_select: ~
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
+      comment: ~
+      columns:
+        - name: tenant_id
+          data_type: UInt32
+          position: 1
+          character_octet_length: ~
+          numeric_precision: 32
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: true
+          in_primary_key: true
+          in_sampling_key: false
+        - name: captured_at
+          data_type: DateTime
+          position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 0
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary: ~
+      definition: "CREATE TABLE analytics.refresh_snapshots (`tenant_id` UInt32, `captured_at` DateTime) ENGINE = MergeTree ORDER BY tenant_id SETTINGS index_granularity = 8192"
+    - database: analytics
+      name: remote_accounts
+      uuid: 20000000-0000-0000-0000-000000000007
+      kind: table
+      engine: MySQL
+      engine_full: "MySQL('127.0.0.1:3306', 'remote_app', 'accounts', 'remote_reader', '[HIDDEN]')"
+      engine_arguments:
+        - "'127.0.0.1:3306'"
+        - "'remote_app'"
+        - "'accounts'"
+        - "'remote_reader'"
+        - "'[HIDDEN]'"
+      engine_parameters: {}
+      settings: {}
+      ttl_rules: []
+      temporary: false
+      partition_key: ""
+      sorting_key: ""
+      primary_key: ""
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: ""
+      target: ~
+      refresh: ~
+      window: ~
+      as_select: ~
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
+      comment: ~
+      columns:
+        - name: account_id
+          data_type: UInt64
+          position: 1
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: email
+          data_type: String
+          position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary: ~
+      definition: "CREATE TABLE analytics.remote_accounts (`account_id` UInt64, `email` String) ENGINE = MySQL('127.0.0.1:3306', 'remote_app', 'accounts', 'remote_reader', '[HIDDEN]')"
+    - database: analytics
+      name: retention_matrix
+      uuid: 20000000-0000-0000-0000-000000000008
+      kind: table
+      engine: MergeTree
+      engine_full: "MergeTree ORDER BY event_id TTL occurred_at + toIntervalDay(7) TO DISK 'default', occurred_at + toIntervalDay(10) TO VOLUME 'default', occurred_at + toIntervalDay(14) RECOMPRESS CODEC(ZSTD(9)), occurred_at + toIntervalDay(30) WHERE deleted = 1 SETTINGS index_granularity = 4096"
+      engine_arguments: []
+      engine_parameters: {}
+      settings:
+        index_granularity: "4096"
+      ttl_rules:
+        - expression: occurred_at + toIntervalDay(7)
+          action:
+            kind: move
+            destination: disk
+            target: "'default'"
+          raw: "occurred_at + toIntervalDay(7) TO DISK 'default'"
+        - expression: occurred_at + toIntervalDay(10)
+          action:
+            kind: move
+            destination: volume
+            target: "'default'"
+          raw: "occurred_at + toIntervalDay(10) TO VOLUME 'default'"
+        - expression: occurred_at + toIntervalDay(14)
+          action:
+            kind: recompress
+            codec: CODEC(ZSTD(9))
+          raw: occurred_at + toIntervalDay(14) RECOMPRESS CODEC(ZSTD(9))
+        - expression: occurred_at + toIntervalDay(30)
+          action:
+            kind: delete
+            predicate: deleted = 1
+          raw: occurred_at + toIntervalDay(30) WHERE deleted = 1
+      temporary: false
+      partition_key: ""
+      sorting_key: event_id
+      primary_key: event_id
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: default
+      target: ~
+      refresh: ~
+      window: ~
+      as_select: ~
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
+      comment: ~
+      columns:
+        - name: event_id
+          data_type: UInt64
+          position: 1
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: true
+          in_primary_key: true
+          in_sampling_key: false
+        - name: occurred_at
+          data_type: DateTime
+          position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 0
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: expires_at
+          data_type: DateTime
+          position: 3
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 0
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: expires_at + toIntervalDay(1)
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: deleted
+          data_type: UInt8
+          position: 4
+          character_octet_length: ~
+          numeric_precision: 8
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: payload
+          data_type: String
+          position: 5
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: Uniq(auto)
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary: ~
+      definition: "CREATE TABLE analytics.retention_matrix (`event_id` UInt64, `occurred_at` DateTime, `expires_at` DateTime TTL expires_at + toIntervalDay(1), `deleted` UInt8, `payload` String) ENGINE = MergeTree ORDER BY event_id TTL occurred_at + toIntervalDay(7) TO DISK 'default', occurred_at + toIntervalDay(10) TO VOLUME 'default', occurred_at + toIntervalDay(14) RECOMPRESS CODEC(ZSTD(9)), occurred_at + toIntervalDay(30) WHERE deleted = 1 SETTINGS index_granularity = 4096"
+    - database: analytics
+      name: retention_rollup
+      uuid: 20000000-0000-0000-0000-000000000009
+      kind: table
+      engine: MergeTree
+      engine_full: MergeTree ORDER BY tenant_id TTL occurred_at + toIntervalDay(30) GROUP BY tenant_id SET amount = sum(amount) SETTINGS index_granularity = 8192
+      engine_arguments: []
+      engine_parameters: {}
+      settings:
+        index_granularity: "8192"
+      ttl_rules:
+        - expression: occurred_at + toIntervalDay(30)
+          action:
+            kind: group_by
+            keys: tenant_id
+            assignments:
+              - amount = sum(amount)
+          raw: occurred_at + toIntervalDay(30) GROUP BY tenant_id SET amount = sum(amount)
+      temporary: false
+      partition_key: ""
+      sorting_key: tenant_id
+      primary_key: tenant_id
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: default
+      target: ~
+      refresh: ~
+      window: ~
+      as_select: ~
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
+      comment: ~
+      columns:
+        - name: tenant_id
+          data_type: UInt64
+          position: 1
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: true
+          in_primary_key: true
+          in_sampling_key: false
+        - name: occurred_at
+          data_type: DateTime
+          position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 0
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: amount
+          data_type: UInt64
+          position: 3
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary: ~
+      definition: "CREATE TABLE analytics.retention_rollup (`tenant_id` UInt64, `occurred_at` DateTime, `amount` UInt64) ENGINE = MergeTree ORDER BY tenant_id TTL occurred_at + toIntervalDay(30) GROUP BY tenant_id SET amount = sum(amount) SETTINGS index_granularity = 8192"
+    - database: analytics
+      name: s3_archive
+      uuid: 20000000-0000-0000-0000-000000000015
+      kind: table
+      engine: S3
+      engine_full: "S3('s3://dbmd-audit/archive.parquet', 'Parquet', storage_class_name = 'INTELLIGENT_TIERING')"
+      engine_arguments:
+        - "'s3://dbmd-audit/archive.parquet'"
+        - "'Parquet'"
+      engine_parameters:
+        storage_class_name: "'INTELLIGENT_TIERING'"
+      settings: {}
+      ttl_rules: []
+      temporary: false
+      partition_key: ""
+      sorting_key: ""
+      primary_key: ""
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: ""
+      target: ~
+      refresh: ~
+      window: ~
+      as_select: ~
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
+      comment: ~
+      columns:
+        - name: payload
+          data_type: String
+          position: 1
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary: ~
+      definition: "CREATE TABLE analytics.s3_archive (`payload` String) ENGINE = S3('s3://dbmd-audit/archive.parquet', 'Parquet', storage_class_name = 'INTELLIGENT_TIERING')"
+    - database: analytics
+      name: window_event_counts
+      uuid: 20000000-0000-0000-0000-000000000018
+      kind: table
+      engine: MergeTree
+      engine_full: MergeTree ORDER BY window_end SETTINGS index_granularity = 8192
+      engine_arguments: []
+      engine_parameters: {}
+      settings:
+        index_granularity: "8192"
+      ttl_rules: []
+      temporary: false
+      partition_key: ""
+      sorting_key: window_end
+      primary_key: window_end
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: default
+      target: ~
+      refresh: ~
+      window: ~
+      as_select: ~
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
+      comment: ~
+      columns:
+        - name: total
+          data_type: UInt64
+          position: 1
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: window_end
+          data_type: DateTime
+          position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 0
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: Default
+          statistics: "Uniq(auto),minmax(auto)"
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: true
+          in_primary_key: true
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary: ~
+      definition: "CREATE TABLE analytics.window_event_counts (`total` UInt64, `window_end` DateTime) ENGINE = MergeTree ORDER BY window_end SETTINGS index_granularity = 8192"
+    - database: analytics
+      name: windowed_events
+      uuid: 20000000-0000-0000-0000-000000000019
+      kind: window_view
+      engine: WindowView
+      engine_full: ""
+      engine_arguments: []
+      engine_parameters: {}
+      settings: {}
+      ttl_rules: []
+      temporary: false
+      partition_key: ""
+      sorting_key: ""
+      primary_key: ""
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: ""
+      target: analytics.window_event_counts
+      refresh: ~
+      window:
+        target: analytics.window_event_counts
+        inner_engine: AggregatingMergeTree ORDER BY tuple()
+        storage_engine: ~
+        watermark: STRICTLY_ASCENDING
+        allowed_lateness: ~
+      as_select: "SELECT count(event_id) AS total, tumbleEnd(window_id) AS window_end FROM analytics.retention_matrix GROUP BY tumble(occurred_at, toIntervalSecond('5')) AS window_id"
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
+      comment: ~
+      columns:
+        - name: total
+          data_type: UInt64
+          position: 1
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: window_end
+          data_type: DateTime
+          position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 0
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary: ~
+      definition: "CREATE WINDOW VIEW analytics.windowed_events TO analytics.window_event_counts (`total` UInt64, `window_end` DateTime) INNER ENGINE = AggregatingMergeTree ORDER BY tuple() WATERMARK STRICTLY_ASCENDING AS SELECT count(event_id) AS total, tumbleEnd(window_id) AS window_end FROM analytics.retention_matrix GROUP BY tumble(occurred_at, toIntervalSecond('5')) AS window_id"
+    - database: analytics
+      name: windowed_events_owned
+      uuid: 20000000-0000-0000-0000-000000000020
+      kind: window_view
+      engine: WindowView
+      engine_full: ""
+      engine_arguments: []
+      engine_parameters: {}
+      settings: {}
+      ttl_rules: []
+      temporary: false
+      partition_key: ""
+      sorting_key: ""
+      primary_key: ""
+      sampling_key: ""
+      unique_key: ""
+      storage_policy: ""
+      target: ~
+      refresh: ~
+      window:
+        target: ~
+        inner_engine: AggregatingMergeTree ORDER BY tuple()
+        storage_engine: MergeTree ORDER BY window_end SETTINGS index_granularity = 8192
+        watermark: ASCENDING
+        allowed_lateness: "toIntervalSecond('2')"
+      as_select: "SELECT count(event_id) AS total, tumbleEnd(window_id) AS window_end FROM analytics.retention_matrix GROUP BY tumble(occurred_at, toIntervalSecond('5')) AS window_id"
+      parameters: []
+      dependencies: []
+      loading_dependencies: []
+      loading_dependents: []
+      definer: ~
+      sql_security: ~
+      comment: ~
+      columns:
+        - name: total
+          data_type: UInt64
+          position: 1
+          character_octet_length: ~
+          numeric_precision: 64
+          numeric_precision_radix: 2
+          numeric_scale: 0
+          datetime_precision: ~
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+        - name: window_end
+          data_type: DateTime
+          position: 2
+          character_octet_length: ~
+          numeric_precision: ~
+          numeric_precision_radix: ~
+          numeric_scale: ~
+          datetime_precision: 0
+          default_kind:
+            kind: none
+          default_expression: ~
+          comment: ~
+          compression_codec: ~
+          serialization_hint: ~
+          statistics: ~
+          ttl: ~
+          in_partition_key: false
+          in_sorting_key: false
+          in_primary_key: false
+          in_sampling_key: false
+      data_skipping_indexes: []
+      projections: []
+      constraints: []
+      dictionary: ~
+      definition: "CREATE WINDOW VIEW analytics.windowed_events_owned (`total` UInt64, `window_end` DateTime) INNER ENGINE = AggregatingMergeTree ORDER BY tuple() ENGINE = MergeTree ORDER BY window_end SETTINGS index_granularity = 8192 WATERMARK ASCENDING ALLOWED_LATENESS toIntervalSecond('2') AS SELECT count(event_id) AS total, tumbleEnd(window_id) AS window_end FROM analytics.retention_matrix GROUP BY tumble(occurred_at, toIntervalSecond('5')) AS window_id"
   functions:
     - name: analytics_normalize
+      origin: SQLUserDefined
+      syntax: ~
+      arguments: ~
+      returned_value: ~
       definition: CREATE FUNCTION analytics_normalize AS value -> lowerUTF8(value)
+  users:
+    - name: analytics_service
+      storage: local_directory
+      authentication_types:
+        - sha256_password
+      valid_until:
+        - ~
+      hosts:
+        ip: []
+        names:
+          - localhost
+        name_regexps: []
+        name_like_patterns: []
+      default_roles:
+        all: false
+        include:
+          - analytics_reader
+        except: []
+      grantees:
+        all: true
+        include: []
+        except: []
+      default_database: analytics
+  roles:
+    - name: analytics_reader
+      storage: local_directory
+  grants:
+    - user: ~
+      role: analytics_reader
+      access_type: SELECT
+      access_object: ~
+      database: analytics
+      table: ~
+      column: ~
+      partial_revoke: false
+      grant_option: true
+  role_grants:
+    - user: analytics_service
+      role: ~
+      granted_role: analytics_reader
+      default: true
+      admin_option: true
+  row_policies:
+    - name: tenant_events ON analytics.events
+      short_name: tenant_events
+      database: analytics
+      table: events
+      storage: local_directory
+      select_filter: tenant_id > 0
+      restrictive: false
+      target:
+        all: false
+        include:
+          - analytics_reader
+        except: []
+  quotas:
+    - name: analytics_quota
+      storage: local_directory
+      keys:
+        - user_name
+      target:
+        all: false
+        include:
+          - analytics_reader
+        except: []
+      ipv4_prefix_bits: ~
+      ipv6_prefix_bits: ~
+      limits:
+        - duration_seconds: 3600
+          randomized: false
+          max_queries: 100
+          max_query_selects: 90
+          max_query_inserts: 10
+          max_errors: 5
+          max_result_rows: 1000
+          max_result_bytes: 2000
+          max_read_rows: 3000
+          max_read_bytes: 4000
+          max_execution_time: "60"
+          max_written_bytes: 5000
+          max_failed_sequential_authentications: 3
+          max_queries_per_normalized_hash: 7
+  settings_profiles:
+    - name: analytics_profile
+      storage: local_directory
+      target:
+        all: false
+        include:
+          - analytics_reader
+        except: []
+      elements:
+        - index: 0
+          setting_name: max_threads
+          value: "4"
+          minimum: "1"
+          maximum: "8"
+          writability: WRITABLE
+          inherited_profile: ~
+  named_collections:
+    - name: analytics_remote
+      entries:
+        - key: host
+          overridable: true
+        - key: password
+          overridable: false
+      definition: "CREATE NAMED COLLECTION analytics_remote AS host = '[HIDDEN]' OVERRIDABLE, password = '[HIDDEN]' NOT OVERRIDABLE"
+      source: SQL
+  resources:
+    - name: analytics_cpu
+      operations:
+        - kind: master_thread
+        - kind: worker_thread
+      read_disks: []
+      write_disks: []
+      unit: CPUNanosecond
+      definition: "CREATE RESOURCE analytics_cpu (MASTER THREAD, WORKER THREAD)"
+  workloads:
+    - name: analytics_all
+      parent: ~
+      settings: []
+      definition: CREATE WORKLOAD analytics_all
+    - name: analytics_interactive
+      parent: analytics_all
+      settings:
+        - name: max_concurrent_threads
+          value: "8"
+          resource: analytics_cpu
+      definition: CREATE WORKLOAD analytics_interactive IN analytics_all SETTINGS max_concurrent_threads = 8 FOR analytics_cpu

@@ -1,0 +1,85 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: "String::from_utf8(files[&\"index.md\".parse().expect(\"static artifact path should parse\")].clone())?"
+---
+# Database: `advanced`
+
+## Database
+
+- [`dbmd_test_df2b78feb085d431`](database/database.dbmd_test_df2b78feb085d431.md)
+
+## Namespaces
+
+| Name | Owner | Comment |
+|---|---|---|
+| `advanced` | `postgres` | - |
+| `public` | `pg_database_owner` | standard public schema |
+
+
+## Tables
+
+- [`advanced.deleted_orders`](tables/advanced.deleted_orders.md)
+- [`advanced.orders`](tables/advanced.orders.md)
+
+
+## Functions
+
+- [`advanced.capture_schema_change()`](functions/advanced.capture_schema_change%28%29.md)
+
+
+## Rewrite Rules
+
+- [`advanced.orders.archive_order_delete`](rules/advanced.orders%2Earchive_order_delete.md)
+
+
+## Event Triggers
+
+- [`capture_schema_change`](event-triggers/event-trigger.capture_schema_change.md)
+
+
+## Extended Statistics
+
+- [`advanced.orders_dependencies`](statistics/advanced.orders_dependencies.md)
+- [`advanced.orders_expression`](statistics/advanced.orders_expression.md)
+
+
+## Text Search Parsers
+
+- [`advanced.default_parser`](text-search-parsers/advanced.default_parser.md)
+
+
+## Text Search Templates
+
+- [`advanced.simple_template`](text-search-templates/advanced.simple_template.md)
+
+
+## Text Search Dictionaries
+
+- [`advanced.simple_dictionary`](text-search-dictionaries/advanced.simple_dictionary.md)
+
+
+## Text Search Configurations
+
+- [`advanced.search_configuration`](text-search-configurations/advanced.search_configuration.md)
+
+
+## Publications
+
+- [`advanced_publication`](publications/publications.advanced_publication.md)
+
+
+## Subscriptions
+
+- [`advanced_subscription`](subscriptions/subscription.advanced_subscription.md)
+
+
+## Object Privileges
+
+- [`schema public → PUBLIC USAGE`](privileges/schema.public-pg_database_owner-PUBLIC-USAGE.md)
+- [`schema public → pg_database_owner CREATE`](privileges/schema.public-pg_database_owner-pg_database_owner-CREATE.md)
+- [`schema public → pg_database_owner USAGE`](privileges/schema.public-pg_database_owner-pg_database_owner-USAGE.md)
+
+
+## Extensions
+
+- [`plpgsql`](extensions/extensions.plpgsql.md)

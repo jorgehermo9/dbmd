@@ -29,6 +29,7 @@ Backend: `{{ source.backend }}`
 
 {% for object in source.data.views -%}
 {% set heading = source.data.object_heading -%}
+{% set detail_heading = source.data.detail_heading -%}
 {% include "view.md.j2" %}
 
 {% endfor -%}

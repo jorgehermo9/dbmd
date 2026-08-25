@@ -10,6 +10,8 @@ use super::{DuckDbSource, DuckDbSourceError};
 pub struct Config {
     path: String,
     display_name: Option<String>,
+    secret_directory: Option<String>,
+    extension_directory: Option<String>,
     #[serde(default)]
     attachments: BTreeMap<String, AttachmentConfig>,
 }
@@ -26,6 +28,8 @@ impl Config {
     #[must_use]
     pub fn environment_values(&self) -> Vec<&str> {
         std::iter::once(self.path.as_str())
+            .chain(self.secret_directory.as_deref())
+            .chain(self.extension_directory.as_deref())
             .chain(
                 self.attachments
                     .values()
@@ -56,6 +60,14 @@ impl Config {
         let mut source = DuckDbSource::new(id, path)?;
         if let Some(display_name) = &self.display_name {
             source = source.with_display_name(display_name);
+        }
+        if let Some(secret_directory) = &self.secret_directory {
+            let value = resolve_value(secret_directory).map_err(DuckDbConfigError::Value)?;
+            source = source.with_secret_directory(resolve_path(base, &value))?;
+        }
+        if let Some(extension_directory) = &self.extension_directory {
+            let value = resolve_value(extension_directory).map_err(DuckDbConfigError::Value)?;
+            source = source.with_extension_directory(resolve_path(base, &value))?;
         }
         for (name, attachment) in &self.attachments {
             let path = resolve_value(&attachment.path).map_err(DuckDbConfigError::Value)?;

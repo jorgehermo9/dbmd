@@ -12,17 +12,29 @@ CREATE TABLE catalog.accounts (
     state catalog.account_state NOT NULL DEFAULT 'invited'
 );
 
-CREATE VIEW catalog.active_accounts AS
+CREATE VIEW catalog.active_accounts
+WITH (security_barrier = true, security_invoker = true) AS
 SELECT id, email
 FROM catalog.accounts
-WHERE state = 'active';
+WHERE state = 'active'
+WITH LOCAL CHECK OPTION;
 
 COMMENT ON VIEW catalog.active_accounts IS 'Accounts allowed to sign in';
 
-CREATE MATERIALIZED VIEW catalog.account_counts AS
+CREATE MATERIALIZED VIEW catalog.account_counts
+USING heap
+WITH (fillfactor = 80)
+TABLESPACE pg_default AS
 SELECT state, count(*) AS account_count
 FROM catalog.accounts
-GROUP BY state;
+GROUP BY state
+WITH NO DATA;
+
+CREATE INDEX account_counts_state_idx
+ON catalog.account_counts (state);
+
+COMMENT ON INDEX catalog.account_counts_state_idx IS
+    'Supports state lookups on the account summary';
 
 CREATE FUNCTION catalog.normalize_email(value text)
 RETURNS text
@@ -32,3 +44,20 @@ PARALLEL SAFE
 RETURN lower(trim(value));
 
 COMMENT ON FUNCTION catalog.normalize_email(text) IS 'Normalizes an email address';
+
+CREATE PROCEDURE catalog.archive_account(
+    IN account_id bigint,
+    INOUT archived boolean,
+    IN reason text DEFAULT 'manual'
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO catalog, pg_temp
+AS $$
+BEGIN
+    archived := account_id > 0 AND reason <> '';
+END;
+$$;
+
+COMMENT ON PROCEDURE catalog.archive_account(bigint, boolean, text)
+IS 'Marks an account archive request';

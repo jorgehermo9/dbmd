@@ -9,6 +9,8 @@ pub struct Config {
     url: String,
     schema: Option<String>,
     display_name: Option<String>,
+    #[serde(default)]
+    include_global_objects: bool,
 }
 
 impl Config {
@@ -36,6 +38,7 @@ impl Config {
         if let Some(display_name) = &self.display_name {
             source = source.with_display_name(display_name);
         }
+        source = source.with_global_objects(self.include_global_objects);
         Ok(source)
     }
 }

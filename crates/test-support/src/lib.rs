@@ -1,23 +1,22 @@
 //! Shared infrastructure for real-database integration tests.
 
-use std::{
-    error::Error,
-    process,
-    sync::atomic::{AtomicU64, Ordering},
-    thread,
-    time::Duration,
-};
+use std::{error::Error, thread, time::Duration};
 
+use mysql::prelude::Queryable;
 use postgres::{Client, NoTls};
 use testcontainers_modules::{
     clickhouse::ClickHouse,
     mariadb::Mariadb,
     mysql::Mysql,
     postgres::Postgres,
-    testcontainers::{runners::SyncRunner, Container, ImageExt},
+    testcontainers::{
+        core::{IntoContainerPort, WaitFor},
+        runners::SyncRunner,
+        Container, GenericImage, ImageExt,
+    },
 };
 
-/// One locally owned MySQL 8.4 fixture container.
+/// One locally owned MySQL 9.7.1 fixture container.
 pub struct MysqlServer {
     _container: Container<Mysql>,
     url: String,
@@ -28,10 +27,12 @@ impl MysqlServer {
     pub fn start(sql: &str) -> Result<Self, TestError> {
         let container = Mysql::default()
             .with_init_sql(sql.as_bytes().to_vec())
-            .with_tag("8.4")
+            .with_tag("9.7.1")
+            .with_startup_timeout(Duration::from_secs(180))
             .start()?;
         let url = mysql_family_url(&container)?;
         wait_for_mysql_family(&url)?;
+        ensure_mysql_family_version(&url, "9.7.1")?;
         Ok(Self {
             _container: container,
             url,
@@ -45,7 +46,7 @@ impl MysqlServer {
     }
 }
 
-/// One locally owned MariaDB 11.8 fixture container.
+/// One locally owned MariaDB 12.3.2 fixture container.
 pub struct MariaDbServer {
     _container: Container<Mariadb>,
     url: String,
@@ -56,10 +57,13 @@ impl MariaDbServer {
     pub fn start(sql: &str) -> Result<Self, TestError> {
         let container = Mariadb::default()
             .with_init_sql(sql.as_bytes().to_vec())
-            .with_tag("11.8")
+            .with_tag("12.3.2")
+            .with_cmd(["--plugin-load-add=auth_mysql_sha2"])
+            .with_startup_timeout(Duration::from_secs(180))
             .start()?;
         let url = mysql_family_url(&container)?;
         wait_for_mysql_family(&url)?;
+        ensure_mysql_family_version(&url, "12.3.2-MariaDB")?;
         Ok(Self {
             _container: container,
             url,
@@ -102,7 +106,22 @@ fn wait_for_mysql_family(url: &str) -> Result<(), TestError> {
     Err("database fixture did not accept MySQL-protocol connections".into())
 }
 
-/// One locally owned ClickHouse 25.8 fixture container.
+fn ensure_mysql_family_version(url: &str, expected_prefix: &str) -> Result<(), TestError> {
+    let mut connection = mysql::Conn::new(mysql::Opts::from_url(url)?)?;
+    let version = connection
+        .query_first::<String, _>("SELECT VERSION()")?
+        .ok_or("database fixture returned no server version")?;
+    if version.starts_with(expected_prefix) {
+        Ok(())
+    } else {
+        Err(
+            format!("database fixture version {version} does not match target {expected_prefix}")
+                .into(),
+        )
+    }
+}
+
+/// One locally owned ClickHouse 26.6.1.1193 fixture container.
 pub struct ClickHouseServer {
     _container: Container<ClickHouse>,
     endpoint: String,
@@ -111,8 +130,13 @@ pub struct ClickHouseServer {
 impl ClickHouseServer {
     /// Starts ClickHouse and executes semicolon-delimited fixture statements.
     pub fn start(sql: &str) -> Result<Self, TestError> {
+        Self::start_with_settings(sql, &[])
+    }
+
+    /// Starts ClickHouse and applies explicit query settings to every fixture statement.
+    pub fn start_with_settings(sql: &str, settings: &[(&str, &str)]) -> Result<Self, TestError> {
         let container = ClickHouse::default()
-            .with_tag("25.8")
+            .with_tag("26.6.1.1193")
             .with_env_var("CLICKHOUSE_SKIP_USER_SETUP", "1")
             .start()?;
         let endpoint = format!(
@@ -124,7 +148,8 @@ impl ClickHouseServer {
             _container: container,
             endpoint,
         };
-        server.execute(sql)?;
+        server.ensure_version("26.6.1.1193")?;
+        server.execute(sql, settings)?;
         Ok(server)
     }
 
@@ -134,7 +159,7 @@ impl ClickHouseServer {
         &self.endpoint
     }
 
-    fn execute(&self, sql: &str) -> Result<(), TestError> {
+    fn execute(&self, sql: &str, settings: &[(&str, &str)]) -> Result<(), TestError> {
         let client = reqwest::blocking::Client::new();
         for statement in sql
             .split(";\n")
@@ -143,6 +168,7 @@ impl ClickHouseServer {
         {
             let response = client
                 .post(&self.endpoint)
+                .query(settings)
                 .body(statement.to_string())
                 .send()?;
             let status = response.status();
@@ -153,6 +179,24 @@ impl ClickHouseServer {
         }
         Ok(())
     }
+
+    fn ensure_version(&self, expected_prefix: &str) -> Result<(), TestError> {
+        let response = reqwest::blocking::Client::new()
+            .post(&self.endpoint)
+            .body("SELECT version() FORMAT TabSeparated")
+            .send()?
+            .error_for_status()?
+            .text()?;
+        let version = response.trim();
+        if version.starts_with(expected_prefix) {
+            Ok(())
+        } else {
+            Err(format!(
+                "ClickHouse fixture version {version} does not match target {expected_prefix}"
+            )
+            .into())
+        }
+    }
 }
 
 /// Thread-safe erased error returned by shared integration-test helpers.
@@ -160,32 +204,121 @@ pub type TestError = Box<dyn Error + Send + Sync>;
 /// Standard result type for one database fixture case.
 pub type TestResult = Result<(), TestError>;
 
-static NEXT_DATABASE: AtomicU64 = AtomicU64::new(1);
+const CONFIG_EXTENSION_CONTROL: &str = r"comment = 'dbmd extension configuration fixture'
+default_version = '1.0'
+relocatable = true
+";
+const CONFIG_EXTENSION_SQL: &str = r#"
+CREATE TYPE dbmd_extension_state AS ENUM ('enabled', 'disabled');
+CREATE TYPE dbmd_extension_pair AS (left_value integer, right_value text);
+CREATE DOMAIN dbmd_extension_positive AS integer CHECK (VALUE > 0);
+CREATE TYPE dbmd_extension_range AS RANGE (SUBTYPE = integer);
+CREATE SEQUENCE dbmd_extension_sequence;
+CREATE COLLATION dbmd_extension_collation FROM "C";
+CREATE TABLE dbmd_extension_config (
+    id integer PRIMARY KEY,
+    enabled boolean NOT NULL,
+    state dbmd_extension_state NOT NULL DEFAULT 'enabled'
+);
+CREATE INDEX dbmd_extension_config_enabled_idx ON dbmd_extension_config (enabled);
+CREATE VIEW dbmd_extension_enabled AS
+SELECT id FROM dbmd_extension_config WHERE enabled;
+CREATE FUNCTION dbmd_extension_identity(value integer)
+RETURNS integer LANGUAGE sql IMMUTABLE RETURN value;
+CREATE FUNCTION dbmd_extension_sum_state(state integer, value integer)
+RETURNS integer LANGUAGE sql IMMUTABLE
+RETURN coalesce(state, 0) + coalesce(value, 0);
+CREATE AGGREGATE dbmd_extension_sum(integer) (
+    SFUNC = dbmd_extension_sum_state,
+    STYPE = integer,
+    INITCOND = '0'
+);
+CREATE PROCEDURE dbmd_extension_noop()
+LANGUAGE sql AS 'SELECT 1';
+CREATE FUNCTION dbmd_extension_trigger()
+RETURNS trigger LANGUAGE plpgsql AS 'BEGIN RETURN NEW; END';
+CREATE TRIGGER dbmd_extension_config_trigger
+BEFORE INSERT ON dbmd_extension_config
+FOR EACH ROW EXECUTE FUNCTION dbmd_extension_trigger();
+SELECT pg_catalog.pg_extension_config_dump('dbmd_extension_config', 'WHERE enabled');
+"#;
 
 /// One locally owned PostgreSQL container shared by a suite of fixture cases.
 pub struct PostgresServer {
-    _container: Container<Postgres>,
+    _container: PostgresContainer,
     host: String,
     port: u16,
+}
+
+enum PostgresContainer {
+    Core { _guard: Container<Postgres> },
+    PgVector { _guard: Container<GenericImage> },
 }
 
 impl PostgresServer {
     /// Starts the pinned PostgreSQL image and retains its RAII container guard.
     pub fn start() -> Result<Self, TestError> {
-        let container = Postgres::default().with_tag("17-alpine").start()?;
+        let container = Postgres::default().with_tag("18.4-alpine").start()?;
         let host = container.get_host()?.to_string();
         let port = container.get_host_port_ipv4(5432)?;
-        Ok(Self {
-            _container: container,
+        let server = Self {
+            _container: PostgresContainer::Core { _guard: container },
             host,
             port,
-        })
+        };
+        server.ensure_version("18.4")?;
+        Ok(server)
+    }
+
+    /// Starts PostgreSQL 18.4 with the pinned pgvector 0.8.2 extension available.
+    pub fn start_pgvector() -> Result<Self, TestError> {
+        let container = GenericImage::new("pgvector/pgvector", "0.8.2-pg18")
+            .with_exposed_port(5432.tcp())
+            .with_wait_for(WaitFor::message_on_stderr(
+                "database system is ready to accept connections",
+            ))
+            .with_copy_to(
+                "/usr/share/postgresql/18/extension/dbmd_fixture.control",
+                CONFIG_EXTENSION_CONTROL.as_bytes().to_vec(),
+            )
+            .with_copy_to(
+                "/usr/share/postgresql/18/extension/dbmd_fixture--1.0.sql",
+                CONFIG_EXTENSION_SQL.as_bytes().to_vec(),
+            )
+            .with_env_var("POSTGRES_DB", "postgres")
+            .with_env_var("POSTGRES_USER", "postgres")
+            .with_env_var("POSTGRES_PASSWORD", "postgres")
+            .with_startup_timeout(Duration::from_secs(180))
+            .start()?;
+        let host = container.get_host()?.to_string();
+        let port = container.get_host_port_ipv4(5432)?;
+        let server = Self {
+            _container: PostgresContainer::PgVector { _guard: container },
+            host,
+            port,
+        };
+        server.ensure_version("18.4")?;
+        Ok(server)
+    }
+
+    fn ensure_version(&self, expected_prefix: &str) -> Result<(), TestError> {
+        let mut client = Client::connect(&self.connection_string("postgres"), NoTls)?;
+        let version = client
+            .query_one("SELECT current_setting('server_version')", &[])?
+            .get::<_, String>(0);
+        if version.starts_with(expected_prefix) {
+            Ok(())
+        } else {
+            Err(format!(
+                "PostgreSQL fixture version {version} does not match target {expected_prefix}"
+            )
+            .into())
+        }
     }
 
     /// Creates an isolated logical database and executes its fixture SQL.
     pub fn database(&self, sql: &str) -> Result<PostgresDatabase<'_>, TestError> {
-        let sequence = NEXT_DATABASE.fetch_add(1, Ordering::Relaxed);
-        let name = format!("dbmd_test_{}_{}", process::id(), sequence);
+        let name = format!("dbmd_test_{:016x}", fixture_hash(sql.as_bytes()));
         let mut admin = Client::connect(&self.connection_string("postgres"), NoTls)?;
         admin.batch_execute(&format!("CREATE DATABASE {name}"))?;
 
@@ -201,6 +334,12 @@ impl PostgresServer {
             self.host, self.port
         )
     }
+}
+
+fn fixture_hash(bytes: &[u8]) -> u64 {
+    bytes.iter().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
+        (hash ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3)
+    })
 }
 
 /// One per-case database dropped forcibly when its fixture guard leaves scope.

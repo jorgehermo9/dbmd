@@ -119,7 +119,7 @@ catalog:
               - id
             on_update: set_null
             on_delete: cascade
-            match_name: simple
+            match_type: simple
             deferrability:
               deferrable: true
               initially: deferred
@@ -219,7 +219,7 @@ catalog:
               - external_id
             on_update: no_action
             on_delete: set_default
-            match_name: ~
+            match_type: ~
             deferrability:
               deferrable: false
               initially: immediate

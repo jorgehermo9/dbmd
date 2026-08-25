@@ -8,7 +8,7 @@ expression: first_markdown
 
 | Name | Comment |
 |---|---|
-| `app.analytics` | `duckdb` catalog; read-only |
+| `app.analytics` | `duckdb` catalog; read-only; catalog tags `storage_version=v1.0.0+` |
 
 
 ## Tables
@@ -28,28 +28,31 @@ User accounts
 | `status` | `ENUM('active', 'disabled')` | no | `'active'` |  |
 | `balance` | `DECIMAL(18,2)` | no | `0` |  |
 | `metadata` | `STRUCT("source" VARCHAR, tags VARCHAR[])` | yes | - |  |
+| `typed_pair` | `STRUCT(account_id BIGINT, tenant_id BIGINT)` | yes | - |  |
+| `typed_reference` | `UNION(account_id BIGINT, external_id VARCHAR)` | yes | - |  |
+| `retry_count` | `INTEGER` | yes | - |  |
 
 
 #### Constraints
 
 | Name | Kind | Columns | Details |
 |---|---|---|---|
-| - | `NOT NULL` | `tenant_id` | `NOT NULL` |
-| - | `FOREIGN KEY` | `tenant_id` | `FOREIGN KEY (tenant_id) REFERENCES analytics.tenants(tenant_id)` |
-| - | `PRIMARY KEY` | `account_id` | `PRIMARY KEY(account_id)` |
-| - | `NOT NULL` | `email` | `NOT NULL` |
-| - | `NOT NULL` | `status` | `NOT NULL` |
-| - | `NOT NULL` | `balance` | `NOT NULL` |
-| - | `UNIQUE` | `tenant_id, email` | `UNIQUE(tenant_id, email)` |
-| - | `CHECK` | `balance` | `CHECK((balance >= 0))` |
-| - | `NOT NULL` | `account_id` | `NOT NULL` |
+| `accounts_tenant_id_not_null` | `not null` | `tenant_id` | `NOT NULL` |
+| `accounts_tenant_id_tenant_id_fkey` | `foreign key` | `tenant_id` | `FOREIGN KEY (tenant_id) REFERENCES analytics.tenants(tenant_id); references tenants (tenant_id)` |
+| `accounts_account_id_pkey` | `primary key` | `account_id` | `PRIMARY KEY(account_id)` |
+| `accounts_email_not_null` | `not null` | `email` | `NOT NULL` |
+| `accounts_status_not_null` | `not null` | `status` | `NOT NULL` |
+| `accounts_balance_not_null` | `not null` | `balance` | `NOT NULL` |
+| `accounts_tenant_id_email_key` | `unique` | `tenant_id, email` | `UNIQUE(tenant_id, email)` |
+| `accounts_balance_check` | `check` | `balance` | `CHECK((balance >= 0))` |
+| `accounts_account_id_not_null` | `not null` | `account_id` | `NOT NULL` |
 
 
 #### Indexes
 
 | Name | Terms | Unique | Origin / details | Predicate |
 |---|---|---|---|---|
-| `accounts_email_idx` | `[email]` | no | duckdb | - |
+| `accounts_email_idx` | `[email]` | no | duckdb; ART | - |
 
 
 #### DuckDB
@@ -57,7 +60,7 @@ User accounts
 **Temporary:** no
 
 ```sql
-CREATE TABLE analytics.accounts(tenant_id BIGINT NOT NULL, account_id BIGINT DEFAULT(nextval('analytics.account_id_seq')) PRIMARY KEY, email VARCHAR NOT NULL, normalized_email VARCHAR GENERATED ALWAYS AS(lower(email)), status ENUM('active', 'disabled') DEFAULT('active') NOT NULL, balance DECIMAL(18,2) DEFAULT(0) NOT NULL, metadata STRUCT("source" VARCHAR, tags VARCHAR[]), FOREIGN KEY (tenant_id) REFERENCES analytics.tenants(tenant_id), UNIQUE(tenant_id, email), CHECK((balance >= 0)));
+CREATE TABLE analytics.accounts(tenant_id BIGINT NOT NULL, account_id BIGINT DEFAULT(nextval('analytics.account_id_seq')) PRIMARY KEY, email VARCHAR NOT NULL, normalized_email VARCHAR GENERATED ALWAYS AS(lower(email)), status ENUM('active', 'disabled') DEFAULT('active') NOT NULL, balance DECIMAL(18,2) DEFAULT(0) NOT NULL, metadata STRUCT("source" VARCHAR, tags VARCHAR[]), typed_pair STRUCT(account_id BIGINT, tenant_id BIGINT), typed_reference UNION(account_id BIGINT, external_id VARCHAR), retry_count INTEGER, FOREIGN KEY (tenant_id) REFERENCES analytics.tenants(tenant_id), UNIQUE(tenant_id, email), CHECK((balance >= 0)));
 ```
 
 
@@ -77,10 +80,10 @@ Application tenants
 
 | Name | Kind | Columns | Details |
 |---|---|---|---|
-| - | `PRIMARY KEY` | `tenant_id` | `PRIMARY KEY(tenant_id)` |
-| - | `NOT NULL` | `name` | `NOT NULL` |
-| - | `UNIQUE` | `name` | `UNIQUE("name")` |
-| - | `NOT NULL` | `tenant_id` | `NOT NULL` |
+| `tenants_tenant_id_pkey` | `primary key` | `tenant_id` | `PRIMARY KEY(tenant_id)` |
+| `tenants_name_not_null` | `not null` | `name` | `NOT NULL` |
+| `tenants_name_key` | `unique` | `name` | `UNIQUE("name")` |
+| `tenants_tenant_id_not_null` | `not null` | `tenant_id` | `NOT NULL` |
 
 
 #### DuckDB
@@ -105,8 +108,8 @@ CREATE TABLE analytics.tenants(tenant_id BIGINT PRIMARY KEY, "name" VARCHAR NOT 
 
 | Name | Kind | Columns | Details |
 |---|---|---|---|
-| - | `PRIMARY KEY` | `id` | `PRIMARY KEY(id)` |
-| - | `NOT NULL` | `id` | `NOT NULL` |
+| `facts_id_pkey` | `primary key` | `id` | `PRIMARY KEY(id)` |
+| `facts_id_not_null` | `not null` | `id` | `NOT NULL` |
 
 
 #### DuckDB
@@ -136,6 +139,20 @@ CREATE VIEW analytics.active_accounts AS SELECT tenant_id, account_id, email FRO
 
 ## Types, Sequences, Functions, and Extensions
 
+### `app.analytics.account_pair`
+
+**Kind:** `type`
+
+**Category:** `COMPOSITE`
+
+**Logical type:** `STRUCT`
+
+**Definition:** `STRUCT(account_id BIGINT, tenant_id BIGINT)`
+
+**Size:** 0
+
+
+
 ### `app.analytics.account_status`
 
 Account lifecycle
@@ -144,7 +161,39 @@ Account lifecycle
 
 **Logical type:** `ENUM`
 
+**Definition:** `ENUM('active', 'disabled')`
+
+**Size:** 1
+
 **Labels:** `active, disabled`
+
+
+
+### `app.analytics.positive_integer`
+
+**Kind:** `type`
+
+**Category:** `NUMERIC`
+
+**Logical type:** `INTEGER`
+
+**Definition:** `INTEGER`
+
+**Size:** 4
+
+
+
+### `app.analytics.reference_value`
+
+**Kind:** `type`
+
+**Category:** `COMPOSITE`
+
+**Logical type:** `UNION`
+
+**Definition:** `UNION(account_id BIGINT, external_id VARCHAR)`
+
+**Size:** 0
 
 
 
@@ -155,6 +204,10 @@ Account identifiers
 **Kind:** `sequence`
 
 **Start:** 1000
+
+**Minimum:** 1
+
+**Maximum:** 9223372036854775807
 
 **Increment:** 10
 
@@ -167,7 +220,7 @@ CREATE SEQUENCE account_id_seq INCREMENT BY 10 MINVALUE 1 MAXVALUE 9223372036854
 
 ### `app.analytics.accounts_for_tenant`
 
-**Kind:** `table_macro`
+**Kind:** `table macro`
 
 **Return type:** `-`
 
@@ -206,3 +259,9 @@ Core function library
 **Installed:** yes
 
 **Version:** `-`
+
+**Aliases:** `-`
+
+**Install mode:** `statically linked`
+
+**Installed from:** `-`

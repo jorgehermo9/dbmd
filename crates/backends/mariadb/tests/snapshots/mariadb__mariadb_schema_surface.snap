@@ -9,6 +9,8 @@ catalog:
     - name: test
       default_character_set: utf8mb4
       default_collation: utf8mb4_uca1400_ai_ci
+      comment: Commerce schema fixture
+      definition: "CREATE DATABASE `test` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci */ COMMENT 'Commerce schema fixture'"
   tables:
     - schema: test
       name: accounts
@@ -21,6 +23,7 @@ catalog:
       system_time_period:
         start_column: row_start
         end_column: row_end
+      application_time_periods: []
       columns:
         - name: tenant_id
           position: 1
@@ -30,9 +33,13 @@ catalog:
           default: ~
           extra: ""
           generation_expression: ~
+          generated_storage: ~
           character_set: ~
           collation: ~
           comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
         - name: account_id
           position: 2
           data_type: bigint
@@ -41,9 +48,13 @@ catalog:
           default: ~
           extra: auto_increment
           generation_expression: ~
+          generated_storage: ~
           character_set: ~
           collation: ~
           comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
         - name: email
           position: 3
           data_type: varchar
@@ -52,9 +63,13 @@ catalog:
           default: ~
           extra: ""
           generation_expression: ~
+          generated_storage: ~
           character_set: utf8mb4
           collation: utf8mb4_uca1400_ai_ci
           comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
         - name: normalized_email
           position: 4
           data_type: varchar
@@ -63,42 +78,103 @@ catalog:
           default: "NULL"
           extra: STORED GENERATED
           generation_expression: "lcase(`email`)"
+          generated_storage: stored
           character_set: utf8mb4
           collation: utf8mb4_uca1400_ai_ci
           comment: ~
-        - name: status
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
+        - name: profile_document
           position: 5
+          data_type: xmltype
+          column_type: xmltype
+          nullable: true
+          default: "NULL"
+          extra: ""
+          generation_expression: ~
+          generated_storage: ~
+          character_set: utf8mb4
+          collation: utf8mb4_uca1400_ai_ci
+          comment: MariaDB 12.3 XML profile payload
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
+        - name: status
+          position: 6
           data_type: enum
           column_type: "enum('active','disabled')"
           nullable: false
           default: "'active'"
           extra: ""
           generation_expression: ~
+          generated_storage: ~
           character_set: utf8mb4
           collation: utf8mb4_uca1400_ai_ci
           comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
+        - name: secret_token
+          position: 7
+          data_type: varchar
+          column_type: varchar(64)
+          nullable: true
+          default: "NULL"
+          extra: INVISIBLE
+          generation_expression: ~
+          generated_storage: ~
+          character_set: utf8mb4
+          collation: utf8mb4_uca1400_ai_ci
+          comment: ~
+          visible: false
+          system_time_period_start: false
+          system_time_period_end: false
+        - name: home
+          position: 8
+          data_type: point
+          column_type: point
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          generated_storage: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
         - name: row_start
-          position: 6
+          position: 9
           data_type: timestamp
           column_type: timestamp(6)
           nullable: false
           default: ~
           extra: STORED GENERATED
           generation_expression: ROW START
+          generated_storage: stored
           character_set: ~
           collation: ~
           comment: ~
+          visible: true
+          system_time_period_start: true
+          system_time_period_end: false
         - name: row_end
-          position: 7
+          position: 10
           data_type: timestamp
           column_type: timestamp(6)
           nullable: false
           default: ~
           extra: STORED GENERATED
           generation_expression: ROW END
+          generated_storage: stored
           character_set: ~
           collation: ~
           comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: true
       constraints:
         - name: PRIMARY
           kind: primary_key
@@ -108,20 +184,24 @@ catalog:
           referenced_schema: ~
           referenced_table: ~
           referenced_columns: []
-          match_option: ~
-          update_rule: ~
-          delete_rule: ~
+          match_type: ~
+          on_update: ~
+          on_delete: ~
           expression: ~
+          check_level: ~
+          period: ~
         - name: accounts_email_check
           kind: check
           columns: []
           referenced_schema: ~
           referenced_table: ~
           referenced_columns: []
-          match_option: ~
-          update_rule: ~
-          delete_rule: ~
+          match_type: ~
+          on_update: ~
+          on_delete: ~
           expression: "`email` <> ''"
+          check_level: table
+          period: ~
         - name: accounts_tenant_email_uq
           kind: unique
           columns:
@@ -131,10 +211,12 @@ catalog:
           referenced_schema: ~
           referenced_table: ~
           referenced_columns: []
-          match_option: ~
-          update_rule: ~
-          delete_rule: ~
+          match_type: ~
+          on_update: ~
+          on_delete: ~
           expression: ~
+          check_level: ~
+          period: ~
         - name: accounts_tenant_fk
           kind: foreign_key
           columns:
@@ -143,55 +225,135 @@ catalog:
           referenced_table: tenants
           referenced_columns:
             - tenant_id
-          match_option: NONE
-          update_rule: CASCADE
-          delete_rule: RESTRICT
+          match_type: ~
+          on_update: cascade
+          on_delete: restrict
           expression: ~
+          check_level: ~
+          period: ~
       indexes:
         - name: PRIMARY
           unique: true
           index_type: BTREE
           ignored: false
           comment: ~
+          catalog_comment: ~
+          period: ~
+          vector_options: ~
           terms:
             - position: 1
               column: account_id
               prefix_length: ~
-              descending: false
+              sort_order: ascending
             - position: 2
               column: row_end
               prefix_length: ~
-              descending: false
+              sort_order: ascending
+        - name: accounts_email_fulltext
+          unique: false
+          index_type: FULLTEXT
+          ignored: false
+          comment: ~
+          catalog_comment: ~
+          period: ~
+          vector_options: ~
+          terms:
+            - position: 1
+              column: email
+              prefix_length: ~
+              sort_order: ~
         - name: accounts_email_ignored_idx
           unique: false
           index_type: BTREE
           ignored: true
           comment: ~
+          catalog_comment: ~
+          period: ~
+          vector_options: ~
           terms:
             - position: 1
               column: email
               prefix_length: ~
-              descending: false
+              sort_order: ascending
+        - name: accounts_home_spatial
+          unique: false
+          index_type: SPATIAL
+          ignored: false
+          comment: ~
+          catalog_comment: ~
+          period: ~
+          vector_options: ~
+          terms:
+            - position: 1
+              column: home
+              prefix_length: 32
+              sort_order: ascending
+        - name: accounts_status_desc_idx
+          unique: false
+          index_type: BTREE
+          ignored: false
+          comment: Status lookup ordering
+          catalog_comment: ~
+          period: ~
+          vector_options: ~
+          terms:
+            - position: 1
+              column: status
+              prefix_length: ~
+              sort_order: descending
         - name: accounts_tenant_email_uq
           unique: true
           index_type: BTREE
           ignored: false
           comment: ~
+          catalog_comment: ~
+          period: ~
+          vector_options: ~
           terms:
             - position: 1
               column: tenant_id
               prefix_length: ~
-              descending: false
+              sort_order: ascending
             - position: 2
               column: email
               prefix_length: 120
-              descending: false
+              sort_order: ascending
             - position: 3
               column: row_end
               prefix_length: ~
-              descending: false
+              sort_order: ascending
       partitions: []
-      definition: "CREATE TABLE `accounts` (\n  `tenant_id` bigint(20) unsigned NOT NULL,\n  `account_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `email` varchar(255) NOT NULL,\n  `normalized_email` varchar(255) GENERATED ALWAYS AS (lcase(`email`)) STORED,\n  `status` enum('active','disabled') NOT NULL DEFAULT 'active',\n  `row_start` timestamp(6) GENERATED ALWAYS AS ROW START,\n  `row_end` timestamp(6) GENERATED ALWAYS AS ROW END,\n  PRIMARY KEY (`account_id`,`row_end`),\n  UNIQUE KEY `accounts_tenant_email_uq` (`tenant_id`,`email`(120),`row_end`),\n  KEY `accounts_email_ignored_idx` (`email`) IGNORED,\n  PERIOD FOR SYSTEM_TIME (`row_start`, `row_end`),\n  CONSTRAINT `accounts_tenant_fk` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`) ON UPDATE CASCADE,\n  CONSTRAINT `accounts_email_check` CHECK (`email` <> '')\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci COMMENT='Versioned user accounts' WITH SYSTEM VERSIONING"
+      definition: "CREATE TABLE `accounts` (\n  `tenant_id` bigint(20) unsigned NOT NULL,\n  `account_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `email` varchar(255) NOT NULL,\n  `normalized_email` varchar(255) GENERATED ALWAYS AS (lcase(`email`)) STORED,\n  `profile_document` xmltype DEFAULT NULL COMMENT 'MariaDB 12.3 XML profile payload',\n  `status` enum('active','disabled') NOT NULL DEFAULT 'active',\n  `secret_token` varchar(64) DEFAULT NULL INVISIBLE,\n  `home` point NOT NULL,\n  `row_start` timestamp(6) GENERATED ALWAYS AS ROW START,\n  `row_end` timestamp(6) GENERATED ALWAYS AS ROW END,\n  PRIMARY KEY (`account_id`,`row_end`),\n  UNIQUE KEY `accounts_tenant_email_uq` (`tenant_id`,`email`(120),`row_end`),\n  KEY `accounts_status_desc_idx` (`status` DESC) COMMENT 'Status lookup ordering',\n  KEY `accounts_email_ignored_idx` (`email`) IGNORED,\n  SPATIAL KEY `accounts_home_spatial` (`home`),\n  FULLTEXT KEY `accounts_email_fulltext` (`email`),\n  PERIOD FOR SYSTEM_TIME (`row_start`, `row_end`),\n  CONSTRAINT `accounts_tenant_fk` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`) ON UPDATE CASCADE,\n  CONSTRAINT `accounts_email_check` CHECK (`email` <> '')\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci COMMENT='Versioned user accounts' WITH SYSTEM VERSIONING"
+    - schema: test
+      name: discarded_events
+      engine: BLACKHOLE
+      row_format: Fixed
+      collation: utf8mb4_uca1400_ai_ci
+      comment: Exercises an installed storage-engine plugin
+      create_options: ~
+      system_versioned: false
+      system_time_period: ~
+      application_time_periods: []
+      columns:
+        - name: event_id
+          position: 1
+          data_type: bigint
+          column_type: bigint(20)
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          generated_storage: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
+      constraints: []
+      indexes: []
+      partitions: []
+      definition: "CREATE TABLE `discarded_events` (\n  `event_id` bigint(20) NOT NULL\n) ENGINE=BLACKHOLE DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci COMMENT='Exercises an installed storage-engine plugin'"
     - schema: test
       name: monthly_metrics
       engine: InnoDB
@@ -201,6 +363,7 @@ catalog:
       create_options: partitioned
       system_versioned: false
       system_time_period: ~
+      application_time_periods: []
       columns:
         - name: occurred_on
           position: 1
@@ -210,9 +373,13 @@ catalog:
           default: ~
           extra: ""
           generation_expression: ~
+          generated_storage: ~
           character_set: ~
           collation: ~
           comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
         - name: metric
           position: 2
           data_type: varchar
@@ -221,9 +388,13 @@ catalog:
           default: ~
           extra: ""
           generation_expression: ~
+          generated_storage: ~
           character_set: utf8mb4
           collation: utf8mb4_uca1400_ai_ci
           comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
         - name: value
           position: 3
           data_type: bigint
@@ -232,9 +403,13 @@ catalog:
           default: ~
           extra: ""
           generation_expression: ~
+          generated_storage: ~
           character_set: ~
           collation: ~
           comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
       constraints:
         - name: PRIMARY
           kind: primary_key
@@ -244,39 +419,80 @@ catalog:
           referenced_schema: ~
           referenced_table: ~
           referenced_columns: []
-          match_option: ~
-          update_rule: ~
-          delete_rule: ~
+          match_type: ~
+          on_update: ~
+          on_delete: ~
           expression: ~
+          check_level: ~
+          period: ~
       indexes:
         - name: PRIMARY
           unique: true
           index_type: BTREE
           ignored: false
           comment: ~
+          catalog_comment: ~
+          period: ~
+          vector_options: ~
           terms:
             - position: 1
               column: occurred_on
               prefix_length: ~
-              descending: false
+              sort_order: ascending
             - position: 2
               column: metric
               prefix_length: ~
-              descending: false
+              sort_order: ascending
       partitions:
         - name: p2025
-          subpartition: ~
-          method: RANGE
+          subpartition: p2025_h0
+          method: range
+          subpartition_method: hash
           expression: "year(`occurred_on`)"
+          subpartition_expression: "month(`occurred_on`)"
           description: "2026"
           ordinal: 1
-        - name: pmax
-          subpartition: ~
-          method: RANGE
+          subpartition_ordinal: 1
+          tablespace: ~
+          comment: ~
+          nodegroup: default
+        - name: p2025
+          subpartition: p2025_h1
+          method: range
+          subpartition_method: hash
           expression: "year(`occurred_on`)"
+          subpartition_expression: "month(`occurred_on`)"
+          description: "2026"
+          ordinal: 1
+          subpartition_ordinal: 2
+          tablespace: ~
+          comment: ~
+          nodegroup: default
+        - name: pmax
+          subpartition: pmax_h0
+          method: range
+          subpartition_method: hash
+          expression: "year(`occurred_on`)"
+          subpartition_expression: "month(`occurred_on`)"
           description: MAXVALUE
           ordinal: 2
-      definition: "CREATE TABLE `monthly_metrics` (\n  `occurred_on` date NOT NULL,\n  `metric` varchar(64) NOT NULL,\n  `value` bigint(20) NOT NULL,\n  PRIMARY KEY (`occurred_on`,`metric`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci\n PARTITION BY RANGE (year(`occurred_on`))\n(PARTITION `p2025` VALUES LESS THAN (2026) ENGINE = InnoDB,\n PARTITION `pmax` VALUES LESS THAN MAXVALUE ENGINE = InnoDB)"
+          subpartition_ordinal: 1
+          tablespace: ~
+          comment: ~
+          nodegroup: default
+        - name: pmax
+          subpartition: pmax_h1
+          method: range
+          subpartition_method: hash
+          expression: "year(`occurred_on`)"
+          subpartition_expression: "month(`occurred_on`)"
+          description: MAXVALUE
+          ordinal: 2
+          subpartition_ordinal: 2
+          tablespace: ~
+          comment: ~
+          nodegroup: default
+      definition: "CREATE TABLE `monthly_metrics` (\n  `occurred_on` date NOT NULL,\n  `metric` varchar(64) NOT NULL,\n  `value` bigint(20) NOT NULL,\n  PRIMARY KEY (`occurred_on`,`metric`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci\n PARTITION BY RANGE (year(`occurred_on`))\nSUBPARTITION BY HASH (month(`occurred_on`))\n(PARTITION `p2025` VALUES LESS THAN (2026)\n (SUBPARTITION `p2025_h0` ENGINE = InnoDB,\n  SUBPARTITION `p2025_h1` ENGINE = InnoDB),\n PARTITION `pmax` VALUES LESS THAN MAXVALUE\n (SUBPARTITION `pmax_h0` ENGINE = InnoDB,\n  SUBPARTITION `pmax_h1` ENGINE = InnoDB))"
     - schema: test
       name: tenants
       engine: InnoDB
@@ -286,6 +502,7 @@ catalog:
       create_options: ~
       system_versioned: false
       system_time_period: ~
+      application_time_periods: []
       columns:
         - name: tenant_id
           position: 1
@@ -295,9 +512,13 @@ catalog:
           default: ~
           extra: auto_increment
           generation_expression: ~
+          generated_storage: ~
           character_set: ~
           collation: ~
           comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
         - name: name
           position: 2
           data_type: varchar
@@ -306,9 +527,13 @@ catalog:
           default: ~
           extra: ""
           generation_expression: ~
+          generated_storage: ~
           character_set: utf8mb4
           collation: utf8mb4_uca1400_ai_ci
           comment: Tenant display name
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
       constraints:
         - name: PRIMARY
           kind: primary_key
@@ -317,10 +542,12 @@ catalog:
           referenced_schema: ~
           referenced_table: ~
           referenced_columns: []
-          match_option: ~
-          update_rule: ~
-          delete_rule: ~
+          match_type: ~
+          on_update: ~
+          on_delete: ~
           expression: ~
+          check_level: ~
+          period: ~
         - name: tenants_name_uq
           kind: unique
           columns:
@@ -328,73 +555,419 @@ catalog:
           referenced_schema: ~
           referenced_table: ~
           referenced_columns: []
-          match_option: ~
-          update_rule: ~
-          delete_rule: ~
+          match_type: ~
+          on_update: ~
+          on_delete: ~
           expression: ~
+          check_level: ~
+          period: ~
       indexes:
         - name: PRIMARY
           unique: true
           index_type: BTREE
           ignored: false
           comment: ~
+          catalog_comment: ~
+          period: ~
+          vector_options: ~
           terms:
             - position: 1
               column: tenant_id
               prefix_length: ~
-              descending: false
+              sort_order: ascending
         - name: tenants_name_uq
           unique: true
           index_type: BTREE
           ignored: false
           comment: ~
+          catalog_comment: ~
+          period: ~
+          vector_options: ~
           terms:
             - position: 1
               column: name
               prefix_length: ~
-              descending: false
+              sort_order: ascending
       partitions: []
       definition: "CREATE TABLE `tenants` (\n  `tenant_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `name` varchar(120) NOT NULL COMMENT 'Tenant display name',\n  PRIMARY KEY (`tenant_id`),\n  UNIQUE KEY `tenants_name_uq` (`name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci COMMENT='Application tenants'"
+    - schema: test
+      name: tenant_audits
+      engine: InnoDB
+      row_format: Dynamic
+      collation: utf8mb4_uca1400_ai_ci
+      comment: Reuses a foreign-key name in the same schema
+      create_options: ~
+      system_versioned: false
+      system_time_period: ~
+      application_time_periods: []
+      columns:
+        - name: audit_id
+          position: 1
+          data_type: bigint
+          column_type: bigint(20) unsigned
+          nullable: false
+          default: ~
+          extra: auto_increment
+          generation_expression: ~
+          generated_storage: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
+        - name: tenant_id
+          position: 2
+          data_type: bigint
+          column_type: bigint(20) unsigned
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          generated_storage: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
+      constraints:
+        - name: PRIMARY
+          kind: primary_key
+          columns:
+            - audit_id
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_type: ~
+          on_update: ~
+          on_delete: ~
+          expression: ~
+          check_level: ~
+          period: ~
+        - name: accounts_tenant_fk
+          kind: foreign_key
+          columns:
+            - tenant_id
+          referenced_schema: test
+          referenced_table: tenants
+          referenced_columns:
+            - tenant_id
+          match_type: ~
+          on_update: restrict
+          on_delete: cascade
+          expression: ~
+          check_level: ~
+          period: ~
+      indexes:
+        - name: PRIMARY
+          unique: true
+          index_type: BTREE
+          ignored: false
+          comment: ~
+          catalog_comment: ~
+          period: ~
+          vector_options: ~
+          terms:
+            - position: 1
+              column: audit_id
+              prefix_length: ~
+              sort_order: ascending
+        - name: accounts_tenant_fk
+          unique: false
+          index_type: BTREE
+          ignored: false
+          comment: ~
+          catalog_comment: ~
+          period: ~
+          vector_options: ~
+          terms:
+            - position: 1
+              column: tenant_id
+              prefix_length: ~
+              sort_order: ascending
+      partitions: []
+      definition: "CREATE TABLE `tenant_audits` (\n  `audit_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `tenant_id` bigint(20) unsigned NOT NULL,\n  PRIMARY KEY (`audit_id`),\n  KEY `accounts_tenant_fk` (`tenant_id`),\n  CONSTRAINT `accounts_tenant_fk` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`tenant_id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci COMMENT='Reuses a foreign-key name in the same schema'"
+    - schema: test
+      name: tenant_embeddings
+      engine: InnoDB
+      row_format: Dynamic
+      collation: utf8mb4_uca1400_ai_ci
+      comment: Bitemporal tenant embeddings
+      create_options: ~
+      system_versioned: true
+      system_time_period:
+        start_column: row_start
+        end_column: row_end
+      application_time_periods:
+        - name: validity
+          start_column: valid_from
+          end_column: valid_to
+      columns:
+        - name: tenant_id
+          position: 1
+          data_type: bigint
+          column_type: bigint(20) unsigned
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          generated_storage: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
+        - name: valid_from
+          position: 2
+          data_type: date
+          column_type: date
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          generated_storage: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
+        - name: valid_to
+          position: 3
+          data_type: date
+          column_type: date
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          generated_storage: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
+        - name: embedding
+          position: 4
+          data_type: vector
+          column_type: vector(5)
+          nullable: false
+          default: ~
+          extra: ""
+          generation_expression: ~
+          generated_storage: ~
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: false
+        - name: row_start
+          position: 5
+          data_type: timestamp
+          column_type: timestamp(6)
+          nullable: false
+          default: ~
+          extra: STORED GENERATED
+          generation_expression: ROW START
+          generated_storage: stored
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          system_time_period_start: true
+          system_time_period_end: false
+        - name: row_end
+          position: 6
+          data_type: timestamp
+          column_type: timestamp(6)
+          nullable: false
+          default: ~
+          extra: STORED GENERATED
+          generation_expression: ROW END
+          generated_storage: stored
+          character_set: ~
+          collation: ~
+          comment: ~
+          visible: true
+          system_time_period_start: false
+          system_time_period_end: true
+      constraints:
+        - name: tenant_validity_uq
+          kind: unique
+          columns:
+            - tenant_id
+            - row_end
+            - valid_to
+            - valid_from
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_type: ~
+          on_update: ~
+          on_delete: ~
+          expression: ~
+          check_level: ~
+          period: validity
+        - name: validity
+          kind: check
+          columns: []
+          referenced_schema: ~
+          referenced_table: ~
+          referenced_columns: []
+          match_type: ~
+          on_update: ~
+          on_delete: ~
+          expression: "`valid_from` < `valid_to`"
+          check_level: table
+          period: ~
+      indexes:
+        - name: embedding_vector_idx
+          unique: false
+          index_type: VECTOR
+          ignored: false
+          comment: ~
+          catalog_comment: ~
+          period: ~
+          vector_options:
+            m: 8
+            distance: cosine
+          terms:
+            - position: 1
+              column: embedding
+              prefix_length: ~
+              sort_order: ascending
+        - name: tenant_validity_uq
+          unique: true
+          index_type: BTREE
+          ignored: false
+          comment: ~
+          catalog_comment: ~
+          period: validity
+          vector_options: ~
+          terms:
+            - position: 1
+              column: tenant_id
+              prefix_length: ~
+              sort_order: ascending
+            - position: 2
+              column: row_end
+              prefix_length: ~
+              sort_order: ascending
+            - position: 3
+              column: valid_to
+              prefix_length: ~
+              sort_order: ascending
+            - position: 4
+              column: valid_from
+              prefix_length: ~
+              sort_order: ascending
+      partitions: []
+      definition: "CREATE TABLE `tenant_embeddings` (\n  `tenant_id` bigint(20) unsigned NOT NULL,\n  `valid_from` date NOT NULL,\n  `valid_to` date NOT NULL,\n  `embedding` vector(5) NOT NULL,\n  `row_start` timestamp(6) GENERATED ALWAYS AS ROW START,\n  `row_end` timestamp(6) GENERATED ALWAYS AS ROW END,\n  PERIOD FOR `validity` (`valid_from`, `valid_to`),\n  UNIQUE KEY `tenant_validity_uq` (`tenant_id`,`row_end`,`validity` WITHOUT OVERLAPS),\n  VECTOR KEY `embedding_vector_idx` (`embedding`) `M`=8 `DISTANCE`=cosine,\n  PERIOD FOR SYSTEM_TIME (`row_start`, `row_end`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci COMMENT='Bitemporal tenant embeddings' WITH SYSTEM VERSIONING"
   views:
     - schema: test
       name: active_accounts
       definition: "select `test`.`accounts`.`tenant_id` AS `tenant_id`,`test`.`accounts`.`account_id` AS `account_id`,`test`.`accounts`.`email` AS `email` from `test`.`accounts` where `test`.`accounts`.`status` = 'active'"
-      check_option: CASCADED
+      check_option: cascaded
       updatable: true
-      security_type: INVOKER
+      security: invoker
       definer: root@localhost
       character_set: utf8mb4
       collation: utf8mb4_uca1400_ai_ci
-      create_statement: "CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `active_accounts` AS select `accounts`.`tenant_id` AS `tenant_id`,`accounts`.`account_id` AS `account_id`,`accounts`.`email` AS `email` from `accounts` where `accounts`.`status` = 'active' WITH CASCADED CHECK OPTION"
+      algorithm: merge
+      create_statement: "CREATE ALGORITHM=MERGE DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `active_accounts` AS select `accounts`.`tenant_id` AS `tenant_id`,`accounts`.`account_id` AS `account_id`,`accounts`.`email` AS `email` from `accounts` where `accounts`.`status` = 'active' WITH CASCADED CHECK OPTION"
   sequences:
     - schema: test
+      name: descending_order_seq
+      data_type: bigint
+      numeric_precision: 64
+      numeric_precision_radix: 2
+      numeric_scale: 0
+      start_value: "0"
+      minimum_value: "-20"
+      maximum_value: "0"
+      increment: "-2"
+      cache: 0
+      cycle: true
+      engine: InnoDB
+      comment: ~
+      definition: "CREATE SEQUENCE `descending_order_seq` start with 0 minvalue -20 maxvalue 0 increment by -2 nocache cycle ENGINE=InnoDB"
+    - schema: test
       name: order_number_seq
+      data_type: bigint
+      numeric_precision: 64
+      numeric_precision_radix: 2
+      numeric_scale: 0
+      start_value: "1000"
+      minimum_value: "1"
+      maximum_value: "9223372036854775806"
+      increment: "10"
+      cache: 20
+      cycle: false
+      engine: InnoDB
+      comment: ~
       definition: "CREATE SEQUENCE `order_number_seq` start with 1000 minvalue 1 maxvalue 9223372036854775806 increment by 10 cache 20 nocycle ENGINE=InnoDB"
   routines:
     - schema: test
       name: disable_account
-      kind: PROCEDURE
+      kind: procedure
       return_type: ~
       definition: "UPDATE accounts SET status = 'disabled' WHERE account_id = target_id"
       deterministic: false
-      sql_data_access: MODIFIES SQL DATA
-      security_type: DEFINER
+      data_access: modifies_sql_data
+      security: definer
       definer: root@localhost
       comment: ~
       parameters:
         - position: 1
-          mode: IN
+          mode: in
           name: target_id
           data_type: bigint
           dtd_identifier: bigint(20) unsigned
+          default: ~
+      sql_mode: "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+      character_set_client: utf8mb4
+      collation_connection: utf8mb4_uca1400_ai_ci
+      database_collation: utf8mb4_uca1400_ai_ci
+      create_statement: "CREATE DEFINER=`root`@`localhost` PROCEDURE `disable_account`(IN target_id BIGINT UNSIGNED)\n    MODIFIES SQL DATA\nUPDATE accounts SET status = 'disabled' WHERE account_id = target_id"
+    - schema: test
+      name: next_account_id
+      kind: procedure
+      return_type: ~
+      definition: SET next_id = current_id + 1
+      deterministic: false
+      data_access: no_sql
+      security: definer
+      definer: root@localhost
+      comment: ~
+      parameters:
+        - position: 1
+          mode: in
+          name: current_id
+          data_type: bigint
+          dtd_identifier: bigint(20) unsigned
+          default: ~
+        - position: 2
+          mode: out
+          name: next_id
+          data_type: bigint
+          dtd_identifier: bigint(20) unsigned
+          default: ~
+      sql_mode: "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+      character_set_client: utf8mb4
+      collation_connection: utf8mb4_uca1400_ai_ci
+      database_collation: utf8mb4_uca1400_ai_ci
+      create_statement: "CREATE DEFINER=`root`@`localhost` PROCEDURE `next_account_id`(IN current_id BIGINT UNSIGNED, OUT next_id BIGINT UNSIGNED)\n    NO SQL\nSET next_id = current_id + 1"
     - schema: test
       name: normalize_email
-      kind: FUNCTION
+      kind: function
       return_type: varchar(255)
       definition: RETURN lower(value)
       deterministic: true
-      sql_data_access: NO SQL
-      security_type: DEFINER
+      data_access: no_sql
+      security: definer
       definer: root@localhost
       comment: ~
       parameters:
@@ -403,34 +976,2022 @@ catalog:
           name: ~
           data_type: varchar
           dtd_identifier: varchar(255)
+          default: ~
         - position: 1
-          mode: IN
+          mode: in
           name: value
           data_type: varchar
           dtd_identifier: varchar(255)
+          default: "'fallback@example.invalid'"
+      sql_mode: "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+      character_set_client: utf8mb4
+      collation_connection: utf8mb4_uca1400_ai_ci
+      database_collation: utf8mb4_uca1400_ai_ci
+      create_statement: "CREATE DEFINER=`root`@`localhost` FUNCTION `normalize_email`(value VARCHAR(255) DEFAULT 'fallback@example.invalid') RETURNS varchar(255) CHARSET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci\n    NO SQL\n    DETERMINISTIC\nRETURN lower(value)"
+  packages:
+    - schema: test
+      name: analytics_tools
+      definer: root@localhost
+      security: invoker
+      comment: Analytics package
+      specification:
+        definition: "CREATE DEFINER=`root`@`localhost` PACKAGE `analytics_tools`    SQL SECURITY INVOKER\n    COMMENT 'Analytics package'\n PROCEDURE refresh_cache(IN tenant BIGINT);\nFUNCTION normalize(value VARCHAR(255)) RETURNS VARCHAR(255);\nEND"
+        sql_mode: "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+        character_set_client: utf8mb4
+        collation_connection: utf8mb4_uca1400_ai_ci
+        database_collation: utf8mb4_uca1400_ai_ci
+      body:
+        definition: "CREATE DEFINER=`root`@`localhost` PACKAGE BODY `analytics_tools` PROCEDURE refresh_cache(IN tenant BIGINT)\nBEGIN\n    SELECT tenant;\nEND;\nFUNCTION normalize(value VARCHAR(255)) RETURNS VARCHAR(255)\nRETURN lower(value);\nEND"
+        sql_mode: "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+        character_set_client: utf8mb4
+        collation_connection: utf8mb4_uca1400_ai_ci
+        database_collation: utf8mb4_uca1400_ai_ci
   triggers:
+    - schema: test
+      name: accounts_changed
+      table: accounts
+      events:
+        - insert
+        - update
+        - delete
+      update_columns: []
+      timing: after
+      orientation: row
+      statement: SET @dbmd_mariadb_account_changed = 1
+      action_order: 1
+      sql_mode: "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+      definer: root@localhost
+      character_set_client: utf8mb4
+      collation_connection: utf8mb4_uca1400_ai_ci
+      database_collation: utf8mb4_uca1400_ai_ci
+      create_statement: "CREATE DEFINER=`root`@`localhost` TRIGGER accounts_changed\nAFTER INSERT OR UPDATE OR DELETE ON accounts\nFOR EACH ROW SET @dbmd_mariadb_account_changed = 1"
     - schema: test
       name: accounts_updated
       table: accounts
-      event: UPDATE
-      timing: BEFORE
-      orientation: ROW
+      events:
+        - update
+      update_columns:
+        - email
+        - status
+      timing: before
+      orientation: row
       statement: "SET NEW.status = COALESCE(NEW.status, OLD.status)"
       action_order: 1
       sql_mode: "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
       definer: root@localhost
+      character_set_client: utf8mb4
+      collation_connection: utf8mb4_uca1400_ai_ci
+      database_collation: utf8mb4_uca1400_ai_ci
+      create_statement: "CREATE DEFINER=`root`@`localhost` TRIGGER accounts_updated\nBEFORE UPDATE OF status, email ON accounts\nFOR EACH ROW SET NEW.status = COALESCE(NEW.status, OLD.status)"
+    - schema: test
+      name: accounts_update_marker
+      table: accounts
+      events:
+        - update
+      update_columns: []
+      timing: before
+      orientation: row
+      statement: SET @dbmd_mariadb_last_account = NEW.account_id
+      action_order: 2
+      sql_mode: "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+      definer: root@localhost
+      character_set_client: utf8mb4
+      collation_connection: utf8mb4_uca1400_ai_ci
+      database_collation: utf8mb4_uca1400_ai_ci
+      create_statement: "CREATE DEFINER=`root`@`localhost` TRIGGER accounts_update_marker\nBEFORE UPDATE ON accounts\nFOR EACH ROW\nSET @dbmd_mariadb_last_account = NEW.account_id"
   events:
+    - schema: test
+      name: archive_accounts_once
+      definer: root@localhost
+      time_zone: SYSTEM
+      kind: one_time
+      execute_at: "2031-01-01 00:00:00"
+      interval_value: ~
+      interval_unit: ~
+      starts: ~
+      ends: ~
+      status: disabled
+      completion: preserve
+      comment: ~
+      definition: SET @dbmd_mariadb_archive_requested = 1
+      sql_mode: "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+      originator: 1
+      character_set_client: utf8mb4
+      collation_connection: utf8mb4_uca1400_ai_ci
+      database_collation: utf8mb4_uca1400_ai_ci
+      create_statement: "CREATE DEFINER=`root`@`localhost` EVENT `archive_accounts_once` ON SCHEDULE AT '2031-01-01 00:00:00' ON COMPLETION PRESERVE DISABLE DO SET @dbmd_mariadb_archive_requested = 1"
     - schema: test
       name: purge_disabled_accounts
       definer: root@localhost
       time_zone: SYSTEM
-      event_type: RECURRING
+      kind: recurring
       execute_at: ~
       interval_value: "1"
-      interval_field: DAY
+      interval_unit: day
       starts: "2030-01-01 00:00:00"
       ends: ~
-      status: DISABLED
-      on_completion: PRESERVE
+      status: disabled
+      completion: preserve
       comment: Remove old disabled accounts
       definition: "DELETE FROM accounts WHERE status = 'disabled' AND row_end < CURRENT_TIMESTAMP - INTERVAL 365 DAY"
+      sql_mode: "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+      originator: 1
+      character_set_client: utf8mb4
+      collation_connection: utf8mb4_uca1400_ai_ci
+      database_collation: utf8mb4_uca1400_ai_ci
+      create_statement: "CREATE DEFINER=`root`@`localhost` EVENT `purge_disabled_accounts` ON SCHEDULE EVERY 1 DAY STARTS '2030-01-01 00:00:00' ON COMPLETION PRESERVE DISABLE COMMENT 'Remove old disabled accounts' DO DELETE FROM accounts WHERE status = 'disabled' AND row_end < CURRENT_TIMESTAMP - INTERVAL 365 DAY"
+  servers:
+    - name: analytics_remote
+      wrapper: mariadb
+      host: db.internal
+      database: analytics
+      username: reader
+      port: 3307
+      socket: ~
+      owner: platform
+      options:
+        - name: DATABASE
+          value: analytics
+          sensitive: false
+        - name: HOST
+          value: db.internal
+          sensitive: false
+        - name: OWNER
+          value: platform
+          sensitive: false
+        - name: PASSWORD
+          value: ~
+          sensitive: true
+        - name: PORT
+          value: "3307"
+          sensitive: false
+        - name: REGION
+          value: eu-west-1
+          sensitive: false
+        - name: USER
+          value: reader
+          sensitive: false
+  loadable_functions: []
+  plugins:
+    - name: Aria
+      version: "1.6"
+      status: active
+      kind: storage_engine
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation Ab
+      description: Crash-safe tables with MyISAM heritage. Used for internal temporary tables and privilege tables
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.6"
+    - name: associative_array
+      version: "1.0"
+      status: active
+      kind: data_type
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Rakuten Securities
+      description: Data type ASSOCIATIVE_ARRAY
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: binlog
+      version: "2.0"
+      status: active
+      kind: daemon
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MySQL AB
+      description: This is a plugin to represent the binlog in a transaction
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "2.0"
+    - name: BLACKHOLE
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "120302.0"
+      library: ha_blackhole.so
+      library_version: "1.15"
+      author: MySQL AB
+      description: /dev/null storage engine (anything you write to it disappears)
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: "1.0"
+    - name: caching_sha2_password
+      version: "1.0"
+      status: active
+      kind: authentication
+      type_version: "2.3"
+      library: auth_mysql_sha2.so
+      library_version: "1.15"
+      author: "Oracle Corporation, Sergei Golubchik"
+      description: MySQL-compatible SHA2 authentication
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: "1.0"
+    - name: CLIENT_STATISTICS
+      version: "2.0"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Percona and Sergei Golubchik
+      description: Client Statistics
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "2.0"
+    - name: CSV
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: "Brian Aker, MySQL AB"
+      description: Stores tables as CSV files
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: FEEDBACK
+      version: "1.1"
+      status: disabled
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Sergei Golubchik
+      description: MariaDB User Feedback Plugin
+      license: gpl
+      load_option: "off"
+      maturity: stable
+      authentication_version: "1.1"
+    - name: GEOMETRY_COLUMNS
+      version: "1.0"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB
+      description: Lists all geometry columns
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: INDEX_STATISTICS
+      version: "2.0"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Percona and Sergei Golubchik
+      description: Index Statistics
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "2.0"
+    - name: inet4
+      version: "1.0"
+      status: active
+      kind: data_type
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Data type INET4
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: 1.0.1
+    - name: inet6
+      version: "1.0"
+      status: active
+      kind: data_type
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Data type INET6
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: inet6_aton
+      version: "1.0"
+      status: active
+      kind: function
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Function INET6_ATON()
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: inet6_ntoa
+      version: "1.0"
+      status: active
+      kind: function
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Function INET6_NTOA()
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: inet_aton
+      version: "1.0"
+      status: active
+      kind: function
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Function INET_ATON()
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: inet_ntoa
+      version: "1.0"
+      status: active
+      kind: function
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Function INET_NTOA()
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: InnoDB
+      version: "12.3"
+      status: active
+      kind: storage_engine
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: "Supports transactions, row-level locking, foreign keys and encryption for tables"
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_BUFFER_PAGE
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB Buffer Page Information
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_BUFFER_PAGE_LRU
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB Buffer Page in LRU
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_BUFFER_POOL_STATS
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB Buffer Pool Statistics Information
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_CMP
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Statistics for the InnoDB compression
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_CMPMEM
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Statistics for the InnoDB compressed buffer pool
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_CMPMEM_RESET
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Statistics for the InnoDB compressed buffer pool; reset cumulated counts
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_CMP_PER_INDEX
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Statistics for the InnoDB compression (per index)
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_CMP_PER_INDEX_RESET
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Statistics for the InnoDB compression (per index); reset cumulated counts
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_CMP_RESET
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Statistics for the InnoDB compression; reset cumulated counts
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_FT_BEING_DELETED
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: INNODB AUXILIARY FTS BEING DELETED TABLE
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_FT_CONFIG
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: INNODB AUXILIARY FTS CONFIG TABLE
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_FT_DEFAULT_STOPWORD
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: Default stopword list for InnoDB Full Text Search
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_FT_DELETED
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: INNODB AUXILIARY FTS DELETED TABLE
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_FT_INDEX_CACHE
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: INNODB AUXILIARY FTS INDEX CACHED
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_FT_INDEX_TABLE
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: INNODB AUXILIARY FTS INDEX TABLE
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_LOCKS
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB conflicting locks
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_LOCK_WAITS
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB which lock is blocking which
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_METRICS
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB Metrics Info
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_SYS_COLUMNS
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB SYS_COLUMNS
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_SYS_FIELDS
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB SYS_FIELDS
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_SYS_FOREIGN
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB SYS_FOREIGN
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_SYS_FOREIGN_COLS
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB SYS_FOREIGN_COLS
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_SYS_INDEXES
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB SYS_INDEXES
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_SYS_TABLES
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB SYS_TABLES
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_SYS_TABLESPACES
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB tablespaces
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_SYS_TABLESTATS
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB SYS_TABLESTATS
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_SYS_VIRTUAL
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB SYS_VIRTUAL
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_TABLESPACES_ENCRYPTION
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Google Inc
+      description: InnoDB TABLESPACES_ENCRYPTION
+      license: bsd
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: INNODB_TRX
+      version: "12.3"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Oracle Corporation
+      description: InnoDB transactions
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 12.3.2
+    - name: is_ipv4
+      version: "1.0"
+      status: active
+      kind: function
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Function IS_IPV4()
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: is_ipv4_compat
+      version: "1.0"
+      status: active
+      kind: function
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Function IS_IPV4_COMPAT()
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: is_ipv4_mapped
+      version: "1.0"
+      status: active
+      kind: function
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Function IS_IPV4_MAPPED()
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: is_ipv6
+      version: "1.0"
+      status: active
+      kind: function
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Function IS_IPV6()
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: MEMORY
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MySQL AB
+      description: "Hash based, stored in memory, useful for temporary tables"
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: mhnsw
+      version: "1.0"
+      status: active
+      kind: daemon
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB plc
+      description: A plugin for mhnsw vector index algorithm
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: MRG_MyISAM
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MySQL AB
+      description: Collection of identical MyISAM tables
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: MyISAM
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MySQL AB
+      description: Non-transactional engine with good performance and small data footprint
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: mysql_native_password
+      version: "1.0"
+      status: active
+      kind: authentication
+      type_version: "2.3"
+      library: ~
+      library_version: ~
+      author: "R.J.Silk, Sergei Golubchik"
+      description: Native MySQL authentication
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: mysql_old_password
+      version: "1.0"
+      status: active
+      kind: authentication
+      type_version: "2.3"
+      library: ~
+      library_version: ~
+      author: "R.J.Silk, Sergei Golubchik"
+      description: Old MySQL-4.0 authentication
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: online_alter_log
+      version: "2.0"
+      status: active
+      kind: daemon
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB PLC
+      description: This is a plugin to represent the online alter log in a transaction
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "2.0"
+    - name: partition
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: "Mikael Ronstrom, MySQL AB"
+      description: Partition Storage Engine Helper
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: "1.0"
+    - name: PERFORMANCE_SCHEMA
+      version: "0.1"
+      status: active
+      kind: storage_engine
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: "Marc Alff, Oracle"
+      description: Performance Schema
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: 5.7.31
+    - name: SEQUENCE
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Sergei Golubchik
+      description: Generated tables filled with sequential values
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: "0.1"
+    - name: SPATIAL_REF_SYS
+      version: "1.0"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB
+      description: Lists all geometry columns
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: SQL_SEQUENCE
+      version: "1.0"
+      status: active
+      kind: storage_engine
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: jianwei.zhao @ Aliyun & Monty @ MariaDB corp
+      description: Sequence Storage Engine for CREATE SEQUENCE
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: sys_guid
+      version: "1.0"
+      status: active
+      kind: function
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Function SYS_GUID()
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: sys_refcursor
+      version: "1.0"
+      status: active
+      kind: data_type
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Data type SYS_REFCURSOR
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: TABLE_STATISTICS
+      version: "2.0"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Percona and Sergei Golubchik
+      description: Table Statistics
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "2.0"
+    - name: THREAD_POOL_GROUPS
+      version: "1.0"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Vladislav Vaintroub
+      description: Provides information about threadpool groups.
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: "1.0"
+    - name: THREAD_POOL_QUEUES
+      version: "1.0"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Vladislav Vaintroub
+      description: Provides information about threadpool queues.
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: "1.0"
+    - name: THREAD_POOL_STATS
+      version: "1.0"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Vladislav Vaintroub
+      description: Provides performance counter information for threadpool.
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: "1.0"
+    - name: THREAD_POOL_WAITS
+      version: "1.0"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Vladislav Vaintroub
+      description: Provides wait counters for threadpool.
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: "1.0"
+    - name: unix_socket
+      version: "1.1"
+      status: active
+      kind: authentication
+      type_version: "2.3"
+      library: ~
+      library_version: ~
+      author: Sergei Golubchik
+      description: Unix Socket based authentication
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: "1.1"
+    - name: USER_STATISTICS
+      version: "2.0"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Percona and Sergei Golubchik
+      description: User Statistics
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "2.0"
+    - name: user_variables
+      version: "1.0"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Sergey Vojtovich
+      description: User-defined variables
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: "1.0"
+    - name: uuid
+      version: "1.0"
+      status: active
+      kind: data_type
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Data type UUID
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: uuid
+      version: "1.0"
+      status: active
+      kind: function
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Function UUID()
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: uuid_v4
+      version: "1.0"
+      status: active
+      kind: function
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Stefano Petrilli
+      description: Function UUID_v4()
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: 1.0.1
+    - name: uuid_v7
+      version: "1.0"
+      status: active
+      kind: function
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: Stefano Petrilli
+      description: Function UUID_v7()
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: 1.0.1
+    - name: wsrep
+      version: "1.0"
+      status: active
+      kind: replication
+      type_version: "2.0"
+      library: ~
+      library_version: ~
+      author: Codership Oy
+      description: Wsrep replication plugin
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+    - name: WSREP_MEMBERSHIP
+      version: "1.0"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: wsrep_info.so
+      library_version: "1.15"
+      author: Nirbhay Choubey
+      description: Information about group members
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: "1.0"
+    - name: wsrep_provider
+      version: "1.0"
+      status: active
+      kind: replication
+      type_version: "2.0"
+      library: ~
+      library_version: ~
+      author: Codership Oy
+      description: Wsrep provider plugin
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: 1.0.1
+    - name: WSREP_STATUS
+      version: "1.0"
+      status: active
+      kind: information_schema
+      type_version: "120302.0"
+      library: wsrep_info.so
+      library_version: "1.15"
+      author: Nirbhay Choubey
+      description: Group view information
+      license: gpl
+      load_option: "on"
+      maturity: stable
+      authentication_version: "1.0"
+    - name: xmltype
+      version: "1.0"
+      status: active
+      kind: data_type
+      type_version: "120302.0"
+      library: ~
+      library_version: ~
+      author: MariaDB Corporation
+      description: Data type XMLTYPE
+      license: gpl
+      load_option: force
+      maturity: stable
+      authentication_version: "1.0"
+  accounts:
+    - name: analytics_reader
+      host: ""
+      kind: role
+      authentication_plugins: []
+      password_expired: false
+      password_lifetime_days: ~
+      account_locked: false
+      default_role: ~
+      tls_requirement: none
+      tls_cipher: ~
+      x509_issuer: ~
+      x509_subject: ~
+      max_queries_per_hour: ~
+      max_updates_per_hour: ~
+      max_connections_per_hour: ~
+      max_user_connections: ~
+      max_statement_time: ~
+    - name: analytics_service
+      host: localhost
+      kind: user
+      authentication_plugins:
+        - caching_sha2_password
+      password_expired: false
+      password_lifetime_days: 90
+      account_locked: true
+      default_role: analytics_reader
+      tls_requirement: specified
+      tls_cipher: TLS_AES_256_GCM_SHA384
+      x509_issuer: /CN=dbmd-ca
+      x509_subject: /CN=dbmd-client
+      max_queries_per_hour: 17
+      max_updates_per_hour: ~
+      max_connections_per_hour: ~
+      max_user_connections: 3
+      max_statement_time: ~
+    - name: healthcheck
+      host: 127.0.0.1
+      kind: user
+      authentication_plugins:
+        - mysql_native_password
+      password_expired: false
+      password_lifetime_days: ~
+      account_locked: false
+      default_role: ~
+      tls_requirement: none
+      tls_cipher: ~
+      x509_issuer: ~
+      x509_subject: ~
+      max_queries_per_hour: ~
+      max_updates_per_hour: ~
+      max_connections_per_hour: ~
+      max_user_connections: ~
+      max_statement_time: ~
+    - name: healthcheck
+      host: "::1"
+      kind: user
+      authentication_plugins:
+        - mysql_native_password
+      password_expired: false
+      password_lifetime_days: ~
+      account_locked: false
+      default_role: ~
+      tls_requirement: none
+      tls_cipher: ~
+      x509_issuer: ~
+      x509_subject: ~
+      max_queries_per_hour: ~
+      max_updates_per_hour: ~
+      max_connections_per_hour: ~
+      max_user_connections: ~
+      max_statement_time: ~
+    - name: healthcheck
+      host: localhost
+      kind: user
+      authentication_plugins:
+        - mysql_native_password
+      password_expired: false
+      password_lifetime_days: ~
+      account_locked: false
+      default_role: ~
+      tls_requirement: none
+      tls_cipher: ~
+      x509_issuer: ~
+      x509_subject: ~
+      max_queries_per_hour: ~
+      max_updates_per_hour: ~
+      max_connections_per_hour: ~
+      max_user_connections: ~
+      max_statement_time: ~
+    - name: mariadb.sys
+      host: localhost
+      kind: user
+      authentication_plugins:
+        - mysql_native_password
+      password_expired: true
+      password_lifetime_days: ~
+      account_locked: true
+      default_role: ~
+      tls_requirement: none
+      tls_cipher: ~
+      x509_issuer: ~
+      x509_subject: ~
+      max_queries_per_hour: ~
+      max_updates_per_hour: ~
+      max_connections_per_hour: ~
+      max_user_connections: ~
+      max_statement_time: ~
+    - name: proxy_target
+      host: localhost
+      kind: user
+      authentication_plugins:
+        - mysql_native_password
+      password_expired: false
+      password_lifetime_days: ~
+      account_locked: true
+      default_role: ~
+      tls_requirement: none
+      tls_cipher: ~
+      x509_issuer: ~
+      x509_subject: ~
+      max_queries_per_hour: ~
+      max_updates_per_hour: ~
+      max_connections_per_hour: ~
+      max_user_connections: ~
+      max_statement_time: ~
+    - name: root
+      host: "%"
+      kind: user
+      authentication_plugins:
+        - mysql_native_password
+      password_expired: false
+      password_lifetime_days: ~
+      account_locked: false
+      default_role: ~
+      tls_requirement: none
+      tls_cipher: ~
+      x509_issuer: ~
+      x509_subject: ~
+      max_queries_per_hour: ~
+      max_updates_per_hour: ~
+      max_connections_per_hour: ~
+      max_user_connections: ~
+      max_statement_time: ~
+    - name: root
+      host: localhost
+      kind: user
+      authentication_plugins:
+        - mysql_native_password
+      password_expired: false
+      password_lifetime_days: ~
+      account_locked: false
+      default_role: ~
+      tls_requirement: none
+      tls_cipher: ~
+      x509_issuer: ~
+      x509_subject: ~
+      max_queries_per_hour: ~
+      max_updates_per_hour: ~
+      max_connections_per_hour: ~
+      max_user_connections: ~
+      max_statement_time: ~
+  role_memberships:
+    - user: analytics_service
+      host: localhost
+      role: analytics_reader
+      admin_option: true
+    - user: root
+      host: localhost
+      role: analytics_reader
+      admin_option: true
+  privileges:
+    - grantee: "'analytics_reader'@''"
+      object_kind: function
+      schema: test
+      object: normalize_email
+      column: ~
+      privilege: EXECUTE
+      grantable: false
+    - grantee: "'analytics_reader'@''"
+      object_kind: package
+      schema: test
+      object: analytics_tools
+      column: ~
+      privilege: EXECUTE
+      grantable: false
+    - grantee: "'analytics_reader'@''"
+      object_kind: schema
+      schema: test
+      object: ~
+      column: ~
+      privilege: SELECT
+      grantable: false
+    - grantee: "'analytics_reader'@''"
+      object_kind: schema
+      schema: test
+      object: ~
+      column: ~
+      privilege: SHOW CREATE ROUTINE
+      grantable: false
+    - grantee: "'analytics_service'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: USAGE
+      grantable: true
+    - grantee: "'analytics_service'@'localhost'"
+      object_kind: proxy
+      schema: ~
+      object: "'proxy_target'@'localhost'"
+      column: ~
+      privilege: PROXY
+      grantable: true
+    - grantee: "'healthcheck'@'127.0.0.1'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: USAGE
+      grantable: false
+    - grantee: "'healthcheck'@'::1'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: USAGE
+      grantable: false
+    - grantee: "'healthcheck'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: USAGE
+      grantable: false
+    - grantee: "'mariadb.sys'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: USAGE
+      grantable: false
+    - grantee: "'proxy_target'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: USAGE
+      grantable: false
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: ALTER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: ALTER ROUTINE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: BINLOG ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: BINLOG MONITOR
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: BINLOG REPLAY
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CONNECTION ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CREATE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CREATE ROUTINE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CREATE TABLESPACE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CREATE TEMPORARY TABLES
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CREATE USER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CREATE VIEW
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: DELETE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: DELETE HISTORY
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: DROP
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: EVENT
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: EXECUTE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: FEDERATED ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: FILE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: INDEX
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: INSERT
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: LOCK TABLES
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: PROCESS
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: READ_ONLY ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: REFERENCES
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: RELOAD
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: REPLICATION MASTER ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: REPLICATION SLAVE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: REPLICATION SLAVE ADMIN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SELECT
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SET USER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SHOW CREATE ROUTINE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SHOW DATABASES
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SHOW VIEW
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SHUTDOWN
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SLAVE MONITOR
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SUPER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: TRIGGER
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: UPDATE
+      grantable: true
+    - grantee: "'root'@'%'"
+      object_kind: proxy
+      schema: ~
+      object: "''@'%'"
+      column: ~
+      privilege: PROXY
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: ALTER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: ALTER ROUTINE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: BINLOG ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: BINLOG MONITOR
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: BINLOG REPLAY
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CONNECTION ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CREATE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CREATE ROUTINE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CREATE TABLESPACE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CREATE TEMPORARY TABLES
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CREATE USER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: CREATE VIEW
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: DELETE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: DELETE HISTORY
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: DROP
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: EVENT
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: EXECUTE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: FEDERATED ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: FILE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: INDEX
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: INSERT
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: LOCK TABLES
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: PROCESS
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: READ_ONLY ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: REFERENCES
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: RELOAD
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: REPLICATION MASTER ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: REPLICATION SLAVE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: REPLICATION SLAVE ADMIN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SELECT
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SET USER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SHOW CREATE ROUTINE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SHOW DATABASES
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SHOW VIEW
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SHUTDOWN
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SLAVE MONITOR
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: SUPER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: TRIGGER
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: global
+      schema: ~
+      object: ~
+      column: ~
+      privilege: UPDATE
+      grantable: true
+    - grantee: "'root'@'localhost'"
+      object_kind: proxy
+      schema: ~
+      object: "''@''"
+      column: ~
+      privilege: PROXY
+      grantable: true

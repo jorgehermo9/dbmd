@@ -18,6 +18,10 @@ fn renders_duckdb_through_configured_and_one_off_application_inputs() {
         .expect("attached DuckDB fixture should open")
         .execute_batch("CREATE TABLE facts (id BIGINT PRIMARY KEY);")
         .expect("attached DuckDB fixture should execute");
+    fs::create_dir(project.path().join("stored-secrets"))
+        .expect("secret directory should be created");
+    fs::create_dir(project.path().join("extensions"))
+        .expect("extension directory should be created");
     let config_path = project.path().join("dbmd.toml");
     fs::write(
         &config_path,
@@ -26,6 +30,8 @@ fn renders_duckdb_through_configured_and_one_off_application_inputs() {
 backend = "duckdb"
 path = "app.duckdb"
 display_name = "Analytical warehouse"
+secret_directory = "stored-secrets"
+extension_directory = "extensions"
 
 [sources.analytics.attachments.warehouse]
 path = "warehouse.duckdb"
@@ -50,6 +56,8 @@ path = "DATABASE.md"
     assert!(first_markdown.contains("Analytical warehouse"));
     assert!(first_markdown.contains("app.analytics.accounts"));
     assert!(first_markdown.contains("warehouse.main.facts"));
+    assert!(!first_markdown.contains("stored-secrets"));
+    assert!(!first_markdown.contains("extensions/"));
 
     let one_off = render(RenderRequest::duckdb(&database_path).to_stdout())
         .expect("one-off DuckDB render should succeed");

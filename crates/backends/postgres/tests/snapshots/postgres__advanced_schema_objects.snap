@@ -1,0 +1,531 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: snapshot
+---
+id: advanced
+display_name: ~
+catalog:
+  database:
+    name: dbmd_test_df2b78feb085d431
+    owner: postgres
+    encoding: UTF8
+    locale_provider: libc
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    locale: ~
+    icu_rules: ~
+    collation_version: ~
+    tablespace: pg_default
+    template: false
+    allow_connections: true
+    connection_limit: -1
+    configuration: []
+    comment: ~
+  cluster_databases: []
+  tablespaces: []
+  namespaces:
+    - name: advanced
+      owner: postgres
+      extension: ~
+      comment: ~
+    - name: public
+      owner: pg_database_owner
+      extension: ~
+      comment: standard public schema
+  enums: []
+  composite_types: []
+  domains: []
+  base_types: []
+  range_types: []
+  sequences: []
+  tables:
+    - namespace: advanced
+      name: deleted_orders
+      extension: ~
+      comment: ~
+      columns:
+        - name: id
+          data_type: bigint
+          collation: ~
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: deleted_at
+          data_type: timestamp with time zone
+          collation: ~
+          nullable: false
+          default: CURRENT_TIMESTAMP
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints:
+        - name: deleted_orders_deleted_at_not_null
+          kind: not_null
+          columns:
+            - deleted_at
+          expression: ~
+          references: ~
+          definition: NOT NULL deleted_at
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+      indexes: []
+      kind: table
+      owner: postgres
+      persistence: permanent
+      access_method: heap
+      typed_table: ~
+      replica_identity: default
+      options: []
+      foreign: ~
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+    - namespace: advanced
+      name: orders
+      extension: ~
+      comment: ~
+      columns:
+        - name: id
+          data_type: bigint
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: customer_id
+          data_type: bigint
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: region
+          data_type: text
+          collation: "pg_catalog.\"default\""
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: amount
+          data_type: "numeric(12,2)"
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: main
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints:
+        - name: orders_amount_not_null
+          kind: not_null
+          columns:
+            - amount
+          expression: ~
+          references: ~
+          definition: NOT NULL amount
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: orders_customer_id_not_null
+          kind: not_null
+          columns:
+            - customer_id
+          expression: ~
+          references: ~
+          definition: NOT NULL customer_id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: orders_id_not_null
+          kind: not_null
+          columns:
+            - id
+          expression: ~
+          references: ~
+          definition: NOT NULL id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: orders_pkey
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          definition: PRIMARY KEY (id)
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: true
+          temporal: false
+          comment: ~
+        - name: orders_region_not_null
+          kind: not_null
+          columns:
+            - region
+          expression: ~
+          references: ~
+          definition: NOT NULL region
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+      indexes:
+        - name: orders_pkey
+          extension: ~
+          unique: true
+          terms:
+            - target:
+                column: id
+              collation: ~
+              operator_class: pg_catalog.int8_ops
+              operator_class_parameters: []
+              order: ascending
+              nulls_order: last
+          predicate: ~
+          definition: CREATE UNIQUE INDEX orders_pkey ON advanced.orders USING btree (id)
+          method: btree
+          included_columns: []
+          nulls_not_distinct: false
+          valid: true
+          ready: true
+          clustered: false
+          replica_identity: false
+          owner: postgres
+          tablespace: ~
+          options: []
+          partitioned: false
+          parent_index: ~
+          constraint: orders_pkey
+          comment: ~
+      kind: table
+      owner: postgres
+      persistence: permanent
+      access_method: heap
+      typed_table: ~
+      replica_identity: default
+      options: []
+      foreign: ~
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+  views: []
+  triggers: []
+  functions:
+    - namespace: advanced
+      name: capture_schema_change
+      extension: ~
+      signature: ()
+      arguments: ""
+      definition: "CREATE OR REPLACE FUNCTION advanced.capture_schema_change()\n RETURNS event_trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    NULL;\nEND;\n$function$\n"
+      comment: ~
+      return_type: event_trigger
+      owner: postgres
+      kind: ordinary
+      language: plpgsql
+      volatility: volatile
+      parallel: unsafe
+      security_definer: false
+      strict: false
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
+  procedures: []
+  aggregates: []
+  casts: []
+  conversions: []
+  operators: []
+  operator_families: []
+  operator_classes: []
+  access_methods: []
+  languages:
+    - name: plpgsql
+      owner: postgres
+      extension: plpgsql
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: PL/pgSQL procedural language
+  transforms: []
+  rules:
+    - namespace: advanced
+      name: archive_order_delete
+      target: orders
+      event: delete
+      instead: false
+      enabled: replica
+      extension: ~
+      comment: Archives replicated deletes
+      definition: "CREATE RULE archive_order_delete AS\n    ON DELETE TO advanced.orders DO  INSERT INTO advanced.deleted_orders (id)\n  VALUES (old.id);"
+  event_triggers:
+    - name: capture_schema_change
+      owner: postgres
+      event: ddl_command_end
+      tags:
+        - CREATE TABLE
+        - ALTER TABLE
+      function: advanced.capture_schema_change()
+      enabled: always
+      extension: ~
+      comment: Captures selected schema changes
+      definition: "CREATE EVENT TRIGGER \"capture_schema_change\" ON ddl_command_end WHEN TAG IN ('CREATE TABLE', 'ALTER TABLE') EXECUTE FUNCTION advanced.capture_schema_change();"
+  statistics:
+    - namespace: advanced
+      name: orders_dependencies
+      owner: postgres
+      kinds:
+        - nd_distinct
+        - dependencies
+        - most_common_values
+      columns:
+        - customer_id
+        - region
+      expressions: []
+      target: 500
+      extension: ~
+      comment: Cross-column order distribution
+      definition: "CREATE STATISTICS advanced.orders_dependencies ON customer_id, region FROM advanced.orders"
+    - namespace: advanced
+      name: orders_expression
+      owner: postgres
+      kinds:
+        - expressions
+      columns: []
+      expressions:
+        - lower(region)
+      target: -1
+      extension: ~
+      comment: ~
+      definition: CREATE STATISTICS advanced.orders_expression ON lower(region) FROM advanced.orders
+  foreign_data_wrappers: []
+  foreign_servers: []
+  user_mappings: []
+  text_search_parsers:
+    - namespace: advanced
+      name: default_parser
+      start_function: "pg_catalog.prsd_start(pg_catalog.internal,integer)"
+      token_function: "pg_catalog.prsd_nexttoken(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+      end_function: pg_catalog.prsd_end(pg_catalog.internal)
+      headline_function: "pg_catalog.prsd_headline(pg_catalog.internal,pg_catalog.internal,pg_catalog.tsquery)"
+      token_types_function: pg_catalog.prsd_lextype(pg_catalog.internal)
+      extension: ~
+      comment: Fixture parser backed by PostgreSQL defaults
+  text_search_templates:
+    - namespace: advanced
+      name: simple_template
+      init_function: pg_catalog.dsimple_init(pg_catalog.internal)
+      lexize_function: "pg_catalog.dsimple_lexize(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)"
+      extension: ~
+      comment: Fixture simple dictionary template
+  text_search_dictionaries:
+    - namespace: advanced
+      name: simple_dictionary
+      owner: postgres
+      template: advanced.simple_template
+      options: "stopwords = 'english'"
+      extension: ~
+      comment: Fixture stop-word dictionary
+  text_search_configurations:
+    - namespace: advanced
+      name: search_configuration
+      owner: postgres
+      parser: advanced.default_parser
+      mappings:
+        - token_type: asciiword
+          dictionaries:
+            - advanced.simple_dictionary
+            - pg_catalog.english_stem
+      extension: ~
+      comment: Fixture search pipeline
+  extensions:
+    - name: plpgsql
+      owner: postgres
+      namespace: pg_catalog
+      relocatable: false
+      version: "1.0"
+      configuration: []
+      members:
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_call_handler
+          arguments: []
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_inline_handler
+          arguments:
+            - pg_catalog.internal
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_validator
+          arguments:
+            - pg_catalog.oid
+        - object_type: language
+          names:
+            - plpgsql
+          arguments: []
+      comment: PL/pgSQL procedural language
+  publications:
+    - name: advanced_publication
+      owner: postgres
+      all_tables: false
+      publish_insert: true
+      publish_update: true
+      publish_delete: true
+      publish_truncate: true
+      publish_via_partition_root: false
+      generated_columns: none
+      schemas: []
+      tables:
+        - namespace: advanced
+          name: orders
+          columns: ~
+          row_filter: ~
+      comment: ~
+  subscriptions:
+    - name: advanced_subscription
+      owner: postgres
+      enabled: false
+      binary: true
+      streaming: parallel
+      two_phase: pending
+      disable_on_error: true
+      password_required: false
+      run_as_owner: true
+      failover: true
+      slot_name: ~
+      synchronous_commit: remote_apply
+      publications:
+        - advanced_publication
+      origin: none
+      skip_lsn: 0/16B6C50
+      connection_redacted: true
+      comment: Disconnected fixture subscription
+  privileges:
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: create
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: usage
+      grantable: false
+  default_privileges: []
+  security_labels: []
+  large_objects: []
+  roles: []
+  role_database_settings: []
+  collations: []

@@ -1,0 +1,401 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: snapshot
+---
+id: storage
+display_name: ~
+catalog:
+  database:
+    name: dbmd_test_39d76eb4c498b23b
+    owner: postgres
+    encoding: UTF8
+    locale_provider: libc
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    locale: ~
+    icu_rules: ~
+    collation_version: ~
+    tablespace: pg_default
+    template: false
+    allow_connections: true
+    connection_limit: -1
+    configuration: []
+    comment: ~
+  cluster_databases: []
+  tablespaces: []
+  namespaces:
+    - name: public
+      owner: pg_database_owner
+      extension: ~
+      comment: standard public schema
+    - name: storage
+      owner: postgres
+      extension: ~
+      comment: ~
+  enums: []
+  composite_types:
+    - namespace: storage
+      name: device_row
+      owner: postgres
+      extension: ~
+      attributes:
+        - name: device_id
+          data_type: bigint
+          collation: ~
+          comment: ~
+        - name: payload
+          data_type: text
+          collation: "pg_catalog.\"default\""
+          comment: ~
+      comment: ~
+      definition: "CREATE TYPE \"storage\".\"device_row\" AS (\n    \"device_id\" bigint,\n    \"payload\" text COLLATE pg_catalog.\"default\"\n);"
+  domains: []
+  base_types: []
+  range_types: []
+  sequences: []
+  tables:
+    - namespace: storage
+      name: event_payloads
+      extension: ~
+      comment: ~
+      columns:
+        - name: event_id
+          data_type: bigint
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: payload
+          data_type: text
+          collation: "pg_catalog.\"default\""
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: external
+          compression: lz4
+          statistics_target: 777
+          options:
+            - n_distinct=-0.5
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints:
+        - name: event_payloads_event_id_not_null
+          kind: not_null
+          columns:
+            - event_id
+          expression: ~
+          references: ~
+          definition: NOT NULL event_id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: event_payloads_pkey
+          kind: primary_key
+          columns:
+            - event_id
+          expression: ~
+          references: ~
+          definition: PRIMARY KEY (event_id)
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: true
+          temporal: false
+          comment: ~
+      indexes:
+        - name: event_payloads_pkey
+          extension: ~
+          unique: true
+          terms:
+            - target:
+                column: event_id
+              collation: ~
+              operator_class: pg_catalog.int8_ops
+              operator_class_parameters: []
+              order: ascending
+              nulls_order: last
+          predicate: ~
+          definition: CREATE UNIQUE INDEX event_payloads_pkey ON storage.event_payloads USING btree (event_id)
+          method: btree
+          included_columns: []
+          nulls_not_distinct: false
+          valid: true
+          ready: true
+          clustered: false
+          replica_identity: false
+          owner: postgres
+          tablespace: ~
+          options: []
+          partitioned: false
+          parent_index: ~
+          constraint: event_payloads_pkey
+          comment: ~
+      kind: table
+      owner: postgres
+      persistence: unlogged
+      access_method: heap
+      typed_table: ~
+      replica_identity: full
+      options:
+        - fillfactor=70
+      foreign: ~
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+    - namespace: storage
+      name: remote_events
+      extension: ~
+      comment: ~
+      columns:
+        - name: event_id
+          data_type: bigint
+          collation: ~
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options:
+            - remote_name=external_id
+          locally_defined: true
+          inheritance_count: 0
+        - name: payload
+          data_type: text
+          collation: "pg_catalog.\"default\""
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints: []
+      indexes: []
+      kind: foreign_table
+      owner: postgres
+      persistence: permanent
+      access_method: ~
+      typed_table: ~
+      replica_identity: nothing
+      options: []
+      foreign:
+        server: fixture_server
+        wrapper: fixture_wrapper
+        options:
+          - schema_name=remote
+          - table_name=events
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+    - namespace: storage
+      name: typed_devices
+      extension: ~
+      comment: ~
+      columns:
+        - name: device_id
+          data_type: bigint
+          collation: ~
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: payload
+          data_type: text
+          collation: "pg_catalog.\"default\""
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints: []
+      indexes: []
+      kind: table
+      owner: postgres
+      persistence: permanent
+      access_method: heap
+      typed_table: storage.device_row
+      replica_identity: default
+      options: []
+      foreign: ~
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+  views: []
+  triggers: []
+  functions: []
+  procedures: []
+  aggregates: []
+  casts: []
+  conversions: []
+  operators: []
+  operator_families: []
+  operator_classes: []
+  access_methods: []
+  languages:
+    - name: plpgsql
+      owner: postgres
+      extension: plpgsql
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: PL/pgSQL procedural language
+  transforms: []
+  rules: []
+  event_triggers: []
+  statistics: []
+  foreign_data_wrappers:
+    - name: fixture_wrapper
+      owner: postgres
+      handler: ~
+      validator: ~
+      options:
+        - api_token=<redacted>
+        - endpoint=catalog.example
+      extension: ~
+      comment: Fixture foreign-data wrapper
+  foreign_servers:
+    - name: fixture_server
+      owner: postgres
+      wrapper: fixture_wrapper
+      server_type: catalog
+      version: "1.0"
+      options:
+        - host=catalog.example
+        - password=<redacted>
+      extension: ~
+      comment: Fixture foreign server
+  user_mappings:
+    - server: fixture_server
+      user: PUBLIC
+      options:
+        - user=catalog_reader
+        - password=<redacted>
+  text_search_parsers: []
+  text_search_templates: []
+  text_search_dictionaries: []
+  text_search_configurations: []
+  extensions:
+    - name: plpgsql
+      owner: postgres
+      namespace: pg_catalog
+      relocatable: false
+      version: "1.0"
+      configuration: []
+      members:
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_call_handler
+          arguments: []
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_inline_handler
+          arguments:
+            - pg_catalog.internal
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_validator
+          arguments:
+            - pg_catalog.oid
+        - object_type: language
+          names:
+            - plpgsql
+          arguments: []
+      comment: PL/pgSQL procedural language
+  publications: []
+  subscriptions: []
+  privileges:
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: create
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: usage
+      grantable: false
+  default_privileges: []
+  security_labels: []
+  large_objects: []
+  roles: []
+  role_database_settings: []
+  collations: []

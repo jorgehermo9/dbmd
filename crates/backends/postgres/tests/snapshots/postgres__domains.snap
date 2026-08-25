@@ -1,0 +1,188 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: snapshot
+---
+id: types
+display_name: ~
+catalog:
+  database:
+    name: dbmd_test_89574c3b2476e2a7
+    owner: postgres
+    encoding: UTF8
+    locale_provider: libc
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    locale: ~
+    icu_rules: ~
+    collation_version: ~
+    tablespace: pg_default
+    template: false
+    allow_connections: true
+    connection_limit: -1
+    configuration: []
+    comment: ~
+  cluster_databases: []
+  tablespaces: []
+  namespaces:
+    - name: public
+      owner: pg_database_owner
+      extension: ~
+      comment: standard public schema
+    - name: types
+      owner: postgres
+      extension: ~
+      comment: ~
+  enums: []
+  composite_types: []
+  domains:
+    - namespace: types
+      name: email_address
+      base_type: text
+      collation: "pg_catalog.\"C\""
+      default: "''::text"
+      not_null: true
+      owner: domain_owner
+      extension: ~
+      constraints:
+        - name: email_not_blocked
+          definition: "CHECK (VALUE <> 'blocked@example.com'::text) NOT VALID"
+          validated: false
+          comment: ~
+        - name: email_shape
+          definition: "CHECK (VALUE ~ '^[^@]+@[^@]+$'::text)"
+          validated: true
+          comment: Requires one at-sign
+      comment: Canonical application email address
+      definition: "CREATE DOMAIN \"types\".\"email_address\"\n    AS text\n    COLLATE pg_catalog.\"C\"\n    DEFAULT ''::text\n    NOT NULL\n    CONSTRAINT \"email_not_blocked\" CHECK (VALUE <> 'blocked@example.com'::text) NOT VALID NOT VALID\n    CONSTRAINT \"email_shape\" CHECK (VALUE ~ '^[^@]+@[^@]+$'::text);"
+  base_types: []
+  range_types: []
+  sequences: []
+  tables:
+    - namespace: types
+      name: accounts
+      extension: ~
+      comment: ~
+      columns:
+        - name: email
+          data_type: types.email_address
+          collation: "pg_catalog.\"C\""
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints: []
+      indexes: []
+      kind: table
+      owner: postgres
+      persistence: permanent
+      access_method: heap
+      typed_table: ~
+      replica_identity: default
+      options: []
+      foreign: ~
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+  views: []
+  triggers: []
+  functions: []
+  procedures: []
+  aggregates: []
+  casts: []
+  conversions: []
+  operators: []
+  operator_families: []
+  operator_classes: []
+  access_methods: []
+  languages:
+    - name: plpgsql
+      owner: postgres
+      extension: plpgsql
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: PL/pgSQL procedural language
+  transforms: []
+  rules: []
+  event_triggers: []
+  statistics: []
+  foreign_data_wrappers: []
+  foreign_servers: []
+  user_mappings: []
+  text_search_parsers: []
+  text_search_templates: []
+  text_search_dictionaries: []
+  text_search_configurations: []
+  extensions:
+    - name: plpgsql
+      owner: postgres
+      namespace: pg_catalog
+      relocatable: false
+      version: "1.0"
+      configuration: []
+      members:
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_call_handler
+          arguments: []
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_inline_handler
+          arguments:
+            - pg_catalog.internal
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_validator
+          arguments:
+            - pg_catalog.oid
+        - object_type: language
+          names:
+            - plpgsql
+          arguments: []
+      comment: PL/pgSQL procedural language
+  publications: []
+  subscriptions: []
+  privileges:
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: create
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: usage
+      grantable: false
+  default_privileges: []
+  security_labels: []
+  large_objects: []
+  roles: []
+  role_database_settings: []
+  collations: []

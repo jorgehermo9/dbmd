@@ -16,7 +16,7 @@ Backend: `{{ source.backend }}`
 {% endfor %}
 
 {% endif -%}
-{% for pair in [("Tables", "tables", source.data.tables), ("Views", "views", source.data.views), ("Functions", "functions", source.data.functions)] -%}
+{% for pair in [("Tables", "tables", source.data.tables), ("Views", "views", source.data.views), ("Functions", "functions", source.data.functions), ("Access and workload objects", "access-and-workloads", source.data.access_objects)] -%}
 {% if pair[2] -%}
 ## {{ pair[0] }}
 

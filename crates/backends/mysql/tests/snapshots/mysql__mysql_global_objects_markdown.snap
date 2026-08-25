@@ -1,0 +1,2459 @@
+---
+source: crates/backends/mysql/tests/mysql.rs
+expression: markdown
+---
+# Database: `global`
+
+## Schemas
+
+| Name | Details |
+|---|---|
+| `test` | Default character set `utf8mb4`; collation `utf8mb4_0900_ai_ci`; encryption no; read-only yes. |
+
+
+## Tables
+
+### `test.accounts`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `account_id` | `bigint unsigned` | no | - |  |
+| `email` | `varchar(255)` | no | - |  |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `PRIMARY` | `primary_key` | `account_id` | - |
+
+
+#### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `PRIMARY` | `account_id` | yes | BTREE | - |
+
+
+#### MySQL
+
+**Engine:** `InnoDB`
+
+**Row format:** `Dynamic`
+
+**Collation:** `utf8mb4_0900_ai_ci`
+
+```sql
+CREATE TABLE `accounts` (
+  `account_id` bigint unsigned NOT NULL,
+  `email` varchar(255) NOT NULL,
+  PRIMARY KEY (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+```
+
+
+## Routines
+
+### `test.rotate_accounts`
+
+**Kind:** procedure
+
+**Data access:** reads SQL data
+
+**Deterministic:** no
+
+**Security:** definer
+
+**Definer:** `root@localhost`
+
+**SQL mode:** `ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION`
+
+**Character set client:** `latin1`
+
+**Connection collation:** `latin1_swedish_ci`
+
+**Database collation:** `utf8mb4_0900_ai_ci`
+
+**Parameters:** ``
+
+**External language:** `SQL`
+
+```sql
+CREATE DEFINER=`root`@`localhost` PROCEDURE `rotate_accounts`()
+    READS SQL DATA
+SELECT COUNT(*) FROM accounts
+```
+
+
+## Servers
+
+### `dbmd_remote`
+
+**Wrapper:** `mysql`
+
+**Host:** `198.51.100.10`
+
+**Database:** `remote_database`
+
+**User:** `remote_user`
+
+**Port:** 3306
+
+**Socket:** ``
+
+**Owner:** `dbmd`
+
+**Password configured:** yes
+
+
+
+## Spatial Reference Systems
+
+### `dbmd geographic (33001)`
+
+Application-defined fixture SRS
+
+**ID:** 33001
+
+**Organization:** `dbmd`
+
+**Organization ID:** 33001
+
+```text
+GEOGCS["dbmd geographic",DATUM["dbmd datum",SPHEROID["dbmd sphere",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["degree",0.017453292519943278],AXIS["Latitude",NORTH],AXIS["Longitude",EAST]]
+```
+
+
+## Tablespaces
+
+### `dbmd_general`
+
+**Engine:** `InnoDB`
+
+**Space type:** `General`
+
+**File locations:** `<redacted>`
+
+**Row format:** `Any`
+
+**Page size:** 16384
+
+**Autoextend size:** 4194304
+
+**Encryption:** `N`
+
+
+
+### `mysql`
+
+**Engine:** `InnoDB`
+
+**Space type:** `General`
+
+**File locations:** `<redacted>`
+
+**Row format:** `Any`
+
+**Page size:** 16384
+
+**Autoextend size:** 0
+
+**Encryption:** `N`
+
+
+
+## Resource Groups
+
+### `dbmd_batch`
+
+**Type:** user threads
+
+**Enabled:** no
+
+**VCPUs:** `0-7`
+
+**Thread priority:** 0
+
+
+
+## Loadable Functions
+
+### `asynchronous_connection_failover_add_managed`
+
+**Kind:** `scalar`
+
+**Returns:** `character`
+
+**Library:** `component/plugin`
+
+
+
+### `asynchronous_connection_failover_add_source`
+
+**Kind:** `scalar`
+
+**Returns:** `character`
+
+**Library:** `component/plugin`
+
+
+
+### `asynchronous_connection_failover_delete_managed`
+
+**Kind:** `scalar`
+
+**Returns:** `character`
+
+**Library:** `component/plugin`
+
+
+
+### `asynchronous_connection_failover_delete_source`
+
+**Kind:** `scalar`
+
+**Returns:** `character`
+
+**Library:** `component/plugin`
+
+
+
+### `asynchronous_connection_failover_reset`
+
+**Kind:** `scalar`
+
+**Returns:** `character`
+
+**Library:** `component/plugin`
+
+
+
+### `innodb_redo_log_archive_flush`
+
+**Kind:** `scalar`
+
+**Returns:** `integer`
+
+**Library:** `component/plugin`
+
+
+
+### `innodb_redo_log_archive_start`
+
+**Kind:** `scalar`
+
+**Returns:** `integer`
+
+**Library:** `component/plugin`
+
+
+
+### `innodb_redo_log_archive_stop`
+
+**Kind:** `scalar`
+
+**Returns:** `integer`
+
+**Library:** `component/plugin`
+
+
+
+### `innodb_redo_log_consumer_advance`
+
+**Kind:** `scalar`
+
+**Returns:** `integer`
+
+**Library:** `component/plugin`
+
+
+
+### `innodb_redo_log_consumer_register`
+
+**Kind:** `scalar`
+
+**Returns:** `integer`
+
+**Library:** `component/plugin`
+
+
+
+### `innodb_redo_log_consumer_unregister`
+
+**Kind:** `scalar`
+
+**Returns:** `integer`
+
+**Library:** `component/plugin`
+
+
+
+### `innodb_redo_log_sharp_checkpoint`
+
+**Kind:** `scalar`
+
+**Returns:** `integer`
+
+**Library:** `component/plugin`
+
+
+
+### `innodb_set_open_files_limit`
+
+**Kind:** `scalar`
+
+**Returns:** `integer`
+
+**Library:** `component/plugin`
+
+
+
+### `mysqlx_error`
+
+**Kind:** `scalar`
+
+**Returns:** `character`
+
+**Library:** `component/plugin`
+
+
+
+### `mysqlx_generate_document_id`
+
+**Kind:** `scalar`
+
+**Returns:** `character`
+
+**Library:** `component/plugin`
+
+
+
+### `mysqlx_get_prepared_statement_id`
+
+**Kind:** `scalar`
+
+**Returns:** `integer`
+
+**Library:** `component/plugin`
+
+
+
+## Plugins
+
+### `ARCHIVE`
+
+Archive storage engine
+
+**Version:** `3.0`
+
+**Status:** active
+
+**Type:** `storage engine`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** on
+
+**Author:** Oracle Corporation
+
+
+
+### `auth_socket`
+
+Unix Socket based authentication
+
+**Version:** `1.1`
+
+**Status:** active
+
+**Type:** `authentication`
+
+**Type version:** `2.1`
+
+**License:** `GPL`
+
+**Load option:** on
+
+**Library:** `auth_socket.so`
+
+**Library version:** `1.11`
+
+**Author:** Oracle Corporation
+
+
+
+### `binlog`
+
+This is a pseudo storage engine to represent the binlog in a transaction
+
+**Version:** `1.0`
+
+**Status:** active
+
+**Type:** `storage engine`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `BLACKHOLE`
+
+/dev/null storage engine (anything you write to it disappears)
+
+**Version:** `1.0`
+
+**Status:** active
+
+**Type:** `storage engine`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** on
+
+**Author:** Oracle Corporation
+
+
+
+### `caching_sha2_password`
+
+Caching sha2 authentication
+
+**Version:** `1.0`
+
+**Status:** active
+
+**Type:** `authentication`
+
+**Type version:** `2.1`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `CSV`
+
+CSV storage engine
+
+**Version:** `1.0`
+
+**Status:** active
+
+**Type:** `storage engine`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `daemon_keyring_proxy_plugin`
+
+A plugin that implements the keyring component services atop of the keyring plugin
+
+**Version:** `1.0`
+
+**Status:** active
+
+**Type:** `daemon`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle
+
+
+
+### `FEDERATED`
+
+Federated MySQL storage engine
+
+**Version:** `1.0`
+
+**Status:** disabled
+
+**Type:** `storage engine`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** off
+
+**Author:** Oracle Corporation
+
+
+
+### `InnoDB`
+
+Supports transactions, row-level locking, and foreign keys
+
+**Version:** `9.7`
+
+**Status:** active
+
+**Type:** `storage engine`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_BUFFER_PAGE`
+
+InnoDB Buffer Page Information
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_BUFFER_PAGE_LRU`
+
+InnoDB Buffer Page in LRU
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_BUFFER_POOL_STATS`
+
+InnoDB Buffer Pool Statistics Information
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_CACHED_INDEXES`
+
+InnoDB cached indexes
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_CMP`
+
+Statistics for the InnoDB compression
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_CMPMEM`
+
+Statistics for the InnoDB compressed buffer pool
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_CMPMEM_RESET`
+
+Statistics for the InnoDB compressed buffer pool; reset cumulated counts
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_CMP_PER_INDEX`
+
+Statistics for the InnoDB compression (per index)
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_CMP_PER_INDEX_RESET`
+
+Statistics for the InnoDB compression (per index); reset cumulated counts
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_CMP_RESET`
+
+Statistics for the InnoDB compression; reset cumulated counts
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_COLUMNS`
+
+InnoDB INNODB_COLUMNS
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_FT_BEING_DELETED`
+
+INNODB AUXILIARY FTS BEING DELETED TABLE
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_FT_CONFIG`
+
+INNODB AUXILIARY FTS CONFIG TABLE
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_FT_DEFAULT_STOPWORD`
+
+Default stopword list for InnDB Full Text Search
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_FT_DELETED`
+
+INNODB AUXILIARY FTS DELETED TABLE
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_FT_INDEX_CACHE`
+
+INNODB AUXILIARY FTS INDEX CACHED
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_FT_INDEX_TABLE`
+
+INNODB AUXILIARY FTS INDEX TABLE
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_INDEXES`
+
+InnoDB INNODB_INDEXES
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_METRICS`
+
+InnoDB Metrics Info
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_SESSION_TEMP_TABLESPACES`
+
+InnoDB Session Temporary tablespaces
+
+**Version:** `9.7`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_TABLES`
+
+InnoDB INNODB_TABLES
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_TABLESPACES`
+
+InnoDB INNODB_TABLESPACES
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_TABLESTATS`
+
+InnoDB INNODB_TABLESTATS
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_TEMP_TABLE_INFO`
+
+InnoDB Temp Table Stats
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_TRX`
+
+InnoDB transactions
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `INNODB_VIRTUAL`
+
+InnoDB INNODB_VIRTUAL
+
+**Version:** `9.2`
+
+**Status:** active
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `MEMORY`
+
+Hash based, stored in memory, useful for temporary tables
+
+**Version:** `1.0`
+
+**Status:** active
+
+**Type:** `storage engine`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `MRG_MYISAM`
+
+Collection of identical MyISAM tables
+
+**Version:** `1.0`
+
+**Status:** active
+
+**Type:** `storage engine`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `MyISAM`
+
+MyISAM storage engine
+
+**Version:** `1.0`
+
+**Status:** active
+
+**Type:** `storage engine`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `mysqlx`
+
+X Plugin for MySQL
+
+**Version:** `1.0`
+
+**Status:** active
+
+**Type:** `daemon`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** on
+
+**Author:** Oracle Corporation
+
+
+
+### `mysqlx_cache_cleaner`
+
+Cache cleaner for sha2 authentication in X plugin
+
+**Version:** `1.0`
+
+**Status:** active
+
+**Type:** `audit`
+
+**Type version:** `4.1`
+
+**License:** `GPL`
+
+**Load option:** on
+
+**Author:** Oracle Corporation
+
+
+
+### `ndbcluster`
+
+Clustered, fault-tolerant tables
+
+**Version:** `1.0`
+
+**Status:** disabled
+
+**Type:** `storage engine`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** off
+
+**Author:** Oracle Corporation
+
+
+
+### `ndbinfo`
+
+MySQL Cluster system information storage engine
+
+**Version:** `0.1`
+
+**Status:** disabled
+
+**Type:** `storage engine`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** off
+
+**Author:** Oracle Corporation
+
+
+
+### `ndb_transid_mysql_connection_map`
+
+Map between MySQL connection ID and NDB transaction ID
+
+**Version:** `0.1`
+
+**Status:** disabled
+
+**Type:** `information schema`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** off
+
+**Author:** Oracle Corporation
+
+
+
+### `ngram`
+
+Ngram Full-Text Parser
+
+**Version:** `0.1`
+
+**Status:** active
+
+**Type:** `full-text parser`
+
+**Type version:** `1.1`
+
+**License:** `GPL`
+
+**Load option:** on
+
+**Author:** Oracle Corporation
+
+
+
+### `PERFORMANCE_SCHEMA`
+
+Performance Schema
+
+**Version:** `0.1`
+
+**Status:** active
+
+**Type:** `storage engine`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `sha256_password`
+
+SHA256 password authentication
+
+**Version:** `1.1`
+
+**Status:** active
+
+**Type:** `authentication`
+
+**Type version:** `2.1`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+### `TempTable`
+
+InnoDB temporary storage engine
+
+**Version:** `1.0`
+
+**Status:** active
+
+**Type:** `storage engine`
+
+**Type version:** `90701.0`
+
+**License:** `GPL`
+
+**Load option:** required
+
+**Author:** Oracle Corporation
+
+
+
+## Components
+
+### `file://component_validate_password`
+
+
+
+## Accounts
+
+### `dbmd_app@%`
+
+dbmd application account
+
+**Locked:** yes
+
+**Password expired:** no
+
+**TLS requirement:** encrypted transport
+
+**Max queries/hour:** 10
+
+**Max updates/hour:** 0
+
+**Max connections/hour:** 0
+
+**Max user connections:** 2
+
+**Custom attributes configured:** yes
+
+**Dual password configured:** no
+
+**Authentication factor:** 1: plugin=`caching_sha2_password`, credential=configured, passwordless=false, registration_required=false
+
+**Password lifetime days:** 90
+
+
+
+### `dbmd_reader@%`
+
+**Locked:** yes
+
+**Password expired:** yes
+
+**TLS requirement:** none
+
+**Max queries/hour:** 0
+
+**Max updates/hour:** 0
+
+**Max connections/hour:** 0
+
+**Max user connections:** 0
+
+**Custom attributes configured:** no
+
+**Dual password configured:** no
+
+**Authentication factor:** 1: plugin=`caching_sha2_password`, credential=not configured, passwordless=false, registration_required=false
+
+
+
+### `root@%`
+
+**Locked:** no
+
+**Password expired:** no
+
+**TLS requirement:** none
+
+**Max queries/hour:** 0
+
+**Max updates/hour:** 0
+
+**Max connections/hour:** 0
+
+**Max user connections:** 0
+
+**Custom attributes configured:** no
+
+**Dual password configured:** no
+
+**Authentication factor:** 1: plugin=`caching_sha2_password`, credential=not configured, passwordless=false, registration_required=false
+
+
+
+### `root@localhost`
+
+**Locked:** no
+
+**Password expired:** no
+
+**TLS requirement:** none
+
+**Max queries/hour:** 0
+
+**Max updates/hour:** 0
+
+**Max connections/hour:** 0
+
+**Max user connections:** 0
+
+**Custom attributes configured:** no
+
+**Dual password configured:** no
+
+**Authentication factor:** 1: plugin=`caching_sha2_password`, credential=not configured, passwordless=false, registration_required=false
+
+
+
+## Role Grants
+
+### `dbmd_reader@% → dbmd_app@%`
+
+**Admin option:** yes
+
+
+
+## Default Roles
+
+### `dbmd_app@% defaults to dbmd_reader@%`
+
+
+
+## Privileges
+
+### `'dbmd_app'@'%' USAGE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'dbmd_app'@'%' PROXY on proxy account 'dbmd_reader'@'%'`
+
+**Grant option:** yes
+
+
+
+### `'dbmd_reader'@'%' UPDATE on column test.accounts.email`
+
+**Grant option:** no
+
+
+
+### `'dbmd_reader'@'%' USAGE on global *.*`
+
+**Grant option:** no
+
+
+
+### `'dbmd_reader'@'%' Execute on procedure test.rotate_accounts`
+
+**Grant option:** no
+
+
+
+### `'dbmd_reader'@'%' SELECT on schema test`
+
+**Grant option:** no
+
+
+
+### `'mysql.infoschema'@'localhost' AUDIT_ABORT_EXEMPT on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.infoschema'@'localhost' FIREWALL_EXEMPT on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.infoschema'@'localhost' SELECT on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.infoschema'@'localhost' SYSTEM_USER on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' AUDIT_ABORT_EXEMPT on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' AUTHENTICATION_POLICY_ADMIN on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' BACKUP_ADMIN on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' CLONE_ADMIN on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' CONNECTION_ADMIN on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' FIREWALL_EXEMPT on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' PERSIST_RO_VARIABLES_ADMIN on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' SESSION_VARIABLES_ADMIN on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' SHUTDOWN on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' SUPER on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' SYSTEM_USER on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' SYSTEM_VARIABLES_ADMIN on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' SELECT on schema performance_schema`
+
+**Grant option:** no
+
+
+
+### `'mysql.session'@'localhost' SELECT on table mysql.user`
+
+**Grant option:** no
+
+
+
+### `'mysql.sys'@'localhost' AUDIT_ABORT_EXEMPT on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.sys'@'localhost' FIREWALL_EXEMPT on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.sys'@'localhost' SYSTEM_USER on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.sys'@'localhost' USAGE on global *.*`
+
+**Grant option:** no
+
+
+
+### `'mysql.sys'@'localhost' TRIGGER on schema sys`
+
+**Grant option:** no
+
+
+
+### `'mysql.sys'@'localhost' SELECT on table sys.sys_config`
+
+**Grant option:** no
+
+
+
+### `'root'@'%' ALLOW_NONEXISTENT_DEFINER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' ALTER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' ALTER ROUTINE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' APPLICATION_PASSWORD_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' AUDIT_ABORT_EXEMPT on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' AUDIT_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' AUTHENTICATION_POLICY_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' BACKUP_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' BINLOG_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' BINLOG_ENCRYPTION_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' CLONE_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' CONNECTION_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' CREATE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' CREATE ROLE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' CREATE ROUTINE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' CREATE TABLESPACE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' CREATE TEMPORARY TABLES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' CREATE USER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' CREATE VIEW on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' CREATE_SPATIAL_REFERENCE_SYSTEM on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' DELETE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' DROP on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' DROP ROLE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' ENCRYPTION_KEY_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' EVENT on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' EXECUTE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' FILE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' FIREWALL_EXEMPT on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' FLUSH_OPTIMIZER_COSTS on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' FLUSH_PRIVILEGES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' FLUSH_STATUS on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' FLUSH_TABLES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' FLUSH_USER_RESOURCES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' GROUP_REPLICATION_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' GROUP_REPLICATION_STREAM on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' INDEX on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' INNODB_REDO_LOG_ARCHIVE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' INNODB_REDO_LOG_ENABLE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' INSERT on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' LOCK TABLES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' MANAGE_DATA_MASKING_POLICY on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' OPTIMIZE_LOCAL_TABLE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' PASSWORDLESS_USER_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' PERSIST_RO_VARIABLES_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' PROCESS on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' REFERENCES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' RELOAD on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' REPLICATION CLIENT on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' REPLICATION SLAVE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' REPLICATION_APPLIER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' REPLICATION_SLAVE_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' RESOURCE_GROUP_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' RESOURCE_GROUP_USER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' ROLE_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' SELECT on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' SENSITIVE_VARIABLES_OBSERVER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' SERVICE_CONNECTION_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' SESSION_VARIABLES_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' SET_ANY_DEFINER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' SHOW DATABASES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' SHOW VIEW on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' SHOW_ROUTINE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' SHUTDOWN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' SUPER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' SYSTEM_USER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' SYSTEM_VARIABLES_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' TABLE_ENCRYPTION_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' TELEMETRY_LOG_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' TRANSACTION_GTID_TAG on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' TRIGGER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' UPDATE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'%' XA_RECOVER_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' ALLOW_NONEXISTENT_DEFINER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' ALTER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' ALTER ROUTINE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' APPLICATION_PASSWORD_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' AUDIT_ABORT_EXEMPT on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' AUDIT_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' AUTHENTICATION_POLICY_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' BACKUP_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' BINLOG_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' BINLOG_ENCRYPTION_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' CLONE_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' CONNECTION_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' CREATE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' CREATE ROLE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' CREATE ROUTINE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' CREATE TABLESPACE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' CREATE TEMPORARY TABLES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' CREATE USER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' CREATE VIEW on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' CREATE_SPATIAL_REFERENCE_SYSTEM on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' DELETE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' DROP on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' DROP ROLE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' ENCRYPTION_KEY_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' EVENT on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' EXECUTE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' FILE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' FIREWALL_EXEMPT on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' FLUSH_OPTIMIZER_COSTS on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' FLUSH_PRIVILEGES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' FLUSH_STATUS on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' FLUSH_TABLES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' FLUSH_USER_RESOURCES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' GROUP_REPLICATION_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' GROUP_REPLICATION_STREAM on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' INDEX on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' INNODB_REDO_LOG_ARCHIVE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' INNODB_REDO_LOG_ENABLE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' INSERT on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' LOCK TABLES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' MANAGE_DATA_MASKING_POLICY on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' OPTIMIZE_LOCAL_TABLE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' PASSWORDLESS_USER_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' PERSIST_RO_VARIABLES_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' PROCESS on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' REFERENCES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' RELOAD on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' REPLICATION CLIENT on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' REPLICATION SLAVE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' REPLICATION_APPLIER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' REPLICATION_SLAVE_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' RESOURCE_GROUP_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' RESOURCE_GROUP_USER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' ROLE_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' SELECT on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' SENSITIVE_VARIABLES_OBSERVER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' SERVICE_CONNECTION_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' SESSION_VARIABLES_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' SET_ANY_DEFINER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' SHOW DATABASES on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' SHOW VIEW on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' SHOW_ROUTINE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' SHUTDOWN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' SUPER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' SYSTEM_USER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' SYSTEM_VARIABLES_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' TABLE_ENCRYPTION_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' TELEMETRY_LOG_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' TRANSACTION_GTID_TAG on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' TRIGGER on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' UPDATE on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' XA_RECOVER_ADMIN on global *.*`
+
+**Grant option:** yes
+
+
+
+### `'root'@'localhost' PROXY on proxy account ''@''`
+
+**Grant option:** yes

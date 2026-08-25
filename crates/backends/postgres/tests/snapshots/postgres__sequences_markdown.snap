@@ -1,0 +1,160 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: markdown
+---
+# Database: `automation`
+
+## Database
+
+### `dbmd_test_917c5a8921518689`
+
+**Owner:** `postgres`
+
+**Encoding:** `UTF8`
+
+**Locale provider:** `libc`
+
+**LC_COLLATE:** `en_US.utf8`
+
+**LC_CTYPE:** `en_US.utf8`
+
+**Tablespace:** `pg_default`
+
+**Template:** no
+
+**Allows connections:** yes
+
+**Connection limit:** -1
+
+
+
+## Namespaces
+
+| Name | Owner | Comment |
+|---|---|---|
+| `automation` | `postgres` | - |
+| `public` | `pg_database_owner` | standard public schema |
+
+
+## Sequences
+
+### `automation.invoice_number`
+
+Stable invoice number allocator
+
+**Owner:** `postgres`
+
+**Type:** `bigint`
+
+**Start:** 1000
+
+**Minimum:** 1000
+
+**Maximum:** 999999
+
+**Increment:** 5
+
+**Cache:** 20
+
+**Cycle:** yes
+
+**Persistence:** `unlogged`
+
+**Owned by:** `automation.invoices.id`
+
+```sql
+CREATE UNLOGGED SEQUENCE "automation"."invoice_number" AS bigint INCREMENT BY 5 MINVALUE 1000 MAXVALUE 999999 START WITH 1000 CACHE 20 CYCLE OWNED BY automation.invoices.id;
+```
+
+
+## Tables
+
+### `automation.invoices`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | no | `nextval('automation.invoice_number'::regclass)` | storage `plain` |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `invoices_id_not_null` | `not_null` | `id` | `NOT NULL id` |
+
+
+#### PostgreSQL
+
+**Kind:** `table`
+
+**Owner:** `postgres`
+
+**Persistence:** `permanent`
+
+**Replica identity:** `default`
+
+**Access method:** `heap`
+
+
+
+## Object Privileges
+
+### `schema public → PUBLIC USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `USAGE`
+
+
+
+### `schema public → pg_database_owner CREATE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `CREATE`
+
+
+
+### `schema public → pg_database_owner USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `USAGE`
+
+
+
+## Extensions
+
+### `plpgsql`
+
+PL/pgSQL procedural language
+
+**Owner:** `postgres`
+
+**Schema:** `pg_catalog`
+
+**Version:** `1.0`
+
+**Relocatable:** no
+
+**Owned objects:** 4 (`function`: 3, `language`: 1)

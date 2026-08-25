@@ -3,7 +3,7 @@ mod support;
 
 use std::str::FromStr;
 
-use dbmd_backend_sqlite::{introspect, ConstraintKind, SqliteSource};
+use dbmd_backend_sqlite::{introspect, ConstraintKind, SqliteSource, TriggerTiming};
 use dbmd_core::SourceId;
 use dbmd_relational::ForeignKeyAction;
 use support::TestDatabase;
@@ -205,4 +205,72 @@ fn introspects_the_persisted_result_of_alter_create_as_and_drop() {
     assert!(snapshot.catalog().views.is_empty());
     assert!(snapshot.catalog().triggers.is_empty());
     insta::assert_yaml_snapshot!("schema_evolution", snapshot);
+}
+
+#[test]
+fn introspects_quoted_grammar_edges_without_hiding_sqlite_prefixed_user_objects() {
+    let database = TestDatabase::from_sql(include_str!("fixtures/grammar_edges/schema.sql"));
+    let source = SqliteSource::new(
+        SourceId::from_str("app").expect("test source ID should be valid"),
+        database.path(),
+    );
+
+    let snapshot = introspect(&source).expect("SQLite grammar edges should be introspected");
+    let child = snapshot
+        .catalog()
+        .tables
+        .iter()
+        .find(|table| table.name == "child refs")
+        .expect("quoted child table should be present");
+    let foreign_keys = child
+        .constraints
+        .iter()
+        .filter(|constraint| constraint.kind == ConstraintKind::ForeignKey)
+        .collect::<Vec<_>>();
+    assert_eq!(foreign_keys.len(), 2);
+    assert_eq!(
+        foreign_keys[0]
+            .references
+            .as_ref()
+            .expect("first foreign key should have a target")
+            .columns,
+        ["code a"]
+    );
+    assert_eq!(
+        foreign_keys[1]
+            .references
+            .as_ref()
+            .expect("second foreign key should have a target")
+            .columns,
+        ["code b"]
+    );
+
+    let ascending = snapshot
+        .catalog()
+        .tables
+        .iter()
+        .find(|table| table.name == "sqliteXascending")
+        .expect("non-reserved sqliteX-prefixed table should be visible");
+    assert_eq!(ascending.columns[0].nullable, Some(false));
+    let descending = snapshot
+        .catalog()
+        .tables
+        .iter()
+        .find(|table| table.name == "sqliteXdescending")
+        .expect("descending primary-key table should be visible");
+    assert_eq!(descending.columns[0].nullable, Some(true));
+    assert!(snapshot
+        .catalog()
+        .views
+        .iter()
+        .any(|view| view.name == "sqliteXview"));
+    let trigger = snapshot
+        .catalog()
+        .triggers
+        .iter()
+        .find(|trigger| trigger.name == "sqliteXdefault_timing")
+        .expect("non-reserved sqliteX-prefixed trigger should be visible");
+    assert_eq!(trigger.timing, TriggerTiming::Before);
+
+    insta::assert_yaml_snapshot!("grammar_edges", snapshot);
 }

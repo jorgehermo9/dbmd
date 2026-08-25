@@ -5,10 +5,10 @@ agent-readable Markdown. Commit the generated `DATABASE.md` or `database/`
 artifact beside the application so agents and humans can inspect current schema
 state without replaying migrations.
 
-SQLite and PostgreSQL are supported through concrete introspection adapters.
-Output can use the embedded agent profile or a complete project-owned template
-set, one file or a deterministic directory tree, and one or more ordered named
-sources.
+SQLite, PostgreSQL, ClickHouse, MySQL, MariaDB, and DuckDB are supported through
+backend-owned introspection adapters. Output can use the embedded agent profile
+or a complete project-owned template set, one file or a deterministic directory
+tree, and one or more ordered named sources.
 
 ## Canonical workflow
 
@@ -87,23 +87,28 @@ accepts no output-shaping overrides.
 - [Complete documentation index](docs/README.md)
 
 The canonical domain glossary lives in [CONTEXT.md](CONTEXT.md). Backend schema
-coverage and known gaps live beside each adapter:
-[SQLite](crates/backends/sqlite/README.md) and
-[PostgreSQL](crates/backends/postgres/README.md).
+coverage and exact compatibility targets live beside each adapter:
+[SQLite](crates/backends/sqlite/README.md),
+[PostgreSQL](crates/backends/postgres/README.md),
+[ClickHouse](crates/backends/clickhouse/README.md),
+[MySQL](crates/backends/mysql/README.md),
+[MariaDB](crates/backends/mariadb/README.md), and
+[DuckDB](crates/backends/duckdb/README.md).
 
 ## Development
 
 ```sh
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace --all-targets
+just check
 ```
 
-PostgreSQL container suites:
+Target one backend while iterating, or accept its reviewed Insta snapshots:
 
 ```sh
-cargo test -p dbmd-backend-postgres --features postgres-tests --test postgres
-cargo test -p dbmd-app --features postgres-tests --test postgres
+just test postgres
+just snapshots postgres
 ```
+
+Run `just` to list the small, opinionated workflow surface. PostgreSQL,
+ClickHouse, MySQL, and MariaDB tests require a running Docker daemon.
 
 The workspace uses Rust 2021 and is licensed under Apache-2.0.

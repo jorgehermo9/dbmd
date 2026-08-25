@@ -1,0 +1,293 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: markdown
+---
+# Database: `postgres18`
+
+## Database
+
+### `dbmd_test_a0c534142c209f42`
+
+**Owner:** `postgres`
+
+**Encoding:** `UTF8`
+
+**Locale provider:** `libc`
+
+**LC_COLLATE:** `en_US.utf8`
+
+**LC_CTYPE:** `en_US.utf8`
+
+**Tablespace:** `pg_default`
+
+**Template:** no
+
+**Allows connections:** yes
+
+**Connection limit:** -1
+
+
+
+## Namespaces
+
+| Name | Owner | Comment |
+|---|---|---|
+| `public` | `pg_database_owner` | standard public schema |
+| `temporal` | `postgres` | - |
+
+
+## Tables
+
+### `temporal.accounts`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `account_id` | `bigint` | yes | - | storage `plain` |
+| `email` | `text` | no | - | collation `temporal.unicode_fast`; storage `extended` |
+| `base_amount` | `integer` | yes | - | storage `plain` |
+| `virtual_amount` | `integer` | yes | - | generated `virtual` as `base_amount * 2`; storage `plain` |
+| `stored_amount` | `integer` | yes | - | generated `stored` as `base_amount * 3`; storage `plain` |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `accounts_amount_nonnegative` | `check` | `base_amount` | `CHECK (base_amount >= 0) NOT ENFORCED`; not validated; not enforced |
+| `accounts_email_required` | `not_null` | `email` | `NOT NULL email` |
+
+
+#### PostgreSQL
+
+**Kind:** `table`
+
+**Owner:** `postgres`
+
+**Persistence:** `permanent`
+
+**Replica identity:** `default`
+
+**Access method:** `heap`
+
+
+
+### `temporal.plan_assignments`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `plan_id` | `bigint` | no | - | storage `plain` |
+| `valid_at` | `daterange` | no | - | storage `extended` |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `assignments_plan_period` | `foreign_key` | `plan_id, valid_at` | `FOREIGN KEY (plan_id, PERIOD valid_at) REFERENCES temporal.plan_versions(plan_id, PERIOD valid_at) NOT ENFORCED`; not validated; not enforced; temporal; no inherit |
+| `plan_assignments_plan_id_not_null` | `not_null` | `plan_id` | `NOT NULL plan_id` |
+| `plan_assignments_valid_at_not_null` | `not_null` | `valid_at` | `NOT NULL valid_at` |
+
+
+#### PostgreSQL
+
+**Kind:** `table`
+
+**Owner:** `postgres`
+
+**Persistence:** `permanent`
+
+**Replica identity:** `default`
+
+**Access method:** `heap`
+
+
+
+### `temporal.plan_versions`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `plan_id` | `bigint` | no | - | storage `plain` |
+| `valid_at` | `daterange` | no | - | storage `extended` |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `plan_versions_identity` | `unique` | `plan_id, valid_at` | `UNIQUE (plan_id, valid_at WITHOUT OVERLAPS)`; temporal; no inherit; operators `pg_catalog.=(bigint,bigint), pg_catalog.&&(pg_catalog.anyrange,pg_catalog.anyrange)` |
+| `plan_versions_plan_id_not_null` | `not_null` | `plan_id` | `NOT NULL plan_id` |
+| `plan_versions_valid_at_not_null` | `not_null` | `valid_at` | `NOT NULL valid_at` |
+
+
+#### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `plan_versions_identity` | `plan_id` ascending opclass `public.gist_int8_ops`, `valid_at` ascending opclass `pg_catalog.range_ops` | yes | postgres `gist`; owner `postgres`; constraint `assignments_plan_period` | - |
+
+
+#### PostgreSQL
+
+**Kind:** `table`
+
+**Owner:** `postgres`
+
+**Persistence:** `permanent`
+
+**Replica identity:** `default`
+
+**Access method:** `heap`
+
+
+
+## Publications
+
+### `all_tables`
+
+**Owner:** `postgres`
+
+**All tables:** yes
+
+**Actions:** `insert`
+
+**Generated columns:** `none`
+
+**Publish via partition root:** no
+
+
+
+### `temporal_changes`
+
+Stored generated values for analytics
+
+**Owner:** `postgres`
+
+**All tables:** no
+
+**Actions:** `insert`
+
+**Generated columns:** `stored`
+
+**Publish via partition root:** no
+
+**Table:** `temporal.accounts`; columns `account_id, stored_amount`; where `base_amount >= 0`
+
+
+
+### `temporal_schema`
+
+**Owner:** `postgres`
+
+**All tables:** no
+
+**Actions:** `insert, truncate`
+
+**Generated columns:** `none`
+
+**Publish via partition root:** no
+
+**Schema:** `temporal`
+
+
+
+## Object Privileges
+
+### `schema public → PUBLIC USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `USAGE`
+
+
+
+### `schema public → pg_database_owner CREATE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `CREATE`
+
+
+
+### `schema public → pg_database_owner USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `USAGE`
+
+
+
+## Collations
+
+### `temporal.unicode_fast`
+
+Fast Unicode semantics
+
+**Owner:** `postgres`
+
+**Provider:** `builtin`
+
+**Deterministic:** yes
+
+**Encoding:** `UTF8`
+
+**Locale:** `PG_UNICODE_FAST`
+
+**Version:** `1`
+
+
+
+## Extensions
+
+### `btree_gist`
+
+Temporal exclusion operator support
+
+**Owner:** `postgres`
+
+**Schema:** `public`
+
+**Version:** `1.8`
+
+**Relocatable:** yes
+
+**Owned objects:** 288 (`function`: 212, `operator`: 12, `operator class`: 26, `operator family`: 26, `type`: 12)
+
+
+
+### `plpgsql`
+
+PL/pgSQL procedural language
+
+**Owner:** `postgres`
+
+**Schema:** `pg_catalog`
+
+**Version:** `1.0`
+
+**Relocatable:** no
+
+**Owned objects:** 4 (`function`: 3, `language`: 1)

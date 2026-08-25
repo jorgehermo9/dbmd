@@ -1,0 +1,572 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: markdown
+---
+# Database: `infrastructure`
+
+## Database
+
+### `dbmd_test_408d5f230f335760`
+
+**Owner:** `postgres`
+
+**Encoding:** `UTF8`
+
+**Locale provider:** `libc`
+
+**LC_COLLATE:** `en_US.utf8`
+
+**LC_CTYPE:** `en_US.utf8`
+
+**Tablespace:** `pg_default`
+
+**Template:** no
+
+**Allows connections:** yes
+
+**Connection limit:** -1
+
+
+
+## Namespaces
+
+| Name | Owner | Comment |
+|---|---|---|
+| `infrastructure` | `postgres` | - |
+| `public` | `pg_database_owner` | standard public schema |
+
+
+## Enum Types
+
+| Type | Owner | Values | Comment |
+|---|---|---|---|
+| `infrastructure.label_a` | `postgres` | `a, b` | - |
+| `infrastructure.label_b` | `postgres` | `a, b` | - |
+
+
+## Base and Shell Types
+
+### `infrastructure.label_c`
+
+**Kind:** `base`
+
+**Owner:** `postgres`
+
+**Input:** `infrastructure.label_c_in`
+
+**Output:** `infrastructure.label_c_out`
+
+**Internal length:** 4
+
+**Passed by value:** yes
+
+**Category:** `U`
+
+**Preferred:** no
+
+**Delimiter:** `,`
+
+**Alignment:** `int4`
+
+**Storage:** `plain`
+
+**Collatable:** no
+
+**Array type:** `infrastructure._label_c`
+
+```sql
+CREATE TYPE "infrastructure"."label_c" (
+    INPUT = infrastructure.label_c_in,
+    OUTPUT = infrastructure.label_c_out,
+    INTERNALLENGTH = 4,
+    PASSEDBYVALUE,
+    ALIGNMENT = int4,
+    STORAGE = plain,
+    CATEGORY = 'U',
+    ARRAY_TYPE = infrastructure._label_c
+);
+```
+
+
+## Functions
+
+### `infrastructure.fixture_btree_handler(internal)`
+
+**Kind:** `ordinary`
+
+**Arguments:** `internal`
+
+**Returns:** `index_am_handler`
+
+**Owner:** `postgres`
+
+**Language:** `internal`
+
+**Volatility:** `volatile`
+
+**Parallel:** `unsafe`
+
+**Security:** `invoker`
+
+**Null input:** strict
+
+**Leakproof:** no
+
+**Returns set:** no
+
+**Cost:** 1
+
+```sql
+CREATE OR REPLACE FUNCTION infrastructure.fixture_btree_handler(internal)
+ RETURNS index_am_handler
+ LANGUAGE internal
+ STRICT
+AS $function$bthandler$function$
+
+```
+
+
+### `infrastructure.label_a_to_b(infrastructure.label_a)`
+
+**Kind:** `ordinary`
+
+**Arguments:** `infrastructure.label_a`
+
+**Returns:** `infrastructure.label_b`
+
+**Owner:** `postgres`
+
+**Language:** `sql`
+
+**Volatility:** `immutable`
+
+**Parallel:** `unsafe`
+
+**Security:** `invoker`
+
+**Null input:** strict
+
+**Leakproof:** no
+
+**Returns set:** no
+
+**Cost:** 100
+
+```sql
+CREATE OR REPLACE FUNCTION infrastructure.label_a_to_b(infrastructure.label_a)
+ RETURNS infrastructure.label_b
+ LANGUAGE sql
+ IMMUTABLE STRICT
+RETURN (($1)::text)::infrastructure.label_b
+
+```
+
+
+### `infrastructure.label_c_in(cstring)`
+
+**Kind:** `ordinary`
+
+**Arguments:** `cstring`
+
+**Returns:** `infrastructure.label_c`
+
+**Owner:** `postgres`
+
+**Language:** `internal`
+
+**Volatility:** `immutable`
+
+**Parallel:** `unsafe`
+
+**Security:** `invoker`
+
+**Null input:** strict
+
+**Leakproof:** no
+
+**Returns set:** no
+
+**Cost:** 1
+
+```sql
+CREATE OR REPLACE FUNCTION infrastructure.label_c_in(cstring)
+ RETURNS infrastructure.label_c
+ LANGUAGE internal
+ IMMUTABLE STRICT
+AS $function$int4in$function$
+
+```
+
+
+### `infrastructure.label_c_out(infrastructure.label_c)`
+
+**Kind:** `ordinary`
+
+**Arguments:** `infrastructure.label_c`
+
+**Returns:** `cstring`
+
+**Owner:** `postgres`
+
+**Language:** `internal`
+
+**Volatility:** `immutable`
+
+**Parallel:** `unsafe`
+
+**Security:** `invoker`
+
+**Null input:** strict
+
+**Leakproof:** no
+
+**Returns set:** no
+
+**Cost:** 1
+
+```sql
+CREATE OR REPLACE FUNCTION infrastructure.label_c_out(infrastructure.label_c)
+ RETURNS cstring
+ LANGUAGE internal
+ IMMUTABLE STRICT
+AS $function$int4out$function$
+
+```
+
+
+### `infrastructure.nonzero(integer)`
+
+**Kind:** `ordinary`
+
+**Arguments:** `integer`
+
+**Returns:** `boolean`
+
+**Owner:** `postgres`
+
+**Language:** `sql`
+
+**Volatility:** `immutable`
+
+**Parallel:** `unsafe`
+
+**Security:** `invoker`
+
+**Null input:** strict
+
+**Leakproof:** no
+
+**Returns set:** no
+
+**Cost:** 100
+
+```sql
+CREATE OR REPLACE FUNCTION infrastructure.nonzero(integer)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE STRICT
+RETURN ($1 <> 0)
+
+```
+
+
+### `infrastructure.same_integer(integer, integer)`
+
+**Kind:** `ordinary`
+
+**Arguments:** `integer, integer`
+
+**Returns:** `boolean`
+
+**Owner:** `postgres`
+
+**Language:** `sql`
+
+**Volatility:** `immutable`
+
+**Parallel:** `unsafe`
+
+**Security:** `invoker`
+
+**Null input:** strict
+
+**Leakproof:** no
+
+**Returns set:** no
+
+**Cost:** 100
+
+```sql
+CREATE OR REPLACE FUNCTION infrastructure.same_integer(integer, integer)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE STRICT
+RETURN ($1 = $2)
+
+```
+
+
+## Procedures
+
+### `infrastructure.accept_integer(IN value integer)`
+
+**Arguments:** `IN value integer`
+
+**Owner:** `postgres`
+
+**Language:** `fixture_pl`
+
+**Security:** `invoker`
+
+**Transform:** `integer`
+
+```sql
+CREATE OR REPLACE PROCEDURE infrastructure.accept_integer(IN value integer)
+ TRANSFORM FOR TYPE integer
+ LANGUAGE fixture_pl
+AS $procedure$
+BEGIN
+    NULL;
+END;
+$procedure$
+
+```
+
+
+## Casts
+
+### `infrastructure.label_a AS infrastructure.label_b`
+
+Fixture implicit cast
+
+**Context:** `implicit`
+
+**Method:** `function`
+
+**Function:** `infrastructure.label_a_to_b(infrastructure.label_a)`
+
+
+
+### `infrastructure.label_b AS infrastructure.label_c`
+
+**Context:** `assignment`
+
+**Method:** `input_output`
+
+
+
+### `infrastructure.label_c AS integer`
+
+**Context:** `explicit`
+
+**Method:** `binary`
+
+
+
+## Encoding Conversions
+
+### `infrastructure.utf8_to_latin1`
+
+Fixture default encoding conversion
+
+**Owner:** `postgres`
+
+**Source encoding:** `UTF8`
+
+**Target encoding:** `LATIN1`
+
+**Function:** `pg_catalog.utf8_to_iso8859_1(integer,integer,pg_catalog.cstring,pg_catalog.internal,integer,boolean)`
+
+**Default:** yes
+
+
+
+## Operators
+
+### `infrastructure.!!(NONE, integer)`
+
+**Owner:** `postgres`
+
+**Kind:** `prefix`
+
+**Result:** `boolean`
+
+**Function:** `infrastructure.nonzero(integer)`
+
+**Merge join:** no
+
+**Hash join:** no
+
+
+
+### `infrastructure.===(integer, integer)`
+
+Fixture equality operator
+
+**Owner:** `postgres`
+
+**Kind:** `binary`
+
+**Result:** `boolean`
+
+**Function:** `infrastructure.same_integer(integer,integer)`
+
+**Merge join:** yes
+
+**Hash join:** yes
+
+**Commutator:** `infrastructure.===(integer,integer)`
+
+**Restriction estimator:** `pg_catalog.eqsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,integer)`
+
+**Join estimator:** `pg_catalog.eqjoinsel(pg_catalog.internal,pg_catalog.oid,pg_catalog.internal,smallint,pg_catalog.internal)`
+
+
+
+## Operator Families
+
+### `infrastructure.integer_family`
+
+Fixture integer operator family
+
+**Owner:** `postgres`
+
+**Access method:** `btree`
+
+**Operator:** strategy 1; `pg_catalog.<(integer,integer)` (`integer`, `integer`) via `btree`
+
+**Operator:** strategy 2; `pg_catalog.<=(integer,integer)` (`integer`, `integer`) via `btree`
+
+**Operator:** strategy 3; `pg_catalog.=(integer,integer)` (`integer`, `integer`) via `btree`
+
+**Operator:** strategy 4; `pg_catalog.>=(integer,integer)` (`integer`, `integer`) via `btree`
+
+**Operator:** strategy 5; `pg_catalog.>(integer,integer)` (`integer`, `integer`) via `btree`
+
+**Support function:** number 1; `pg_catalog.btint4cmp(integer,integer)` (`integer`, `integer`)
+
+
+
+## Operator Classes
+
+### `infrastructure.integer_class`
+
+Fixture integer operator class
+
+**Owner:** `postgres`
+
+**Access method:** `btree`
+
+**Family:** `infrastructure.integer_family`
+
+**Input type:** `integer`
+
+**Default:** no
+
+
+
+## Access Methods
+
+### `fixture_btree`
+
+Fixture index access method
+
+**Kind:** `index`
+
+**Handler:** `infrastructure.fixture_btree_handler(pg_catalog.internal)`
+
+
+
+## Procedural Languages
+
+### `fixture_pl`
+
+Fixture procedural language
+
+**Owner:** `postgres`
+
+**Procedural:** yes
+
+**Trusted:** yes
+
+**Handler:** `pg_catalog.plpgsql_call_handler()`
+
+**Inline handler:** `pg_catalog.plpgsql_inline_handler(pg_catalog.internal)`
+
+**Validator:** `pg_catalog.plpgsql_validator(pg_catalog.oid)`
+
+
+
+## Transforms
+
+### `integer FOR fixture_pl`
+
+Fixture integer transform
+
+**Language:** `fixture_pl`
+
+**From SQL:** `pg_catalog.textlike_support(pg_catalog.internal)`
+
+**To SQL:** `pg_catalog.int4recv(pg_catalog.internal)`
+
+
+
+## Object Privileges
+
+### `schema public → PUBLIC USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `USAGE`
+
+
+
+### `schema public → pg_database_owner CREATE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `CREATE`
+
+
+
+### `schema public → pg_database_owner USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `USAGE`
+
+
+
+## Extensions
+
+### `plpgsql`
+
+PL/pgSQL procedural language
+
+**Owner:** `postgres`
+
+**Schema:** `pg_catalog`
+
+**Version:** `1.0`
+
+**Relocatable:** no
+
+**Owned objects:** 4 (`function`: 3, `language`: 1)

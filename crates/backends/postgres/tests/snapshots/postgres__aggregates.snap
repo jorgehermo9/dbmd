@@ -1,0 +1,374 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: snapshot
+---
+id: aggregates
+display_name: ~
+catalog:
+  database:
+    name: dbmd_test_97d6c320c70be050
+    owner: postgres
+    encoding: UTF8
+    locale_provider: libc
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    locale: ~
+    icu_rules: ~
+    collation_version: ~
+    tablespace: pg_default
+    template: false
+    allow_connections: true
+    connection_limit: -1
+    configuration: []
+    comment: ~
+  cluster_databases: []
+  tablespaces: []
+  namespaces:
+    - name: aggregates
+      owner: postgres
+      extension: ~
+      comment: ~
+    - name: public
+      owner: pg_database_owner
+      extension: ~
+      comment: standard public schema
+  enums: []
+  composite_types: []
+  domains: []
+  base_types: []
+  range_types: []
+  sequences: []
+  tables: []
+  views: []
+  triggers: []
+  functions:
+    - namespace: aggregates
+      name: collect_integer
+      extension: ~
+      signature: "(state integer[], value integer)"
+      arguments: "state integer[], value integer"
+      definition: "CREATE OR REPLACE FUNCTION aggregates.collect_integer(state integer[], value integer)\n RETURNS integer[]\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nRETURN array_append(state, value)\n"
+      comment: ~
+      return_type: "integer[]"
+      owner: postgres
+      kind: ordinary
+      language: sql
+      volatility: immutable
+      parallel: safe
+      security_definer: false
+      strict: false
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: aggregates
+      name: hypothetical_position
+      extension: ~
+      signature: "(state integer[], hypothetical integer)"
+      arguments: "state integer[], hypothetical integer"
+      definition: "CREATE OR REPLACE FUNCTION aggregates.hypothetical_position(state integer[], hypothetical integer)\n RETURNS bigint\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nRETURN (SELECT (1 + count(*)) FROM unnest(hypothetical_position.state) value(value) WHERE (value.value < hypothetical_position.hypothetical))\n"
+      comment: ~
+      return_type: bigint
+      owner: postgres
+      kind: ordinary
+      language: sql
+      volatility: immutable
+      parallel: safe
+      security_definer: false
+      strict: false
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: aggregates
+      name: pick_integer
+      extension: ~
+      signature: "(state integer[], fraction double precision)"
+      arguments: "state integer[], fraction double precision"
+      definition: "CREATE OR REPLACE FUNCTION aggregates.pick_integer(state integer[], fraction double precision)\n RETURNS integer\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nRETURN (SELECT value.value FROM unnest(pick_integer.state) value(value) ORDER BY value.value OFFSET LEAST((cardinality(pick_integer.state) - 1), GREATEST(0, (floor((pick_integer.fraction * ((cardinality(pick_integer.state) - 1))::double precision)))::integer)) LIMIT 1)\n"
+      comment: ~
+      return_type: integer
+      owner: postgres
+      kind: ordinary
+      language: sql
+      volatility: immutable
+      parallel: safe
+      security_definer: false
+      strict: false
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: aggregates
+      name: total_combine
+      extension: ~
+      signature: "(left_state bigint, right_state bigint)"
+      arguments: "left_state bigint, right_state bigint"
+      definition: "CREATE OR REPLACE FUNCTION aggregates.total_combine(left_state bigint, right_state bigint)\n RETURNS bigint\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nRETURN (COALESCE(left_state, (0)::bigint) + COALESCE(right_state, (0)::bigint))\n"
+      comment: ~
+      return_type: bigint
+      owner: postgres
+      kind: ordinary
+      language: sql
+      volatility: immutable
+      parallel: safe
+      security_definer: false
+      strict: false
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: aggregates
+      name: total_final
+      extension: ~
+      signature: (state bigint)
+      arguments: state bigint
+      definition: "CREATE OR REPLACE FUNCTION aggregates.total_final(state bigint)\n RETURNS bigint\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nRETURN state\n"
+      comment: ~
+      return_type: bigint
+      owner: postgres
+      kind: ordinary
+      language: sql
+      volatility: immutable
+      parallel: safe
+      security_definer: false
+      strict: false
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: aggregates
+      name: total_inverse
+      extension: ~
+      signature: "(state bigint, value integer)"
+      arguments: "state bigint, value integer"
+      definition: "CREATE OR REPLACE FUNCTION aggregates.total_inverse(state bigint, value integer)\n RETURNS bigint\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nRETURN (COALESCE(state, (0)::bigint) - COALESCE(value, 0))\n"
+      comment: ~
+      return_type: bigint
+      owner: postgres
+      kind: ordinary
+      language: sql
+      volatility: immutable
+      parallel: safe
+      security_definer: false
+      strict: false
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: aggregates
+      name: total_step
+      extension: ~
+      signature: "(state bigint, value integer)"
+      arguments: "state bigint, value integer"
+      definition: "CREATE OR REPLACE FUNCTION aggregates.total_step(state bigint, value integer)\n RETURNS bigint\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nRETURN (COALESCE(state, (0)::bigint) + COALESCE(value, 0))\n"
+      comment: ~
+      return_type: bigint
+      owner: postgres
+      kind: ordinary
+      language: sql
+      volatility: immutable
+      parallel: safe
+      security_definer: false
+      strict: false
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "100"
+      rows: ~
+      configuration: []
+      transforms: []
+  procedures: []
+  aggregates:
+    - namespace: aggregates
+      name: hypothetical_position
+      extension: ~
+      signature: (integer ORDER BY integer)
+      arguments: integer ORDER BY integer
+      owner: postgres
+      result_type: bigint
+      kind: hypothetical_set
+      direct_arguments: 1
+      transition_function: "aggregates.collect_integer(integer[],integer)"
+      final_function: "aggregates.hypothetical_position(integer[],integer)"
+      combine_function: ~
+      serialization_function: ~
+      deserialization_function: ~
+      moving_transition_function: ~
+      moving_inverse_function: ~
+      moving_final_function: ~
+      final_extra_arguments: false
+      moving_final_extra_arguments: false
+      final_modify: read_write
+      moving_final_modify: read_write
+      sort_operator: ~
+      transition_type: "integer[]"
+      transition_space: 0
+      moving_transition_type: ~
+      moving_transition_space: 0
+      initial_condition: "{}"
+      moving_initial_condition: ~
+      parallel: safe
+      comment: Example hypothetical-set aggregate
+    - namespace: aggregates
+      name: integer_total
+      extension: ~
+      signature: (integer)
+      arguments: integer
+      owner: postgres
+      result_type: bigint
+      kind: normal
+      direct_arguments: 0
+      transition_function: "aggregates.total_step(bigint,integer)"
+      final_function: aggregates.total_final(bigint)
+      combine_function: "aggregates.total_combine(bigint,bigint)"
+      serialization_function: ~
+      deserialization_function: ~
+      moving_transition_function: "aggregates.total_step(bigint,integer)"
+      moving_inverse_function: "aggregates.total_inverse(bigint,integer)"
+      moving_final_function: aggregates.total_final(bigint)
+      final_extra_arguments: false
+      moving_final_extra_arguments: false
+      final_modify: shareable
+      moving_final_modify: read_write
+      sort_operator: ~
+      transition_type: bigint
+      transition_space: 0
+      moving_transition_type: bigint
+      moving_transition_space: 0
+      initial_condition: "0"
+      moving_initial_condition: "0"
+      parallel: safe
+      comment: "Adds integers with ordinary, moving, and parallel aggregation support"
+    - namespace: aggregates
+      name: percentile_pick
+      extension: ~
+      signature: (double precision ORDER BY integer)
+      arguments: double precision ORDER BY integer
+      owner: postgres
+      result_type: integer
+      kind: ordered_set
+      direct_arguments: 1
+      transition_function: "aggregates.collect_integer(integer[],integer)"
+      final_function: "aggregates.pick_integer(integer[],double precision)"
+      combine_function: ~
+      serialization_function: ~
+      deserialization_function: ~
+      moving_transition_function: ~
+      moving_inverse_function: ~
+      moving_final_function: ~
+      final_extra_arguments: false
+      moving_final_extra_arguments: false
+      final_modify: read_write
+      moving_final_modify: read_write
+      sort_operator: ~
+      transition_type: "integer[]"
+      transition_space: 0
+      moving_transition_type: ~
+      moving_transition_space: 0
+      initial_condition: "{}"
+      moving_initial_condition: ~
+      parallel: safe
+      comment: Example ordered-set aggregate
+  casts: []
+  conversions: []
+  operators: []
+  operator_families: []
+  operator_classes: []
+  access_methods: []
+  languages:
+    - name: plpgsql
+      owner: postgres
+      extension: plpgsql
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: PL/pgSQL procedural language
+  transforms: []
+  rules: []
+  event_triggers: []
+  statistics: []
+  foreign_data_wrappers: []
+  foreign_servers: []
+  user_mappings: []
+  text_search_parsers: []
+  text_search_templates: []
+  text_search_dictionaries: []
+  text_search_configurations: []
+  extensions:
+    - name: plpgsql
+      owner: postgres
+      namespace: pg_catalog
+      relocatable: false
+      version: "1.0"
+      configuration: []
+      members:
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_call_handler
+          arguments: []
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_inline_handler
+          arguments:
+            - pg_catalog.internal
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_validator
+          arguments:
+            - pg_catalog.oid
+        - object_type: language
+          names:
+            - plpgsql
+          arguments: []
+      comment: PL/pgSQL procedural language
+  publications: []
+  subscriptions: []
+  privileges:
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: create
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: usage
+      grantable: false
+  default_privileges: []
+  security_labels: []
+  large_objects: []
+  roles: []
+  role_database_settings: []
+  collations: []

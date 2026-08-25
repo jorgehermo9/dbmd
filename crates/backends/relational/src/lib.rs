@@ -40,8 +40,8 @@ pub struct ForeignKeyReference {
     pub on_update: ForeignKeyAction,
     /// Action when referenced rows delete.
     pub on_delete: ForeignKeyAction,
-    /// Optional match-mode name.
-    pub match_name: Option<String>,
+    /// Optional match semantics.
+    pub match_type: Option<ForeignKeyMatch>,
     /// Deferral behavior.
     pub deferrability: ForeignKeyDeferrability,
 }
@@ -60,7 +60,7 @@ impl ForeignKeyReference {
             columns,
             on_update: ForeignKeyAction::NoAction,
             on_delete: ForeignKeyAction::NoAction,
-            match_name: None,
+            match_type: None,
             deferrability: ForeignKeyDeferrability::default(),
         }
     }
@@ -77,10 +77,10 @@ impl ForeignKeyReference {
         self
     }
 
-    /// Sets the backend match-mode name.
+    /// Sets foreign-key match semantics.
     #[must_use]
-    pub fn with_match_name(mut self, match_name: Option<String>) -> Self {
-        self.match_name = match_name;
+    pub fn with_match_type(mut self, match_type: Option<ForeignKeyMatch>) -> Self {
+        self.match_type = match_type;
         self
     }
 
@@ -90,6 +90,18 @@ impl ForeignKeyReference {
         self.deferrability = deferrability;
         self
     }
+}
+
+/// Row-matching behavior for a relational foreign key.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum ForeignKeyMatch {
+    Simple,
+    Partial,
+    Full,
+    /// Backend-defined match name where the engine grammar permits open names.
+    Named(String),
 }
 
 /// Whether and when a foreign key may be deferred.
