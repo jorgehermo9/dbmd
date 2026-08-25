@@ -15,8 +15,8 @@ pub use catalog::{
     NamedCollectionEntry, Projection, Quota, QuotaLimit, RefreshSchedule, Resource,
     ResourceOperation, Role, RoleGrant, RowPolicy, SettingsProfile, SettingsProfileElement,
     Snapshot, Table, TableKind, TableReference, TableTtl, TtlAction, TtlDestination, User,
-    UserDefinedFunction, UserHosts, ViewRefresh, ViewSqlSecurity, WindowView, Workload,
-    WorkloadSetting,
+    UserDefinedFunction, UserDefinedFunctionOrigin, UserHosts, ViewRefresh, ViewSqlSecurity,
+    WindowView, Workload, WorkloadSetting,
 };
 pub use config::Config;
 pub use introspect::{introspect, ClickHouseSource, IntrospectionError};

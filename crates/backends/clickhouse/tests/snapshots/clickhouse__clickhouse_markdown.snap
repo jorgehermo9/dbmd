@@ -697,7 +697,7 @@ CREATE WINDOW VIEW analytics.windowed_events_owned (`total` UInt64, `window_end`
 
 **Kind:** `user_defined_function`
 
-**Origin:** `SQLUserDefined`
+**Origin:** `SQL-defined`
 
 ```sql
 CREATE FUNCTION analytics_normalize AS value -> lowerUTF8(value)

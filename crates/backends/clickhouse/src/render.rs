@@ -157,7 +157,7 @@ pub(crate) fn source(
 fn function_facts(function: &super::UserDefinedFunction) -> Vec<FactView> {
     let mut facts = vec![
         FactView::new("Kind", inline_code("user_defined_function")),
-        FactView::new("Origin", inline_code(&function.origin)),
+        FactView::new("Origin", inline_code(function.origin.display_name())),
     ];
     for (label, value) in [
         ("Syntax", &function.syntax),

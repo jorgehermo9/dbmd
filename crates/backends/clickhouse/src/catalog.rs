@@ -468,8 +468,8 @@ pub struct DictionaryField {
 pub struct UserDefinedFunction {
     /// Global function name.
     pub name: String,
-    /// Catalog origin such as `SQLUserDefined` or `WasmUserDefined`.
-    pub origin: String,
+    /// Definition mechanism reported by ClickHouse.
+    pub origin: UserDefinedFunctionOrigin,
     /// Server-provided invocation syntax, when available.
     pub syntax: Option<String>,
     /// Server-provided argument signature, when available.
@@ -478,6 +478,28 @@ pub struct UserDefinedFunction {
     pub returned_value: Option<String>,
     /// Exact normalized creation statement.
     pub definition: String,
+}
+
+/// Definition mechanism for a ClickHouse user-defined function.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum UserDefinedFunctionOrigin {
+    /// A function declared with ClickHouse SQL DDL.
+    SqlDefined,
+    /// A function loaded from a WebAssembly module.
+    WebAssemblyDefined,
+}
+
+impl UserDefinedFunctionOrigin {
+    /// Returns the stable human-readable label used in rendered artifacts.
+    #[must_use]
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::SqlDefined => "SQL-defined",
+            Self::WebAssemblyDefined => "WebAssembly-defined",
+        }
+    }
 }
 
 /// One ClickHouse user with authentication identities but no credential material.

@@ -2087,7 +2087,7 @@ catalog:
       definition: "CREATE WINDOW VIEW analytics.windowed_events_owned (`total` UInt64, `window_end` DateTime) INNER ENGINE = AggregatingMergeTree ORDER BY tuple() ENGINE = MergeTree ORDER BY window_end SETTINGS index_granularity = 8192 WATERMARK ASCENDING ALLOWED_LATENESS toIntervalSecond('2') AS SELECT count(event_id) AS total, tumbleEnd(window_id) AS window_end FROM analytics.retention_matrix GROUP BY tumble(occurred_at, toIntervalSecond('5')) AS window_id"
   functions:
     - name: analytics_normalize
-      origin: SQLUserDefined
+      origin: sql_defined
       syntax: ~
       arguments: ~
       returned_value: ~

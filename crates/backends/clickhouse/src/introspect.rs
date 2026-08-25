@@ -13,7 +13,7 @@ use super::catalog::{
     DataSkippingIndex, Database, DictionaryDetails, DictionaryField, Grant, NamedCollection,
     Projection, ProjectionIndex, Quota, QuotaLimit, Resource, Role, RoleGrant, RowPolicy,
     SettingsProfile, SettingsProfileElement, Snapshot, Table, TableKind, TableReference, User,
-    UserDefinedFunction, UserHosts, ViewParameter, Workload,
+    UserDefinedFunction, UserDefinedFunctionOrigin, UserHosts, ViewParameter, Workload,
 };
 
 /// Connection-backed ClickHouse source selected for introspection.
@@ -836,15 +836,30 @@ fn load_functions(
         "user-defined functions",
         "SELECT name, toString(origin) AS origin, create_query, syntax, arguments, returned_value FROM system.functions WHERE origin IN ('SQLUserDefined', 'WasmUserDefined') ORDER BY name FORMAT JSONEachRow",
     )
-    .map(|rows| {
+    .and_then(|rows| {
         rows.into_iter()
-            .map(|row| UserDefinedFunction {
-                name: row.name,
-                origin: row.origin,
-                syntax: optional(row.syntax),
-                arguments: optional(row.arguments),
-                returned_value: optional(row.returned_value),
-                definition: row.create_query,
+            .map(|row| {
+                let origin = closed_value(
+                    source,
+                    "user-defined functions",
+                    "origin",
+                    &row.origin,
+                    |value| match value {
+                        "SQLUserDefined" => Some(UserDefinedFunctionOrigin::SqlDefined),
+                        "WasmUserDefined" => {
+                            Some(UserDefinedFunctionOrigin::WebAssemblyDefined)
+                        }
+                        _ => None,
+                    },
+                )?;
+                Ok(UserDefinedFunction {
+                    name: row.name,
+                    origin,
+                    syntax: optional(row.syntax),
+                    arguments: optional(row.arguments),
+                    returned_value: optional(row.returned_value),
+                    definition: row.create_query,
+                })
             })
             .collect()
     })

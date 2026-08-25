@@ -252,7 +252,10 @@ fn introspects_the_clickhouse_schema_surface_deterministically() {
     assert_eq!(parameterized_view.parameters[0].name, "requested_tenant");
     assert_eq!(parameterized_view.parameters[0].data_type, "UInt32");
     assert_eq!(first.catalog().functions.len(), 1);
-    assert_eq!(first.catalog().functions[0].origin, "SQLUserDefined");
+    assert_eq!(
+        first.catalog().functions[0].origin,
+        dbmd_backend_clickhouse::UserDefinedFunctionOrigin::SqlDefined
+    );
     assert_eq!(first.catalog().functions[0].syntax, None);
     let dictionary = first
         .catalog()
