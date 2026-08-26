@@ -28,14 +28,14 @@ composition root; it does not add vendor types to core or render.
 The composition integration tests prove heterogeneous ordering and rendering:
 
 ```sh
-cargo test -p dbmd-backends
+just test-integration
 ```
 
 Backend-specific fixture suites run at their owning seams:
 
 ```sh
-cargo test -p dbmd-backend-sqlite
-cargo test -p dbmd-backend-postgres --features postgres-tests --test postgres
+just test-contract sqlite
+just test-contract postgres
 ```
 
 User-visible behavior remains in the

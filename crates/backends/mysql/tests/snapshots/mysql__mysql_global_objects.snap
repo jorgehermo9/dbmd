@@ -148,7 +148,7 @@ catalog:
     - name: dbmd_batch
       kind: user
       enabled: false
-      virtual_cpus: 0-7
+      virtual_cpus: "0"
       thread_priority: 0
   loadable_functions:
     - name: asynchronous_connection_failover_add_managed

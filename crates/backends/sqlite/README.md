@@ -118,3 +118,9 @@ Add a focused directory under `tests/fixtures`, execute its `schema.sql`
 against a real temporary database in `tests/sqlite.rs`, and snapshot the public
 source result. Update this matrix in the same change so implementation status and
 fixture evidence stay synchronized.
+
+## Contract test
+
+```sh
+just test-contract sqlite
+```

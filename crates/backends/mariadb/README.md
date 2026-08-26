@@ -102,5 +102,5 @@ All values are Markdown-ready and deterministically ordered. See the
 ## Contract test
 
 ```sh
-cargo test -p dbmd-backend-mariadb --features mariadb-tests --test mariadb
+just test-contract mariadb
 ```

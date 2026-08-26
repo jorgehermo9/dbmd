@@ -65,7 +65,7 @@ All values are Markdown-ready and deterministically ordered. See the
 ## Contract test
 
 ```sh
-cargo test -p dbmd-backend-duckdb --test duckdb
+just test-contract duckdb
 ```
 
 The persistent-secret contract downloads DuckDB's official 1.5.4 `httpfs`

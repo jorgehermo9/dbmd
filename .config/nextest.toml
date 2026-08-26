@@ -1,0 +1,39 @@
+nextest-version = "0.9.143"
+
+[profile.default]
+fail-fast = false
+retries = 0
+slow-timeout = { period = "60s", terminate-after = 3 }
+
+[profile.ci]
+inherits = "default"
+failure-output = "immediate-final"
+success-output = "never"
+status-level = "fail"
+final-status-level = "slow"
+
+[test-groups]
+postgres-contract = { max-threads = 1 }
+clickhouse-contract = { max-threads = 1 }
+mysql-contract = { max-threads = 1 }
+mariadb-contract = { max-threads = 1 }
+
+[[profile.default.overrides]]
+filter = "binary(=postgres)"
+test-group = "postgres-contract"
+slow-timeout = { period = "120s", terminate-after = 3 }
+
+[[profile.default.overrides]]
+filter = "binary(=clickhouse)"
+test-group = "clickhouse-contract"
+slow-timeout = { period = "120s", terminate-after = 3 }
+
+[[profile.default.overrides]]
+filter = "binary(=mysql)"
+test-group = "mysql-contract"
+slow-timeout = { period = "120s", terminate-after = 3 }
+
+[[profile.default.overrides]]
+filter = "binary(=mariadb)"
+test-group = "mariadb-contract"
+slow-timeout = { period = "120s", terminate-after = 3 }

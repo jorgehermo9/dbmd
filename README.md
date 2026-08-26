@@ -97,6 +97,9 @@ coverage and exact compatibility targets live beside each adapter:
 
 ## Development
 
+Install `just`, `cargo-nextest`, and `actionlint`, then run the complete local
+gate:
+
 ```sh
 just check
 ```

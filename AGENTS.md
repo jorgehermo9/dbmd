@@ -34,6 +34,14 @@ updates. Run `just` to list recipes; prefer `just check [backend]`,
 
 Any task that writes, modifies, reviews, or refactors Rust code must invoke and follow [`rust-skills`](.agents/skills/rust-skills/SKILL.md). Read the rule files relevant to the task before editing, prioritize critical and high-impact guidance, and run formatting, Clippy, and the applicable test suite afterward.
 
+### Testing
+
+Every code change must invoke and follow
+[`create-tests`](.agents/skills/create-tests/SKILL.md), derive its coverage
+matrix before implementation, and close every applicable row before completion.
+Load the skill before authoring or editing any test, fixture, or snapshot; all
+test work must follow its layer, fixture, assertion, and determinism guidance.
+
 ### Issue tracker
 
 Issues and PRDs are tracked in GitHub Issues for `jorgehermo9/dbmd`. External PRs are not a triage surface. See `docs/agents/issue-tracker.md`.

@@ -345,3 +345,9 @@ chooses how to iterate or include them. Values are Markdown-ready; templates
 must not re-derive PostgreSQL catalog semantics.
 
 Raw server definitions remain a fidelity backstop for represented objects.
+
+## Contract test
+
+```sh
+just test-contract postgres
+```

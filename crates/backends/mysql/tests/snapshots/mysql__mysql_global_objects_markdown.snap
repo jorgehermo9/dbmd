@@ -172,7 +172,7 @@ GEOGCS["dbmd geographic",DATUM["dbmd datum",SPHEROID["dbmd sphere",6378137,298.2
 
 **Enabled:** no
 
-**VCPUs:** `0-7`
+**VCPUs:** `0`
 
 **Thread priority:** 0
 

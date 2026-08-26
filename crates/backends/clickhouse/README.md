@@ -83,5 +83,5 @@ All values are Markdown-ready and all collections retain catalog order. See the
 Run the real-server contract with:
 
 ```sh
-cargo test -p dbmd-backend-clickhouse --features clickhouse-tests --test clickhouse
+just test-contract clickhouse
 ```

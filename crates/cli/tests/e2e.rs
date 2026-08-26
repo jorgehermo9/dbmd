@@ -5,6 +5,31 @@ use rusqlite::Connection;
 const DUCKDB_SCHEMA: &str = include_str!("../../backends/duckdb/tests/fixtures/schema_surface.sql");
 
 #[test]
+fn root_help_and_version_succeed_without_project_state() {
+    let project = tempfile::tempdir().expect("temporary CLI project should be created");
+    let help = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+        .current_dir(project.path())
+        .arg("--help")
+        .output()
+        .expect("dbmd help should execute");
+    let version = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+        .current_dir(project.path())
+        .arg("--version")
+        .output()
+        .expect("dbmd version should execute");
+
+    assert!(help.status.success());
+    assert!(String::from_utf8(help.stdout)
+        .expect("help should be UTF-8")
+        .contains("Generate agent-readable database schema markdown"));
+    assert!(version.status.success());
+    assert_eq!(
+        String::from_utf8(version.stdout).expect("version should be UTF-8"),
+        format!("dbmd {}\n", env!("CARGO_PKG_VERSION"))
+    );
+}
+
+#[test]
 fn render_help_exposes_configured_and_one_off_application_inputs() {
     let output = Command::new(env!("CARGO_BIN_EXE_dbmd"))
         .args(["render", "--help"])
@@ -328,6 +353,47 @@ fn verify_uses_nonzero_exit_and_prints_the_complete_diff_for_drift() {
     assert!(stderr.contains("modified  DATABASE.md"));
     assert!(stderr.contains("--- a/DATABASE.md"));
     assert!(stderr.contains("-manual edit"));
+    assert_eq!(
+        fs::read_to_string(project.path().join("DATABASE.md"))
+            .expect("canonical artifact should remain"),
+        "manual edit\n"
+    );
+}
+
+#[test]
+fn verify_without_diff_reports_drift_compactly() {
+    let project = tempfile::tempdir().expect("temporary CLI project should be created");
+    Connection::open(project.path().join("app.db"))
+        .expect("SQLite fixture should open")
+        .execute_batch("CREATE TABLE users (id INTEGER PRIMARY KEY);")
+        .expect("SQLite fixture should execute");
+    fs::write(
+        project.path().join("dbmd.toml"),
+        r#"
+[sources.app]
+backend = "sqlite"
+path = "app.db"
+
+[output]
+path = "DATABASE.md"
+"#,
+    )
+    .expect("config should be written");
+    fs::write(project.path().join("DATABASE.md"), "manual edit\n")
+        .expect("canonical artifact should be written");
+
+    let verify = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+        .current_dir(project.path())
+        .arg("verify")
+        .output()
+        .expect("verify should execute");
+
+    assert!(!verify.status.success());
+    let stderr = String::from_utf8(verify.stderr).expect("diagnostics should be UTF-8");
+    assert!(stderr.contains("error: canonical artifact has drifted"));
+    assert!(stderr.contains("modified  DATABASE.md"));
+    assert!(!stderr.contains("--- a/DATABASE.md"));
+    assert!(!stderr.contains("-manual edit"));
     assert_eq!(
         fs::read_to_string(project.path().join("DATABASE.md"))
             .expect("canonical artifact should remain"),
