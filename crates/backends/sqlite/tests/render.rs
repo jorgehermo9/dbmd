@@ -74,4 +74,9 @@ fn maps_the_sqlite_catalog_and_templates_into_a_renderable_source() {
     assert!(markdown.contains("### `main.documents`"));
     assert!(markdown.contains("### `main.documents.documents_touch_updated_at`"));
     assert!(markdown.contains("**AFTER UPDATE OF title, body**"));
+    let repeated = Renderer::embedded(template_files())
+        .expect("SQLite templates should compile again")
+        .render(&context)
+        .expect("repeat SQLite presentation should render");
+    assert_eq!(repeated.as_single_file(), Some(markdown.as_bytes()));
 }

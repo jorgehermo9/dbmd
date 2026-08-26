@@ -11,6 +11,20 @@ use dbmd_render::{OutputLayout, RenderContext, RenderOptions, RenderedArtifact, 
 use dbmd_test_support::MysqlServer;
 
 #[test]
+fn refused_connection_error_is_source_scoped_and_credential_free() {
+    let source = MysqlSource::new(
+        SourceId::from_str("unavailable").expect("test source ID should be valid"),
+        "mysql://dbmd:sentinel-mysql-secret@127.0.0.1:1/missing",
+    );
+
+    let error = introspect(&source).expect_err("refused MySQL connection should fail");
+    let diagnostic = format!("{error}\n{error:?}\n{source:?}");
+
+    assert!(diagnostic.contains("MySQL source `unavailable`"));
+    assert!(!diagnostic.contains("sentinel-mysql-secret"));
+}
+
+#[test]
 fn introspects_and_renders_the_mysql_schema_surface_deterministically() {
     let server = MysqlServer::start(include_str!("fixtures/schema_surface.sql"))
         .expect("MySQL test container should start");
@@ -23,6 +37,17 @@ fn introspects_and_renders_the_mysql_schema_surface_deterministically() {
     let first = introspect(&source).expect("MySQL introspection should succeed");
     let second = introspect(&source).expect("repeat introspection should succeed");
     assert_eq!(first, second);
+    assert!(first.catalog().servers.is_empty());
+    assert!(first.catalog().spatial_reference_systems.is_empty());
+    assert!(first.catalog().tablespaces.is_empty());
+    assert!(first.catalog().resource_groups.is_empty());
+    assert!(first.catalog().loadable_functions.is_empty());
+    assert!(first.catalog().plugins.is_empty());
+    assert!(first.catalog().components.is_empty());
+    assert!(first.catalog().accounts.is_empty());
+    assert!(first.catalog().role_grants.is_empty());
+    assert!(first.catalog().default_roles.is_empty());
+    assert!(first.catalog().privileges.is_empty());
     assert_eq!(first.catalog().tables.len(), 6);
     let accounts = first
         .catalog()
@@ -156,6 +181,10 @@ fn introspects_and_renders_the_mysql_schema_surface_deterministically() {
     assert!(markdown.contains("vector(3)"));
     assert!(markdown.contains("json_relational_duality"));
     insta::assert_snapshot!("mysql_markdown", markdown);
+    let repeated = renderer
+        .render(&context)
+        .expect("repeat MySQL presentation should render");
+    assert_eq!(repeated.as_single_file(), Some(markdown.as_bytes()));
     assert_directory_render(&renderer, &context, "tables/test.accounts.md");
 }
 
@@ -258,6 +287,10 @@ fn introspects_global_objects_without_acquiring_secrets() {
     assert!(!markdown.contains("dbmd-account-secret"));
     assert!(!markdown.contains("dbmd-general.ibd"));
     insta::assert_snapshot!("mysql_global_objects_markdown", markdown);
+    let repeated = renderer
+        .render(&context)
+        .expect("repeat MySQL global presentation should render");
+    assert_eq!(repeated.as_single_file(), Some(markdown.as_bytes()));
     assert_directory_render(&renderer, &context, "accounts/account.dbmd_app%40%25.md");
 }
 

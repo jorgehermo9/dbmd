@@ -48,6 +48,117 @@ fn render_help_exposes_configured_and_one_off_application_inputs() {
 }
 
 #[test]
+fn clap_rejects_every_conflicting_or_unsupported_command_shape_before_application_work() {
+    let project = tempfile::tempdir().expect("temporary CLI project should be created");
+    let cases = [
+        (
+            "backend requires path",
+            vec!["render", "--backend", "sqlite", "--stdout"],
+            "--path",
+        ),
+        (
+            "path requires backend",
+            vec!["render", "--path", "app.db", "--stdout"],
+            "--backend",
+        ),
+        (
+            "config conflicts with backend",
+            vec![
+                "render",
+                "--config",
+                "dbmd.toml",
+                "--backend",
+                "sqlite",
+                "--path",
+                "app.db",
+            ],
+            "cannot be used with",
+        ),
+        (
+            "source conflicts with one-off backend",
+            vec![
+                "render",
+                "--source",
+                "app",
+                "--backend",
+                "sqlite",
+                "--path",
+                "app.db",
+            ],
+            "cannot be used with",
+        ),
+        (
+            "stdout conflicts with output",
+            vec!["render", "--stdout", "--output", "DATABASE.md"],
+            "cannot be used with",
+        ),
+        (
+            "server backend is not a configless value",
+            vec![
+                "render",
+                "--backend",
+                "postgres",
+                "--path",
+                "ignored",
+                "--stdout",
+            ],
+            "invalid value",
+        ),
+        (
+            "verify has no output override",
+            vec!["verify", "--output", "OTHER.md"],
+            "unexpected argument",
+        ),
+        (
+            "explain has no structured format",
+            vec!["explain", "--format", "json"],
+            "unexpected argument",
+        ),
+    ];
+
+    for (case, arguments, expected) in cases {
+        let output = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+            .current_dir(project.path())
+            .args(arguments)
+            .output()
+            .expect(case);
+        let stderr = String::from_utf8(output.stderr).expect("Clap error should be UTF-8");
+
+        assert_eq!(output.status.code(), Some(2), "{case}: {stderr}");
+        assert!(stderr.contains(expected), "{case}: {stderr}");
+        assert!(output.stdout.is_empty(), "{case}");
+    }
+    assert_eq!(
+        fs::read_dir(project.path())
+            .expect("temporary project should remain readable")
+            .count(),
+        0
+    );
+}
+
+#[test]
+fn configless_file_backend_requires_an_explicit_destination() {
+    let project = tempfile::tempdir().expect("temporary CLI project should be created");
+    Connection::open(project.path().join("app.db")).expect("SQLite fixture should open");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+        .current_dir(project.path())
+        .args(["render", "--backend", "sqlite", "--path", "app.db"])
+        .output()
+        .expect("render should execute");
+    let stderr = String::from_utf8(output.stderr).expect("application error should be UTF-8");
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(stderr.contains("one-off rendering requires `--output` unless `--stdout`"));
+    assert_eq!(
+        fs::read_dir(project.path())
+            .expect("temporary project should remain readable")
+            .count(),
+        1
+    );
+}
+
+#[test]
 fn configless_sqlite_render_writes_the_requested_output() {
     let project = tempfile::tempdir().expect("temporary CLI project should be created");
     Connection::open(project.path().join("app.db"))

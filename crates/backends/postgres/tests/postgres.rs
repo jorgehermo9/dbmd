@@ -21,6 +21,20 @@ use dbmd_render::{
 use dbmd_test_support::{run_postgres_cases, PostgresCase, PostgresServer, TestResult};
 use postgres::{Client, NoTls};
 
+#[test]
+fn refused_connection_error_is_source_scoped_and_credential_free() {
+    let source = PostgresSource::new(
+        SourceId::from_str("unavailable").expect("test source ID should be valid"),
+        "postgres://dbmd:sentinel-postgres-secret@127.0.0.1:1/missing?connect_timeout=1",
+    );
+
+    let error = introspect(&source).expect_err("refused PostgreSQL connection should fail");
+    let diagnostic = format!("{error}\n{error:?}\n{source:?}");
+
+    assert!(diagnostic.contains("PostgreSQL source `unavailable`"));
+    assert!(!diagnostic.contains("sentinel-postgres-secret"));
+}
+
 const CASES: &[PostgresCase] = &[
     PostgresCase {
         name: "ordinary_table",
@@ -232,6 +246,7 @@ fn introspects_access_control_metadata() -> TestResult {
     assert!(!markdown.contains("large-object-secret"));
     insta::assert_yaml_snapshot!("access_control", snapshot);
     insta::assert_snapshot!("access_control_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -357,6 +372,7 @@ fn introspects_opt_in_cluster_objects() -> TestResult {
     assert!(!markdown.contains("cluster-secret"));
     insta::assert_yaml_snapshot!("cluster_objects", snapshot);
     insta::assert_snapshot!("cluster_objects_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -483,6 +499,7 @@ fn introspects_roles_without_password_material() -> TestResult {
     assert!(!markdown.contains("/var/lib/postgresql"));
     insta::assert_yaml_snapshot!("roles", snapshot);
     insta::assert_snapshot!("roles_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -717,6 +734,7 @@ fn introspects_pgvector_extension_ownership() -> TestResult {
     assert!(!markdown.contains("vector_in"));
     assert!(!markdown.contains("### `public.dbmd_extension_config`"));
     insta::assert_snapshot!("extensions_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -770,6 +788,9 @@ fn introspects_an_ordinary_table(server: &PostgresServer) -> TestResult {
 
     let snapshot = introspect(&source)?;
 
+    assert!(snapshot.catalog().cluster_databases.is_empty());
+    assert!(snapshot.catalog().tablespaces.is_empty());
+    assert!(snapshot.catalog().roles.is_empty());
     assert_eq!(
         snapshot
             .catalog()
@@ -983,6 +1004,7 @@ fn introspects_namespaces_enums_views_and_functions(server: &PostgresServer) -> 
     assert!(markdown.contains("**Populated:** no"));
     assert!(markdown.contains("**Option:** `fillfactor=80`"));
     insta::assert_snapshot!("schema_objects_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -1094,6 +1116,7 @@ fn introspects_normal_ordered_and_hypothetical_aggregates(server: &PostgresServe
     assert!(markdown.contains("ordered_set"));
     assert!(markdown.contains("hypothetical_set"));
     insta::assert_snapshot!("aggregates_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -1287,6 +1310,7 @@ fn introspects_storage_typed_and_foreign_table_properties(server: &PostgresServe
         assert!(!markdown.contains(secret));
     }
     insta::assert_snapshot!("table_properties_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -1725,6 +1749,7 @@ fn introspects_postgres_sequences(server: &PostgresServer) -> TestResult {
     assert!(markdown.contains("Stable invoice number allocator"));
     assert!(markdown.contains("OWNED BY automation.invoices.id"));
     insta::assert_snapshot!("sequences_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -1799,6 +1824,7 @@ fn introspects_postgres_domains(server: &PostgresServer) -> TestResult {
     assert!(markdown.contains("Canonical application email address"));
     assert!(markdown.contains("email_not_blocked"));
     insta::assert_snapshot!("domains_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -1873,6 +1899,7 @@ fn introspects_postgres_composite_types(server: &PostgresServer) -> TestResult {
     assert!(markdown.contains("Reusable postal address"));
     assert!(markdown.contains("Postal locality"));
     insta::assert_snapshot!("composite_types_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -2066,6 +2093,7 @@ fn introspects_postgres_18_schema_semantics(server: &PostgresServer) -> TestResu
     assert!(markdown.contains("unicode_fast"));
     assert!(markdown.contains("PG_UNICODE_FAST"));
     insta::assert_snapshot!("postgres_18_schema_semantics_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -2187,6 +2215,7 @@ fn introspects_base_shell_range_and_multirange_types(server: &PostgresServer) ->
     assert!(markdown.contains("Range and Multirange Types"));
     assert!(markdown.contains("measurement_ranges"));
     insta::assert_snapshot!("type_system_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -2377,6 +2406,7 @@ fn introspects_type_and_operator_infrastructure(server: &PostgresServer) -> Test
     }
     insta::assert_yaml_snapshot!("type_operator_infrastructure", snapshot);
     insta::assert_snapshot!("type_operator_infrastructure_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -2593,6 +2623,7 @@ fn introspects_rules_event_triggers_and_statistics(server: &PostgresServer) -> T
     assert!(!markdown.contains("subscription-secret"));
     insta::assert_yaml_snapshot!("advanced_schema_objects", snapshot);
     insta::assert_snapshot!("advanced_schema_objects_markdown", markdown);
+    assert_repeat_single_file_render(&renderer, &context, &markdown)?;
 
     let RenderedArtifact::Directory(files) = renderer.render_with_options(
         &context,
@@ -2645,5 +2676,18 @@ fn introspects_rules_event_triggers_and_statistics(server: &PostgresServer) -> T
     assert_eq!(snapshot, introspect(&source)?);
     Client::connect(&connection_string, NoTls)?
         .batch_execute("DROP SUBSCRIPTION advanced_subscription")?;
+    Ok(())
+}
+
+fn assert_repeat_single_file_render(
+    renderer: &Renderer,
+    context: &RenderContext,
+    expected: &str,
+) -> TestResult {
+    let RenderedArtifact::SingleFile(repeated) = renderer.render(context)? else {
+        panic!("repeat PostgreSQL rendering should produce one file");
+    };
+
+    assert_eq!(repeated, expected.as_bytes());
     Ok(())
 }

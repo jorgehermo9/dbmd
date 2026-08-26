@@ -14,9 +14,37 @@ use dbmd_render::{OutputLayout, RenderContext, RenderOptions, RenderedArtifact, 
 use dbmd_test_support::MariaDbServer;
 
 #[test]
+fn refused_connection_error_is_source_scoped_and_credential_free() {
+    let source = MariaDbSource::new(
+        SourceId::from_str("unavailable").expect("test source ID should be valid"),
+        "mysql://dbmd:sentinel-mariadb-secret@127.0.0.1:1/missing",
+    );
+
+    let error = introspect(&source).expect_err("refused MariaDB connection should fail");
+    let diagnostic = format!("{error}\n{error:?}\n{source:?}");
+
+    assert!(diagnostic.contains("MariaDB source `unavailable`"));
+    assert!(!diagnostic.contains("sentinel-mariadb-secret"));
+}
+
+#[test]
 fn introspects_and_renders_the_mariadb_schema_surface_deterministically() {
     let server = MariaDbServer::start(include_str!("fixtures/schema_surface.sql"))
         .expect("MariaDB test container should start");
+    let schema_only = MariaDbSource::new(
+        SourceId::from_str("schema_only").expect("test source ID should be valid"),
+        server.url(),
+    )
+    .with_schema("test");
+    let schema_only =
+        introspect(&schema_only).expect("default MariaDB introspection should succeed");
+    assert!(schema_only.catalog().servers.is_empty());
+    assert!(schema_only.catalog().loadable_functions.is_empty());
+    assert!(schema_only.catalog().plugins.is_empty());
+    assert!(schema_only.catalog().accounts.is_empty());
+    assert!(schema_only.catalog().role_memberships.is_empty());
+    assert!(schema_only.catalog().privileges.is_empty());
+
     let source = MariaDbSource::new(
         SourceId::from_str("commerce").expect("test source ID should be valid"),
         server.url(),
@@ -421,6 +449,10 @@ fn introspects_and_renders_the_mariadb_schema_surface_deterministically() {
     assert!(markdown.contains("Account locked"));
     assert!(!markdown.contains("$A$005$"));
     insta::assert_snapshot!("mariadb_markdown", markdown);
+    let repeated = renderer
+        .render(&context)
+        .expect("repeat MariaDB presentation should render");
+    assert_eq!(repeated.as_single_file(), Some(markdown.as_bytes()));
     assert_directory_render(&renderer, &context, "objects/test.order_number_seq.md");
     assert_directory_render(&renderer, &context, "objects/server.analytics_remote.md");
     assert_directory_render(&renderer, &context, "objects/test.analytics_tools.md");

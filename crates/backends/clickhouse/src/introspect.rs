@@ -1500,3 +1500,53 @@ pub enum IntrospectionError {
         value: String,
     },
 }
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use dbmd_core::SourceId;
+
+    use super::{closed_value, constraint_kind, default_kind, ClickHouseSource};
+    use crate::{ColumnDefaultKind, ConstraintKind};
+
+    #[test]
+    fn decodes_closed_catalog_values_into_semantic_enums() {
+        assert_eq!(default_kind(""), Some(ColumnDefaultKind::None));
+        assert_eq!(default_kind("DEFAULT"), Some(ColumnDefaultKind::Default));
+        assert_eq!(
+            default_kind("MATERIALIZED"),
+            Some(ColumnDefaultKind::Materialized)
+        );
+        assert_eq!(default_kind("ALIAS"), Some(ColumnDefaultKind::Alias));
+        assert_eq!(
+            default_kind("EPHEMERAL"),
+            Some(ColumnDefaultKind::Ephemeral)
+        );
+        assert_eq!(constraint_kind("CHECK"), Some(ConstraintKind::Check));
+        assert_eq!(constraint_kind("ASSUME"), Some(ConstraintKind::Assume));
+    }
+
+    #[test]
+    fn rejects_unknown_closed_values_with_source_operation_field_and_native_value() {
+        let source = ClickHouseSource::new(
+            SourceId::from_str("analytics").expect("test source ID should be valid"),
+            "http://database.invalid",
+        );
+
+        let error = closed_value(
+            &source,
+            "columns",
+            "default_kind",
+            "FUTURE_KIND",
+            default_kind,
+        )
+        .expect_err("unknown closed value must not leak as an opaque string");
+        let message = error.to_string();
+
+        assert!(message.contains("source `analytics`"));
+        assert!(message.contains("columns"));
+        assert!(message.contains("default_kind"));
+        assert!(message.contains("FUTURE_KIND"));
+    }
+}

@@ -74,6 +74,8 @@ path = "DATABASE.md"
     .expect("config should be written");
     let cases = [
         "Keep `<!-- dbmd:begin -->` and `<!-- dbmd:end -->` documented.\n",
+        "<!-- dbmd:begin -->\nmissing end\n",
+        "missing begin\n<!-- dbmd:end -->\n",
         "<!-- dbmd:begin -->\n<!-- dbmd:begin -->\n<!-- dbmd:end -->\n",
         "<!-- dbmd:end -->\n<!-- dbmd:begin -->\n",
     ];
@@ -91,6 +93,48 @@ path = "DATABASE.md"
             original
         );
     }
+}
+
+#[cfg(unix)]
+#[test]
+fn rejects_symlink_and_non_regular_instruction_destinations_without_touching_targets() {
+    use std::os::unix::fs::symlink;
+
+    let project = tempfile::tempdir().expect("temporary project should exist");
+    let config = project.path().join("dbmd.toml");
+    fs::write(
+        &config,
+        r#"
+[sources.app]
+backend = "sqlite"
+path = "app.db"
+
+[output]
+path = "DATABASE.md"
+"#,
+    )
+    .expect("config should be written");
+    let target = project.path().join("target.md");
+    fs::write(&target, "user-owned\n").expect("symlink target should be written");
+    let link = project.path().join("AGENTS-link.md");
+    symlink(&target, &link).expect("instruction symlink should be created");
+    let directory = project.path().join("AGENTS-directory.md");
+    fs::create_dir(&directory).expect("non-regular destination should be created");
+
+    for path in [&link, &directory] {
+        let error = init_agents(InitAgentsRequest::new(&config).with_file(path))
+            .expect_err("unsafe instruction destination must be rejected");
+        assert!(
+            error
+                .to_string()
+                .contains("must be a regular non-symlink file"),
+            "{error}"
+        );
+    }
+    assert_eq!(
+        fs::read_to_string(target).expect("symlink target should remain readable"),
+        "user-owned\n"
+    );
 }
 
 #[test]

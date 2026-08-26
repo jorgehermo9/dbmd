@@ -1105,6 +1105,7 @@ dependencies = [
  "insta",
  "minijinja",
  "serde",
+ "serde_json",
  "tempfile",
  "thiserror",
 ]

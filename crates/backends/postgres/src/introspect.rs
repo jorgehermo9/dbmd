@@ -4932,7 +4932,56 @@ pub enum IntrospectionError {
 
 #[cfg(test)]
 mod tests {
-    use super::trigger_when_expression;
+    use std::str::FromStr;
+
+    use dbmd_core::SourceId;
+
+    use super::{
+        default_privilege_object, policy_command, privilege_kind, privilege_object_kind,
+        trigger_when_expression,
+    };
+    use crate::{DefaultPrivilegeObject, PolicyCommand, PrivilegeKind, PrivilegeObjectKind};
+
+    #[test]
+    fn decodes_access_control_catalog_values_into_semantic_enums() {
+        let source = SourceId::from_str("app").expect("test source ID should be valid");
+
+        assert_eq!(policy_command(&source, "r").unwrap(), PolicyCommand::Select);
+        assert_eq!(policy_command(&source, "a").unwrap(), PolicyCommand::Insert);
+        assert_eq!(policy_command(&source, "w").unwrap(), PolicyCommand::Update);
+        assert_eq!(policy_command(&source, "d").unwrap(), PolicyCommand::Delete);
+        assert_eq!(policy_command(&source, "*").unwrap(), PolicyCommand::All);
+        assert_eq!(
+            privilege_object_kind(&source, "table column").unwrap(),
+            PrivilegeObjectKind::TableColumn
+        );
+        assert_eq!(
+            privilege_kind(&source, "MAINTAIN").unwrap(),
+            PrivilegeKind::Maintain
+        );
+        assert_eq!(
+            default_privilege_object(&source, "L").unwrap(),
+            DefaultPrivilegeObject::LargeObjects
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_access_control_values_with_catalog_and_source_context() {
+        let source = SourceId::from_str("app").expect("test source ID should be valid");
+
+        for error in [
+            policy_command(&source, "future").expect_err("unknown policy code should fail"),
+            privilege_kind(&source, "SUPERUSER").expect_err("unknown privilege should fail"),
+            privilege_object_kind(&source, "future object")
+                .expect_err("unknown object family should fail"),
+            default_privilege_object(&source, "?")
+                .expect_err("unknown default privilege family should fail"),
+        ] {
+            let message = error.to_string();
+            assert!(message.contains("source `app`"), "{message}");
+            assert!(message.contains("unsupported PostgreSQL"), "{message}");
+        }
+    }
 
     #[test]
     fn extracts_trigger_predicate_around_quoted_delimiter_text() {

@@ -58,6 +58,35 @@ fn writes_an_editable_example_when_sqlite_discovery_is_ambiguous() {
 }
 
 #[test]
+fn discovery_requires_a_regular_file_supported_extension_and_sqlite_header() {
+    let project = tempfile::tempdir().expect("temporary project should be created");
+    Connection::open(project.path().join("warehouse.SQLITE3"))
+        .expect("valid SQLite database should open")
+        .execute_batch("CREATE TABLE records (id INTEGER PRIMARY KEY);")
+        .expect("valid SQLite database should persist a header");
+    fs::write(project.path().join("fake.db"), "not sqlite\n")
+        .expect("fake database candidate should be written");
+    Connection::open(project.path().join("ignored.data"))
+        .expect("unsupported-extension SQLite file should open");
+    fs::create_dir(project.path().join("directory.sqlite"))
+        .expect("directory candidate should be created");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(
+        project.path().join("warehouse.SQLITE3"),
+        project.path().join("linked.db"),
+    )
+    .expect("symlink candidate should be created");
+
+    let report = init(InitRequest::new(project.path().join("dbmd.toml")))
+        .expect("one real supported SQLite file should be discovered");
+
+    assert_eq!(
+        report.detected_database.as_deref(),
+        Some("warehouse.SQLITE3".as_ref())
+    );
+}
+
+#[test]
 fn initializes_a_complete_project_owned_template_profile() {
     let project = tempfile::tempdir().expect("temporary project should be created");
     let root = project.path().join("templates/dbmd");

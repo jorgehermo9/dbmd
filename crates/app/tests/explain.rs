@@ -131,6 +131,154 @@ sources = ["clicks", "duck", "maria", "mysql"]
 }
 
 #[test]
+fn resolves_every_backend_specific_optional_field_without_exposing_values() {
+    let project = tempfile::tempdir().expect("temporary project should exist");
+    let config = project.path().join("dbmd.toml");
+    fs::write(
+        &config,
+        r#"
+[sources.clicks]
+backend = "clickhouse"
+url = "${CLICKHOUSE_URL}"
+database = "${CLICKHOUSE_DATABASE}"
+username = "${CLICKHOUSE_USERNAME}"
+password = "${CLICKHOUSE_PASSWORD}"
+display_name = "Click analytics"
+
+[sources.duck]
+backend = "duckdb"
+path = "${DUCKDB_PATH}"
+secret_directory = "${DUCKDB_SECRETS}"
+extension_directory = "${DUCKDB_EXTENSIONS}"
+display_name = "Embedded analytics"
+
+[sources.duck.attachments.raw]
+path = "${DUCKDB_ATTACHMENT}"
+read_only = false
+
+[sources.maria]
+backend = "mariadb"
+url = "${MARIADB_URL}"
+schema = "${MARIADB_SCHEMA}"
+include_global_objects = true
+
+[sources.mysql]
+backend = "mysql"
+url = "${MYSQL_URL}"
+schema = "${MYSQL_SCHEMA}"
+include_global_objects = true
+
+[sources.postgres]
+backend = "postgres"
+url = "${POSTGRES_URL}"
+include_cluster_objects = true
+
+[sources.sqlite]
+backend = "sqlite"
+path = "${SQLITE_PATH}"
+
+[sources.sqlite.attachments.analytics]
+path = "${SQLITE_ATTACHMENT}"
+
+[output]
+path = "DATABASE.md"
+sources = ["clicks", "duck", "maria", "mysql", "postgres", "sqlite"]
+"#,
+    )
+    .expect("config should be written");
+    let names = [
+        "CLICKHOUSE_URL",
+        "CLICKHOUSE_DATABASE",
+        "CLICKHOUSE_USERNAME",
+        "CLICKHOUSE_PASSWORD",
+        "DUCKDB_PATH",
+        "DUCKDB_SECRETS",
+        "DUCKDB_EXTENSIONS",
+        "DUCKDB_ATTACHMENT",
+        "MARIADB_URL",
+        "MARIADB_SCHEMA",
+        "MYSQL_URL",
+        "MYSQL_SCHEMA",
+        "POSTGRES_URL",
+        "SQLITE_PATH",
+        "SQLITE_ATTACHMENT",
+    ];
+    let environment = names
+        .iter()
+        .map(|name| ((*name).to_string(), format!("sentinel-value-{name}")))
+        .collect::<BTreeMap<_, _>>();
+
+    let report = explain(ExplainRequest::with_environment(&config, environment))
+        .expect("all backend-specific fields should resolve locally");
+    let debug = format!("{report:?}");
+
+    assert_eq!(
+        report
+            .sources
+            .iter()
+            .map(|source| source.backend)
+            .collect::<Vec<_>>(),
+        [
+            Backend::Clickhouse,
+            Backend::Duckdb,
+            Backend::Mariadb,
+            Backend::Mysql,
+            Backend::Postgres,
+            Backend::Sqlite,
+        ]
+    );
+    assert_eq!(report.required_environment.len(), names.len());
+    for name in names {
+        assert!(report.required_environment.iter().any(|item| item == name));
+        assert!(!debug.contains(&format!("sentinel-value-{name}")));
+    }
+}
+
+#[test]
+fn rejects_backend_specific_attachment_invariants_during_local_resolution() {
+    let project = tempfile::tempdir().expect("temporary project should exist");
+    let cases = [
+        (
+            "SQLite reserved namespace",
+            r#"
+[sources.app]
+backend = "sqlite"
+path = "app.db"
+[sources.app.attachments.main]
+path = "other.db"
+[output]
+path = "DATABASE.md"
+"#,
+            "SQLite namespace `main` is reserved",
+        ),
+        (
+            "DuckDB reserved attachment",
+            r#"
+[sources.app]
+backend = "duckdb"
+path = "app.duckdb"
+[sources.app.attachments.temp]
+path = "other.duckdb"
+[output]
+path = "DATABASE.md"
+"#,
+            "DuckDB attachment name `temp` is reserved",
+        ),
+    ];
+
+    for (case, contents, expected) in cases {
+        let config = project
+            .path()
+            .join(format!("{}.toml", case.replace(' ', "-")));
+        fs::write(&config, contents).expect("invalid config fixture should be written");
+
+        let error = explain(ExplainRequest::new(config)).expect_err(case);
+
+        assert!(error.to_string().contains(expected), "{case}: {error}");
+    }
+}
+
+#[test]
 fn explains_render_overrides_and_known_single_file_output() {
     let project = tempfile::tempdir().expect("temporary project should exist");
     let config = project.path().join("dbmd.toml");

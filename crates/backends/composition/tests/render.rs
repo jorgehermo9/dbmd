@@ -1,6 +1,8 @@
 use std::str::FromStr;
 
-use dbmd_backends::{all_template_files, render_context, Catalog, DatabaseContext, Snapshot};
+use dbmd_backends::{
+    all_template_files, render_context, Backend, Catalog, DatabaseContext, Snapshot,
+};
 use dbmd_core::{SourceId, SourceSnapshot};
 use dbmd_render::{RenderedArtifact, Renderer};
 
@@ -37,6 +39,57 @@ fn heterogeneous_sources_render_in_context_order() {
         .find("## Source: `local`")
         .expect("SQLite source should render");
     assert!(warehouse < local, "selected source order must be preserved");
+}
+
+#[test]
+fn composed_backend_tags_and_template_entrypoints_are_stable_and_collision_free() {
+    assert_eq!(
+        [
+            Backend::Clickhouse,
+            Backend::Duckdb,
+            Backend::Mariadb,
+            Backend::Mysql,
+            Backend::Postgres,
+            Backend::Sqlite,
+        ]
+        .map(Backend::as_str),
+        [
+            "clickhouse",
+            "duckdb",
+            "mariadb",
+            "mysql",
+            "postgres",
+            "sqlite",
+        ]
+    );
+
+    let templates = all_template_files();
+    let unique_names = templates
+        .iter()
+        .map(|template| template.template_name)
+        .collect::<std::collections::BTreeSet<_>>();
+    let unique_paths = templates
+        .iter()
+        .map(|template| template.relative_path)
+        .collect::<std::collections::BTreeSet<_>>();
+
+    assert_eq!(unique_names.len(), templates.len());
+    assert_eq!(unique_paths.len(), templates.len());
+    for backend in [
+        "clickhouse",
+        "duckdb",
+        "mariadb",
+        "mysql",
+        "postgres",
+        "sqlite",
+    ] {
+        assert!(templates.iter().any(|template| {
+            template.relative_path == format!("single_file/backends/{backend}/source.md.j2")
+        }));
+        assert!(templates.iter().any(|template| {
+            template.relative_path == format!("directory/backends/{backend}/source.md.j2")
+        }));
+    }
 }
 
 fn source_snapshot(id: &str, catalog: Catalog) -> Snapshot {

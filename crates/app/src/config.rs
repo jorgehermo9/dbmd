@@ -510,7 +510,7 @@ impl ConfigParseKind {
             Self::MissingField
         } else if message.starts_with("invalid type") {
             Self::InvalidType
-        } else if message.starts_with("duplicate field") {
+        } else if message.starts_with("duplicate field") || message.starts_with("duplicate key") {
             Self::DuplicateField
         } else if message.starts_with("invalid value") || message.starts_with("unknown variant") {
             Self::InvalidValue
@@ -685,8 +685,7 @@ sources = ["production", "local"]
         assert!(!format!("{:?}", plan.sources[0]).contains("password"));
     }
 
-    #[test]
-    fn rejects_empty_duplicate_unknown_and_invalid_source_selections() {
+    fn selection_error(selection: Vec<String>) -> ConfigError {
         let config = r#"
 [sources.app]
 backend = "sqlite"
@@ -699,26 +698,49 @@ path = "bad.db"
 [output]
 path = "DATABASE.md"
 "#;
-        let cases = [
-            (Vec::<String>::new(), "cannot be empty"),
-            (vec!["app".into(), "app".into()], "more than once"),
-            (vec!["missing".into()], "unknown source"),
-            (vec!["bad/id".into()], "invalid character"),
-        ];
 
-        for (selection, expected) in cases {
-            let error = resolve(
-                config,
-                Path::new("/project/dbmd.toml"),
-                &BTreeMap::new(),
-                Overrides {
-                    source_selection: Some(selection),
-                    ..Overrides::default()
-                },
-            )
-            .expect_err("invalid selection should fail");
-            assert!(error.to_string().contains(expected), "{error}");
-        }
+        resolve(
+            config,
+            Path::new("/project/dbmd.toml"),
+            &BTreeMap::new(),
+            Overrides {
+                source_selection: Some(selection),
+                ..Overrides::default()
+            },
+        )
+        .expect_err("invalid selection should fail")
+    }
+
+    #[test]
+    fn rejects_an_explicit_empty_source_selection() {
+        assert!(matches!(
+            selection_error(Vec::new()),
+            ConfigError::EmptySelection
+        ));
+    }
+
+    #[test]
+    fn rejects_a_duplicate_source_selection_with_the_duplicate_identity() {
+        assert!(matches!(
+            selection_error(vec!["app".into(), "app".into()]),
+            ConfigError::DuplicateSelection(id) if id == "app"
+        ));
+    }
+
+    #[test]
+    fn rejects_an_unknown_selected_source_with_the_requested_identity() {
+        assert!(matches!(
+            selection_error(vec!["missing".into()]),
+            ConfigError::UnknownSource(id) if id == "missing"
+        ));
+    }
+
+    #[test]
+    fn rejects_a_path_like_source_identity_before_backend_resolution() {
+        assert!(matches!(
+            selection_error(vec!["bad/id".into()]),
+            ConfigError::SourceId(_)
+        ));
     }
 
     #[test]
@@ -755,5 +777,155 @@ dir = "configured-templates"
             plan.template_root.as_deref(),
             Some(Path::new("/project/config/one-off-templates"))
         );
+    }
+
+    #[test]
+    fn classifies_configuration_schema_failures_without_echoing_values() {
+        let cases = [
+            (
+                "syntax",
+                "this is not = valid toml",
+                ConfigParseKind::Syntax,
+            ),
+            (
+                "unknown field",
+                r#"
+[sources.app]
+backend = "sqlite"
+path = "app.db"
+password = "sentinel-secret"
+[output]
+path = "DATABASE.md"
+"#,
+                ConfigParseKind::UnknownField,
+            ),
+            (
+                "missing field",
+                r#"
+[sources.app]
+backend = "sqlite"
+[output]
+path = "DATABASE.md"
+"#,
+                ConfigParseKind::MissingField,
+            ),
+            (
+                "invalid type",
+                r#"
+[sources.app]
+backend = "sqlite"
+path = 7
+[output]
+path = "DATABASE.md"
+"#,
+                ConfigParseKind::InvalidType,
+            ),
+            (
+                "duplicate field",
+                r#"
+[sources.app]
+backend = "sqlite"
+path = "app.db"
+path = "other.db"
+[output]
+path = "DATABASE.md"
+"#,
+                ConfigParseKind::DuplicateField,
+            ),
+            (
+                "invalid value",
+                r#"
+[sources.app]
+backend = "sqlite"
+path = "app.db"
+[output]
+path = "DATABASE.md"
+[output.layout]
+kind = "archive"
+"#,
+                ConfigParseKind::InvalidValue,
+            ),
+        ];
+
+        for (case, contents, expected_kind) in cases {
+            let error = resolve(
+                contents,
+                Path::new("/project/dbmd.toml"),
+                &BTreeMap::new(),
+                Overrides::default(),
+            )
+            .expect_err(case);
+            let ConfigError::Parse { kind, line, column } = error else {
+                panic!("{case}: expected parse error, got {error}");
+            };
+            assert_eq!(kind, expected_kind, "{case}");
+            assert!(line > 0, "{case}");
+            assert!(column > 0, "{case}");
+            assert!(!format!("{error}").contains("sentinel-secret"), "{case}");
+        }
+    }
+
+    #[test]
+    fn rejects_every_malformed_environment_reference_before_source_use() {
+        let cases = [
+            ("unclosed", "${DATABASE_PATH"),
+            ("empty", "${}"),
+            ("numeric prefix", "${1DATABASE_PATH}"),
+            ("punctuation", "${DATABASE-PATH}"),
+        ];
+
+        for (case, value) in cases {
+            let config = format!(
+                r#"
+[sources.app]
+backend = "sqlite"
+path = "{value}"
+
+[output]
+path = "DATABASE.md"
+"#
+            );
+            let error = resolve(
+                &config,
+                Path::new("/project/dbmd.toml"),
+                &BTreeMap::new(),
+                Overrides::default(),
+            )
+            .expect_err(case);
+
+            assert!(
+                matches!(
+                    error,
+                    ConfigError::UnclosedEnvironment | ConfigError::InvalidEnvironmentName(_)
+                ),
+                "{case}: {error}"
+            );
+        }
+    }
+
+    #[test]
+    fn embedded_templates_reject_profiles_the_binary_does_not_provide() {
+        let config = r#"
+[sources.app]
+backend = "sqlite"
+path = "app.db"
+
+[output]
+path = "DATABASE.md"
+profile = "human"
+"#;
+
+        let error = resolve(
+            config,
+            Path::new("/project/dbmd.toml"),
+            &BTreeMap::new(),
+            Overrides::default(),
+        )
+        .expect_err("unavailable embedded profile should fail locally");
+
+        assert!(matches!(
+            error,
+            ConfigError::UnsupportedProfile(profile) if profile == "human"
+        ));
     }
 }

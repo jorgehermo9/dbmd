@@ -5,6 +5,7 @@ use dbmd_render::{
     RenderOptions, RenderSource, RenderedArtifact, Renderer, SourceLayout, TemplateFile,
 };
 use serde::Serialize;
+use serde_json::Value;
 
 const TEST_TEMPLATES: &[TemplateFile] = &[
     TemplateFile::new(
@@ -124,8 +125,88 @@ fn renders_backend_declared_directory_objects_without_knowing_their_family() {
 }
 
 #[test]
+fn one_source_auto_and_nested_layouts_have_distinct_single_file_and_directory_shapes() {
+    let renderer = Renderer::embedded(TEST_TEMPLATES).expect("templates should compile");
+    let auto_context = RenderContext::new(vec![source("app", None, "users", false)]);
+    let nested_context = RenderContext::new(vec![source("app", None, "users", true)]);
+
+    let RenderedArtifact::SingleFile(auto_file) = renderer
+        .render(&auto_context)
+        .expect("one-source auto file should render")
+    else {
+        panic!("default options should render one file");
+    };
+    let RenderedArtifact::SingleFile(nested_file) = renderer
+        .render_with_options(
+            &nested_context,
+            RenderOptions {
+                source_layout: SourceLayout::Nested,
+                ..RenderOptions::default()
+            },
+        )
+        .expect("one-source nested file should render")
+    else {
+        panic!("nested single-file options should render one file");
+    };
+    assert!(!String::from_utf8(auto_file)
+        .expect("auto Markdown should be UTF-8")
+        .contains("Source: `app`"));
+    assert!(String::from_utf8(nested_file)
+        .expect("nested Markdown should be UTF-8")
+        .contains("Source: `app`"));
+
+    let RenderedArtifact::Directory(auto_directory) = renderer
+        .render_with_options(
+            &auto_context,
+            RenderOptions {
+                layout: OutputLayout::Directory,
+                source_layout: SourceLayout::Auto,
+            },
+        )
+        .expect("one-source auto directory should render")
+    else {
+        panic!("directory options should render a directory");
+    };
+    let RenderedArtifact::Directory(nested_directory) = renderer
+        .render_with_options(
+            &nested_context,
+            RenderOptions {
+                layout: OutputLayout::Directory,
+                source_layout: SourceLayout::Nested,
+            },
+        )
+        .expect("one-source nested directory should render")
+    else {
+        panic!("directory options should render a directory");
+    };
+    assert_eq!(
+        auto_directory
+            .keys()
+            .map(ArtifactPath::as_str)
+            .collect::<Vec<_>>(),
+        ["index.md", "widgets/main.users.md"]
+    );
+    assert_eq!(
+        nested_directory
+            .keys()
+            .map(ArtifactPath::as_str)
+            .collect::<Vec<_>>(),
+        ["app/index.md", "app/widgets/main.users.md", "index.md"]
+    );
+}
+
+#[test]
 fn artifact_paths_reject_absolute_and_parent_traversal() {
-    for invalid in ["", "/index.md", "../index.md", "tables/../../index.md"] {
+    for invalid in [
+        "",
+        "/index.md",
+        "../index.md",
+        "tables/../../index.md",
+        "./index.md",
+        "tables//index.md",
+        "tables\\index.md",
+        "tables/index.md\0ignored",
+    ] {
         assert!(
             invalid.parse::<ArtifactPath>().is_err(),
             "accepted {invalid}"
@@ -231,4 +312,143 @@ fn custom_template_root_does_not_fall_back_to_embedded_files() {
         panic!("missing custom files must not fall back to embedded templates");
     };
     assert!(error.to_string().contains("directory/enum.md.j2"));
+}
+
+#[test]
+fn render_context_serializes_the_version_two_common_envelope() {
+    let context = RenderContext::new(vec![source(
+        "analytics",
+        Some("Analytics"),
+        "events",
+        false,
+    )]);
+
+    let serialized = serde_json::to_value(&context).expect("render context should serialize");
+    let source = &serialized["sources"][0];
+
+    assert_eq!(serialized["version"], Value::from(2));
+    assert_eq!(source["id"], "analytics");
+    assert_eq!(source["name"], "`Analytics`");
+    assert_eq!(source["has_display_name"], true);
+    assert_eq!(source["backend"], "test");
+    assert_eq!(
+        source["single_file_template"],
+        "backends/test/single_file/source.md.j2"
+    );
+    assert_eq!(
+        source["directory_template"],
+        "backends/test/directory/source.md.j2"
+    );
+    assert_eq!(source["nested"], false);
+    assert!(source.get("data").is_some());
+}
+
+#[test]
+fn source_layout_requires_backend_context_to_match_the_resolved_cardinality() {
+    let renderer = Renderer::embedded(TEST_TEMPLATES).expect("templates should compile");
+    let cases = [
+        (
+            "single auto expects no nesting",
+            vec![source("app", None, "users", true)],
+            RenderOptions::default(),
+        ),
+        (
+            "single nested expects nesting",
+            vec![source("app", None, "users", false)],
+            RenderOptions {
+                source_layout: SourceLayout::Nested,
+                ..RenderOptions::default()
+            },
+        ),
+        (
+            "multiple auto expects nesting",
+            vec![
+                source("app", None, "users", false),
+                source("analytics", None, "events", false),
+            ],
+            RenderOptions::default(),
+        ),
+    ];
+
+    for (case, sources, options) in cases {
+        let error = renderer
+            .render_with_options(&RenderContext::new(sources), options)
+            .expect_err(case);
+        assert!(
+            matches!(error, RenderError::InconsistentSourceLayout),
+            "{case}: {error}"
+        );
+    }
+}
+
+#[test]
+fn strict_undefined_template_values_fail_with_template_and_line_context() {
+    const INVALID_TEMPLATES: &[TemplateFile] = &[
+        TemplateFile::new(
+            "single_file/backends/test/source.md.j2",
+            "backends/test/single_file/source.md.j2",
+            "{{ source.data.missing_value }}",
+        ),
+        TEST_TEMPLATES[1],
+        TEST_TEMPLATES[2],
+    ];
+    let renderer = Renderer::embedded(INVALID_TEMPLATES).expect("templates should compile");
+    let error = renderer
+        .render(&RenderContext::new(vec![source(
+            "app", None, "users", false,
+        )]))
+        .expect_err("undefined backend data must fail loudly");
+    let message = error.to_string();
+
+    assert!(
+        message.contains("backends/test/single_file/source.md.j2"),
+        "{message}"
+    );
+    assert!(message.contains("could not render include"), "{message}");
+    assert!(message.contains("database.md.j2:9"), "{message}");
+}
+
+#[test]
+fn invalid_template_syntax_reports_the_owning_template_and_line() {
+    const INVALID_TEMPLATES: &[TemplateFile] = &[
+        TemplateFile::new(
+            "single_file/backends/test/source.md.j2",
+            "backends/test/single_file/source.md.j2",
+            "line one\n{% if source %}",
+        ),
+        TEST_TEMPLATES[1],
+        TEST_TEMPLATES[2],
+    ];
+
+    let error = Renderer::embedded(INVALID_TEMPLATES)
+        .err()
+        .expect("invalid template syntax should fail compilation");
+    let message = error.to_string();
+
+    assert!(
+        message.contains("backends/test/single_file/source.md.j2"),
+        "{message}"
+    );
+    assert!(message.contains(":2)"), "{message}");
+}
+
+#[test]
+fn custom_profile_names_cannot_escape_or_ambiguously_address_the_root() {
+    let root = tempfile::tempdir().expect("template root should be created");
+
+    for profile in [
+        "",
+        "../agent",
+        "agent/profile",
+        "agent.profile",
+        "agent profile",
+    ] {
+        let error = Renderer::from_template_root(root.path(), profile, TEST_TEMPLATES)
+            .err()
+            .expect("unsafe profile name should fail before reading templates");
+        assert!(
+            matches!(error, RenderError::InvalidProfile(ref value) if value == profile),
+            "profile {profile:?} returned {error}"
+        );
+    }
 }

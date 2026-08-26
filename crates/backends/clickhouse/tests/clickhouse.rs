@@ -9,6 +9,25 @@ use dbmd_render::{OutputLayout, RenderContext, RenderOptions, RenderedArtifact, 
 use dbmd_test_support::ClickHouseServer;
 
 #[test]
+fn refused_request_error_is_source_scoped_and_credential_free() {
+    let source = ClickHouseSource::new(
+        SourceId::from_str("unavailable").expect("test source ID should be valid"),
+        "http://127.0.0.1:1",
+    )
+    .with_credentials(
+        Some("sentinel-clickhouse-user".to_string()),
+        Some("sentinel-clickhouse-secret".to_string()),
+    );
+
+    let error = introspect(&source).expect_err("refused ClickHouse request should fail");
+    let diagnostic = format!("{error}\n{error:?}\n{source:?}");
+
+    assert!(diagnostic.contains("source `unavailable`"));
+    assert!(!diagnostic.contains("sentinel-clickhouse-user"));
+    assert!(!diagnostic.contains("sentinel-clickhouse-secret"));
+}
+
+#[test]
 fn introspects_the_clickhouse_schema_surface_deterministically() {
     let server = ClickHouseServer::start_with_settings(
         include_str!("fixtures/schema_surface.sql"),
@@ -478,6 +497,10 @@ fn introspects_the_clickhouse_schema_surface_deterministically() {
     assert!(!markdown.contains("dbmd-dictionary-secret-sentinel"));
     assert!(!markdown.contains("dbmd-engine-secret-sentinel"));
     insta::assert_snapshot!("clickhouse_markdown", markdown);
+    let repeated = renderer
+        .render(&context)
+        .expect("repeat ClickHouse presentation should render");
+    assert_eq!(repeated.as_single_file(), Some(markdown.as_bytes()));
     assert_directory_render(&renderer, &context, "tables/analytics.events.md");
     assert_directory_render(
         &renderer,

@@ -3,10 +3,67 @@ mod support;
 
 use std::str::FromStr;
 
-use dbmd_backend_sqlite::{introspect, ConstraintKind, SqliteSource, TriggerTiming};
+use dbmd_backend_sqlite::{
+    introspect, ConstraintKind, SqliteSource, SqliteSourceError, TriggerTiming,
+};
 use dbmd_core::SourceId;
 use dbmd_relational::ForeignKeyAction;
 use support::TestDatabase;
+
+#[test]
+fn attachment_configuration_rejects_empty_reserved_duplicate_and_nul_names() {
+    let id = || SourceId::from_str("app").expect("test source ID should be valid");
+
+    assert!(matches!(
+        SqliteSource::new(id(), "app.db").with_attached_database("", "analytics.db"),
+        Err(SqliteSourceError::EmptyNamespace)
+    ));
+    assert!(matches!(
+        SqliteSource::new(id(), "app.db").with_attached_database("MAIN", "analytics.db"),
+        Err(SqliteSourceError::ReservedNamespace(name)) if name == "MAIN"
+    ));
+    assert!(matches!(
+        SqliteSource::new(id(), "app.db")
+            .with_attached_database("analytics", "analytics.db")
+            .expect("first attachment should be valid")
+            .with_attached_database("ANALYTICS", "other.db"),
+        Err(SqliteSourceError::DuplicateNamespace(name)) if name == "ANALYTICS"
+    ));
+    assert!(matches!(
+        SqliteSource::new(id(), "app.db").with_attached_database("bad\0namespace", "analytics.db"),
+        Err(SqliteSourceError::NamespaceContainsNul)
+    ));
+}
+
+#[test]
+fn missing_database_and_attachment_errors_are_source_scoped_and_path_free() {
+    let directory = tempfile::tempdir().expect("temporary directory should be created");
+    let source = SqliteSource::new(
+        SourceId::from_str("app").expect("test source ID should be valid"),
+        directory.path().join("sentinel-missing-main.db"),
+    );
+
+    let error = introspect(&source).expect_err("missing read-only database should fail");
+    assert!(error.to_string().contains("SQLite source `app`"));
+    assert!(!error.to_string().contains("sentinel-missing-main"));
+
+    let main = TestDatabase::from_sql("CREATE TABLE items (id INTEGER PRIMARY KEY);");
+    let source = SqliteSource::new(
+        SourceId::from_str("app").expect("test source ID should be valid"),
+        main.path(),
+    )
+    .with_attached_database(
+        "analytics",
+        directory.path().join("sentinel-missing-attachment.db"),
+    )
+    .expect("attachment configuration should be structurally valid");
+
+    let error = introspect(&source).expect_err("missing attachment should fail");
+    assert!(error
+        .to_string()
+        .contains("SQLite namespace `analytics` for source `app`"));
+    assert!(!error.to_string().contains("sentinel-missing-attachment"));
+}
 
 #[test]
 fn introspects_an_ordinary_table_into_a_source_snapshot() {

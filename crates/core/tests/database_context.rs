@@ -22,15 +22,24 @@ fn source_id_accepts_the_documented_slug_grammar() {
 }
 
 #[test]
-fn source_id_rejects_empty_and_path_like_values() {
+fn source_id_rejects_empty_path_like_unicode_and_whitespace_values() {
     assert_eq!(SourceId::from_str(""), Err(SourceIdError::Empty));
-    assert!(matches!(
-        SourceId::from_str("analytics/prod"),
-        Err(SourceIdError::InvalidCharacter {
-            character: '/',
-            index: 9
-        })
-    ));
+    let cases = [
+        ("analytics/prod", '/', 9),
+        ("analytics\\prod", '\\', 9),
+        (".", '.', 0),
+        ("..", '.', 0),
+        ("analytics prod", ' ', 9),
+        ("ánalytics", 'á', 0),
+    ];
+
+    for (value, character, index) in cases {
+        assert_eq!(
+            SourceId::from_str(value),
+            Err(SourceIdError::InvalidCharacter { character, index }),
+            "accepted invalid source ID {value:?}"
+        );
+    }
 }
 
 #[test]

@@ -1,11 +1,95 @@
 use std::str::FromStr;
 
 use dbmd_backend_duckdb::{
-    introspect, render_source, template_files, ConstraintKind, DuckDbSource, FunctionKind,
+    introspect, render_source, template_files, ConstraintKind, DuckDbSource, DuckDbSourceError,
+    FunctionKind,
 };
 use dbmd_core::SourceId;
 use dbmd_render::{OutputLayout, RenderContext, RenderOptions, RenderedArtifact, Renderer};
 use duckdb::{Config as DuckDbConnectionConfig, Connection};
+
+#[test]
+fn source_configuration_rejects_empty_reserved_duplicate_and_nul_values() {
+    let id = || SourceId::from_str("app").expect("test source ID should be valid");
+
+    assert!(matches!(
+        DuckDbSource::new(id(), ""),
+        Err(DuckDbSourceError::EmptyPath)
+    ));
+    assert!(matches!(
+        DuckDbSource::new(id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("", "analytics.duckdb", true),
+        Err(DuckDbSourceError::EmptyAttachmentName)
+    ));
+    assert!(matches!(
+        DuckDbSource::new(id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("system", "analytics.duckdb", true),
+        Err(DuckDbSourceError::ReservedAttachmentName(name)) if name == "system"
+    ));
+    assert!(matches!(
+        DuckDbSource::new(id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("analytics", "analytics.duckdb", true)
+            .expect("first attachment should be valid")
+            .with_attached_database("analytics", "other.duckdb", true),
+        Err(DuckDbSourceError::DuplicateAttachmentName(name)) if name == "analytics"
+    ));
+    assert!(matches!(
+        DuckDbSource::new(id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("analytics", "", true),
+        Err(DuckDbSourceError::EmptyAttachmentPath(name)) if name == "analytics"
+    ));
+    assert!(matches!(
+        DuckDbSource::new(id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_secret_directory(""),
+        Err(DuckDbSourceError::EmptySecretDirectory)
+    ));
+    assert!(matches!(
+        DuckDbSource::new(id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_extension_directory("bad\0directory"),
+        Err(DuckDbSourceError::NulExtensionDirectory)
+    ));
+}
+
+#[test]
+fn missing_database_and_attachment_errors_are_source_scoped_without_directory_details() {
+    let directory = tempfile::tempdir().expect("temporary directory should be created");
+    let missing = directory.path().join("sentinel-missing-main.duckdb");
+    let source = DuckDbSource::new(
+        SourceId::from_str("warehouse").expect("test source ID should be valid"),
+        &missing,
+    )
+    .expect("missing path is structurally valid");
+
+    let error = introspect(&source).expect_err("read-only missing database should fail");
+    assert!(error.to_string().contains("DuckDB source `warehouse`"));
+    assert!(!error.to_string().contains("sentinel-missing-main"));
+
+    let main = directory.path().join("main.duckdb");
+    Connection::open(&main).expect("main fixture database should open");
+    let source = DuckDbSource::new(
+        SourceId::from_str("warehouse").expect("test source ID should be valid"),
+        main,
+    )
+    .expect("main source should be valid")
+    .with_attached_database(
+        "analytics",
+        directory.path().join("sentinel-missing-attachment.duckdb"),
+        true,
+    )
+    .expect("attachment configuration should be structurally valid");
+
+    let error = introspect(&source).expect_err("read-only missing attachment should fail");
+    assert!(error
+        .to_string()
+        .contains("DuckDB database `analytics` for source `warehouse`"));
+    assert!(!error.to_string().contains("sentinel-missing-attachment"));
+}
 
 #[test]
 fn introspects_and_renders_the_duckdb_schema_surface_deterministically() {
@@ -148,6 +232,10 @@ fn introspects_and_renders_the_duckdb_schema_surface_deterministically() {
     assert!(markdown.contains("analytics.accounts"));
     assert!(markdown.contains("normalize_email"));
     insta::assert_snapshot!("duckdb_markdown", markdown);
+    let repeated = renderer
+        .render(&context)
+        .expect("repeat DuckDB presentation should render");
+    assert_eq!(repeated.as_single_file(), Some(markdown.as_bytes()));
     let RenderedArtifact::Directory(files) = renderer
         .render_with_options(
             &context,
@@ -239,4 +327,8 @@ fn introspects_persistent_secret_metadata_without_secret_material() {
     assert!(!markdown.contains("dbmd-key-sentinel"));
     assert!(!markdown.contains("dbmd-secret-sentinel"));
     insta::assert_snapshot!("duckdb_secret_metadata", markdown);
+    let repeated = renderer
+        .render(&context)
+        .expect("repeat DuckDB secret presentation should render");
+    assert_eq!(repeated.as_single_file(), Some(markdown.as_bytes()));
 }
