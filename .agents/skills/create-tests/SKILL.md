@@ -40,30 +40,63 @@ scratchpad, never in durable product or architecture documentation.
 Choose the narrowest layer that proves the behavior through its owning
 interface.
 
+There is intentional execution overlap, but not responsibility overlap. A
+higher layer may traverse lower layers to prove its own observable outcome, but
+it does not inherit their exhaustive assertion matrix. Put each assertion at
+the narrowest seam that owns it.
+
+| Question | Owning layer |
+|----------|--------------|
+| Does concentrated parser, state, or semantic translation logic behave correctly? | Unit |
+| Do modules in one crate compose through its public API without the application or a database? | Hermetic crate integration |
+| Does an adapter faithfully represent the supported database version? | Backend compatibility integration |
+| Does the application resolve, dispatch, render, verify, and write safely? | Application integration |
+| Does the compiled command expose the correct arguments, status, streams, and filesystem effects? | End-to-end |
+
 ### Unit
 
 Place `#[cfg(test)]` modules beside implementation under `src/`. Use unit tests
 for parsers, normalization, state transitions, semantic token translation, and
 failure branches that require a dependency to return an otherwise impractical
 response. Private access is acceptable only when the private behavior itself is
-the concentrated module logic.
+the concentrated module logic. Unit tests own these focused transformations and
+invariants; they do not prove that crate, application, or process seams compose.
 
 ### Integration
 
 Place integration tests under the owning crate's `tests/` directory and use
 only its public interface. Choose one independently runnable subtype:
 
-- **Hermetic crate integration** composes crate modules with local resources
-  such as temporary files and templates, excluding the application and concrete
-  backend crates.
-- **Backend compatibility integration** exercises an adapter against the exact
-  supported database version using real temporary databases or pinned
-  Testcontainers images and real DDL. Prove catalog fidelity, semantic
-  normalization, deterministic order, render-context mapping, redaction, and
-  repeat introspection. Backend mocks do not satisfy a compatibility row.
-- **Application integration** exercises the application API without spawning
-  `dbmd`, using configuration, templates, rendering, filesystem replacement,
-  and local or server-backed adapters as required.
+- **Hermetic crate integration** enters through one crate's public API and owns
+  the composition and invariants of that crate's modules. Use isolated local
+  resources such as temporary files and templates. Do not depend on a network,
+  Docker, credentials, ambient user configuration, the application layer, or a
+  connection to a concrete database.
+- **Backend compatibility integration** enters through an adapter's public API
+  and exercises the exact supported database version using real temporary
+  databases or pinned Testcontainers images and real DDL. It owns exhaustive
+  backend fidelity: catalog acquisition, semantic normalization, deterministic
+  order, render-context mapping, redaction, repeat introspection, supported DDL
+  surfaces, and documented exclusions. Backend mocks do not satisfy a
+  compatibility row.
+- **Application integration** enters through the application API without
+  spawning `dbmd`. It owns deep application behavior: configuration loading and
+  resolution, safe environment expansion, source selection and ordering,
+  backend-specific configuration and dispatch, template and layout selection,
+  introspection/render coordination, atomic artifact replacement, preservation
+  after failure, drift versus operational failure, credential-free
+  explain/doctor behavior, and path or symlink safety. Use local or
+  server-backed adapters as the scenario requires. Include one representative
+  real-database tracer bullet per backend to prove that backend's distinct
+  configuration and dispatch branch, but do not repeat the backend's exhaustive
+  DDL or catalog assertion matrix here.
+
+For example, PostgreSQL compatibility integrations exhaustively prove how its
+catalog is acquired and represented. A PostgreSQL application integration may
+traverse that same adapter, but it proves that PostgreSQL configuration resolves
+and dispatches correctly and that the application produces or preserves the
+right artifact. The shared execution path is intentional; the asserted
+responsibility is different.
 
 Keep backend fixtures and snapshots beside the owning backend crate. A backend
 coverage README claims only surfaces backed by executable fixtures or an
@@ -73,9 +106,10 @@ explicit documented exclusion.
 
 Exercise the compiled `dbmd` binary from `crates/cli/tests/`. Assert exit status,
 stdout, stderr, artifact bytes, and filesystem effects. Keep this tier focused
-on user-visible command coordination; backend catalog depth belongs to backend
-compatibility integrations and application behavior belongs to application
-integrations.
+on user-visible argument parsing and command coordination. Use representative
+workflows to prove the process boundary; backend catalog depth belongs to
+backend compatibility integrations and deep application behavior belongs to
+application integrations.
 
 Cargo `examples/` binaries are not a test layer. Test user-facing example
 projects through application integration or CLI E2E at the product seam they
