@@ -52,6 +52,11 @@ are executable product documentation; their test-only manifests and harnesses
 stay under the owning test suite. Load `create-tests` as well when executable
 verification, expected artifacts, fixtures, or snapshots change.
 
+For a meaningful user-visible workflow, backend capability, or output-contract
+change, assess whether an existing example should demonstrate it. Prefer
+extending the smallest relevant example; create a new example only when it
+teaches a distinct workflow or user journey.
+
 ### Issue tracker
 
 Issues and PRDs are tracked in GitHub Issues for `jorgehermo9/dbmd`. External PRs are not a triage surface. See `docs/agents/issue-tracker.md`.
