@@ -662,3 +662,139 @@ pub struct Privilege {
     pub privilege: String,
     pub grantable: bool,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    macro_rules! semantic_cases {
+        ($($name:ident: $value:expr => $display:literal, $serialized:literal;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!($value.display_name(), $display);
+                    assert_eq!(
+                        serde_json::to_string(&$value).expect("semantic enum should serialize"),
+                        $serialized
+                    );
+                }
+            )+
+        };
+    }
+
+    semantic_cases! {
+        presents_column_check_level: CheckConstraintLevel::Column => "column", "\"column\"";
+        presents_table_check_level: CheckConstraintLevel::Table => "table", "\"table\"";
+        presents_none_view_check: ViewCheckOption::None => "none", "\"none\"";
+        presents_cascaded_view_check: ViewCheckOption::Cascaded => "cascaded", "\"cascaded\"";
+        presents_local_view_check: ViewCheckOption::Local => "local", "\"local\"";
+        presents_undefined_view_algorithm: ViewAlgorithm::Undefined => "undefined", "\"undefined\"";
+        presents_merge_view_algorithm: ViewAlgorithm::Merge => "merge", "\"merge\"";
+        presents_temporary_table_view_algorithm: ViewAlgorithm::TemporaryTable => "temporary table", "\"temporary_table\"";
+        presents_definer_sql_security: SqlSecurity::Definer => "definer", "\"definer\"";
+        presents_invoker_sql_security: SqlSecurity::Invoker => "invoker", "\"invoker\"";
+        presents_function_routine_kind: RoutineKind::Function => "function", "\"function\"";
+        presents_procedure_routine_kind: RoutineKind::Procedure => "procedure", "\"procedure\"";
+        presents_contains_sql_data_access: RoutineDataAccess::ContainsSql => "contains SQL", "\"contains_sql\"";
+        presents_no_sql_data_access: RoutineDataAccess::NoSql => "no SQL", "\"no_sql\"";
+        presents_reads_sql_data_access: RoutineDataAccess::ReadsSqlData => "reads SQL data", "\"reads_sql_data\"";
+        presents_modifies_sql_data_access: RoutineDataAccess::ModifiesSqlData => "modifies SQL data", "\"modifies_sql_data\"";
+        presents_in_parameter_mode: ParameterMode::In => "in", "\"in\"";
+        presents_out_parameter_mode: ParameterMode::Out => "out", "\"out\"";
+        presents_inout_parameter_mode: ParameterMode::InOut => "in/out", "\"in_out\"";
+        presents_insert_trigger_event: TriggerEvent::Insert => "insert", "\"insert\"";
+        presents_update_trigger_event: TriggerEvent::Update => "update", "\"update\"";
+        presents_delete_trigger_event: TriggerEvent::Delete => "delete", "\"delete\"";
+        presents_before_trigger_timing: TriggerTiming::Before => "before", "\"before\"";
+        presents_after_trigger_timing: TriggerTiming::After => "after", "\"after\"";
+        presents_row_trigger_orientation: TriggerOrientation::Row => "for each row", "\"row\"";
+        presents_one_time_event_kind: ScheduledEventKind::OneTime => "one time", "\"one_time\"";
+        presents_recurring_event_kind: ScheduledEventKind::Recurring => "recurring", "\"recurring\"";
+        presents_year_interval: ScheduledIntervalUnit::Year => "year", "\"year\"";
+        presents_quarter_interval: ScheduledIntervalUnit::Quarter => "quarter", "\"quarter\"";
+        presents_month_interval: ScheduledIntervalUnit::Month => "month", "\"month\"";
+        presents_week_interval: ScheduledIntervalUnit::Week => "week", "\"week\"";
+        presents_day_interval: ScheduledIntervalUnit::Day => "day", "\"day\"";
+        presents_hour_interval: ScheduledIntervalUnit::Hour => "hour", "\"hour\"";
+        presents_minute_interval: ScheduledIntervalUnit::Minute => "minute", "\"minute\"";
+        presents_second_interval: ScheduledIntervalUnit::Second => "second", "\"second\"";
+        presents_microsecond_interval: ScheduledIntervalUnit::Microsecond => "microsecond", "\"microsecond\"";
+        presents_year_month_interval: ScheduledIntervalUnit::YearMonth => "year to month", "\"year_month\"";
+        presents_day_hour_interval: ScheduledIntervalUnit::DayHour => "day to hour", "\"day_hour\"";
+        presents_day_minute_interval: ScheduledIntervalUnit::DayMinute => "day to minute", "\"day_minute\"";
+        presents_day_second_interval: ScheduledIntervalUnit::DaySecond => "day to second", "\"day_second\"";
+        presents_hour_minute_interval: ScheduledIntervalUnit::HourMinute => "hour to minute", "\"hour_minute\"";
+        presents_hour_second_interval: ScheduledIntervalUnit::HourSecond => "hour to second", "\"hour_second\"";
+        presents_minute_second_interval: ScheduledIntervalUnit::MinuteSecond => "minute to second", "\"minute_second\"";
+        presents_day_microsecond_interval: ScheduledIntervalUnit::DayMicrosecond => "day to microsecond", "\"day_microsecond\"";
+        presents_hour_microsecond_interval: ScheduledIntervalUnit::HourMicrosecond => "hour to microsecond", "\"hour_microsecond\"";
+        presents_minute_microsecond_interval: ScheduledIntervalUnit::MinuteMicrosecond => "minute to microsecond", "\"minute_microsecond\"";
+        presents_second_microsecond_interval: ScheduledIntervalUnit::SecondMicrosecond => "second to microsecond", "\"second_microsecond\"";
+        presents_virtual_generated_storage: GeneratedColumnStorage::Virtual => "virtual", "\"virtual\"";
+        presents_stored_generated_storage: GeneratedColumnStorage::Stored => "stored", "\"stored\"";
+        presents_range_partition: PartitionMethod::Range => "range", "\"range\"";
+        presents_range_columns_partition: PartitionMethod::RangeColumns => "range columns", "\"range_columns\"";
+        presents_list_partition: PartitionMethod::List => "list", "\"list\"";
+        presents_list_columns_partition: PartitionMethod::ListColumns => "list columns", "\"list_columns\"";
+        presents_hash_partition: PartitionMethod::Hash => "hash", "\"hash\"";
+        presents_linear_hash_partition: PartitionMethod::LinearHash => "linear hash", "\"linear_hash\"";
+        presents_key_partition: PartitionMethod::Key => "key", "\"key\"";
+        presents_linear_key_partition: PartitionMethod::LinearKey => "linear key", "\"linear_key\"";
+        presents_system_time_partition: PartitionMethod::SystemTime => "system time", "\"system_time\"";
+        presents_enabled_event_status: ScheduledEventStatus::Enabled => "enabled", "\"enabled\"";
+        presents_disabled_event_status: ScheduledEventStatus::Disabled => "disabled", "\"disabled\"";
+        presents_replica_disabled_event_status: ScheduledEventStatus::ReplicaSideDisabled => "disabled on replica", "\"replica_side_disabled\"";
+        presents_preserved_event_completion: ScheduledEventCompletion::Preserve => "preserve", "\"preserve\"";
+        presents_dropped_event_completion: ScheduledEventCompletion::Drop => "drop", "\"drop\"";
+        presents_string_loadable_return_type: LoadableFunctionReturnType::String => "string", "\"string\"";
+        presents_real_loadable_return_type: LoadableFunctionReturnType::Real => "real number", "\"real\"";
+        presents_integer_loadable_return_type: LoadableFunctionReturnType::Integer => "integer", "\"integer\"";
+        presents_row_loadable_return_type: LoadableFunctionReturnType::Row => "row", "\"row\"";
+        presents_decimal_loadable_return_type: LoadableFunctionReturnType::Decimal => "decimal", "\"decimal\"";
+        presents_temporal_loadable_return_type: LoadableFunctionReturnType::Temporal => "temporal", "\"temporal\"";
+        presents_scalar_loadable_function: LoadableFunctionKind::Scalar => "loadable function", "\"scalar\"";
+        presents_aggregate_loadable_function: LoadableFunctionKind::Aggregate => "aggregate loadable function", "\"aggregate\"";
+        presents_active_plugin_status: PluginStatus::Active => "active", "\"active\"";
+        presents_inactive_plugin_status: PluginStatus::Inactive => "inactive", "\"inactive\"";
+        presents_disabled_plugin_status: PluginStatus::Disabled => "disabled", "\"disabled\"";
+        presents_deleted_plugin_status: PluginStatus::Deleted => "deleted", "\"deleted\"";
+        presents_udf_plugin: PluginKind::Udf => "user-defined function", "\"udf\"";
+        presents_storage_engine_plugin: PluginKind::StorageEngine => "storage engine", "\"storage_engine\"";
+        presents_full_text_parser_plugin: PluginKind::FullTextParser => "full-text parser", "\"full_text_parser\"";
+        presents_daemon_plugin: PluginKind::Daemon => "daemon", "\"daemon\"";
+        presents_information_schema_plugin: PluginKind::InformationSchema => "information schema", "\"information_schema\"";
+        presents_audit_plugin: PluginKind::Audit => "audit", "\"audit\"";
+        presents_replication_plugin: PluginKind::Replication => "replication", "\"replication\"";
+        presents_authentication_plugin: PluginKind::Authentication => "authentication", "\"authentication\"";
+        presents_password_validation_plugin: PluginKind::PasswordValidation => "password validation", "\"password_validation\"";
+        presents_encryption_plugin: PluginKind::Encryption => "encryption", "\"encryption\"";
+        presents_data_type_plugin: PluginKind::DataType => "data type", "\"data_type\"";
+        presents_function_plugin: PluginKind::Function => "native function", "\"function\"";
+        presents_proprietary_plugin_license: PluginLicense::Proprietary => "proprietary", "\"proprietary\"";
+        presents_gpl_plugin_license: PluginLicense::Gpl => "GPL", "\"gpl\"";
+        presents_bsd_plugin_license: PluginLicense::Bsd => "BSD", "\"bsd\"";
+        presents_off_plugin_load_option: PluginLoadOption::Off => "off", "\"off\"";
+        presents_on_plugin_load_option: PluginLoadOption::On => "on", "\"on\"";
+        presents_force_plugin_load_option: PluginLoadOption::Force => "required", "\"force\"";
+        presents_permanent_plugin_load_option: PluginLoadOption::ForcePlusPermanent => "required and permanent", "\"force_plus_permanent\"";
+        presents_unknown_plugin_maturity: PluginMaturity::Unknown => "unknown", "\"unknown\"";
+        presents_experimental_plugin_maturity: PluginMaturity::Experimental => "experimental", "\"experimental\"";
+        presents_alpha_plugin_maturity: PluginMaturity::Alpha => "alpha", "\"alpha\"";
+        presents_beta_plugin_maturity: PluginMaturity::Beta => "beta", "\"beta\"";
+        presents_gamma_plugin_maturity: PluginMaturity::Gamma => "gamma", "\"gamma\"";
+        presents_stable_plugin_maturity: PluginMaturity::Stable => "stable", "\"stable\"";
+        presents_no_tls_requirement: TlsRequirement::None => "none", "\"none\"";
+        presents_any_tls_requirement: TlsRequirement::Any => "encrypted transport", "\"any\"";
+        presents_x509_tls_requirement: TlsRequirement::X509 => "valid X.509 certificate", "\"x509\"";
+        presents_specified_tls_requirement: TlsRequirement::Specified => "specified certificate properties", "\"specified\"";
+        presents_global_privilege_object: PrivilegeObjectKind::Global => "global", "\"global\"";
+        presents_schema_privilege_object: PrivilegeObjectKind::Schema => "schema", "\"schema\"";
+        presents_table_privilege_object: PrivilegeObjectKind::Table => "table", "\"table\"";
+        presents_column_privilege_object: PrivilegeObjectKind::Column => "column", "\"column\"";
+        presents_function_privilege_object: PrivilegeObjectKind::Function => "function", "\"function\"";
+        presents_procedure_privilege_object: PrivilegeObjectKind::Procedure => "procedure", "\"procedure\"";
+        presents_package_privilege_object: PrivilegeObjectKind::Package => "package", "\"package\"";
+        presents_package_body_privilege_object: PrivilegeObjectKind::PackageBody => "package body", "\"package_body\"";
+        presents_proxy_privilege_object: PrivilegeObjectKind::Proxy => "proxy account", "\"proxy\"";
+    }
+}

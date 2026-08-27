@@ -1666,14 +1666,225 @@ fn stable_create_statement(definition: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        generated_column_storage, loadable_function_return_type, partition_method, plugin_kind,
-        plugin_license, plugin_status, scheduled_interval_unit, stable_create_statement,
-        trigger_events,
+        binary_flag, check_constraint_level, constraint_kind, foreign_key_action,
+        generated_column_storage, index_sort_order, loadable_function_kind,
+        loadable_function_return_type, parameter_mode, partition_method, plugin_kind,
+        plugin_license, plugin_load_option, plugin_maturity, plugin_status, privilege_object_kind,
+        routine_data_access, routine_kind, scheduled_event_completion, scheduled_event_kind,
+        scheduled_event_status, scheduled_interval_unit, sql_security, stable_create_statement,
+        tls_requirement, trigger_events, trigger_orientation, trigger_timing, view_algorithm,
+        view_check_option, y_n, yes_no,
     };
     use crate::{
-        GeneratedColumnStorage, LoadableFunctionReturnType, PartitionMethod, PluginKind,
-        PluginLicense, ScheduledIntervalUnit, TriggerEvent,
+        CheckConstraintLevel, GeneratedColumnStorage, LoadableFunctionKind,
+        LoadableFunctionReturnType, ParameterMode, PartitionMethod, PluginKind, PluginLicense,
+        PluginLoadOption, PluginMaturity, PluginStatus, PrivilegeObjectKind, RoutineDataAccess,
+        RoutineKind, ScheduledEventCompletion, ScheduledEventKind, ScheduledEventStatus,
+        ScheduledIntervalUnit, SqlSecurity, TlsRequirement, TriggerEvent, TriggerOrientation,
+        TriggerTiming, ViewAlgorithm, ViewCheckOption,
     };
+    use dbmd_relational::{ForeignKeyAction, IndexSortOrder};
+
+    macro_rules! decoder_cases {
+        ($($name:ident: $actual:expr => $expected:expr;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!($actual, Some($expected));
+                }
+            )+
+        };
+    }
+
+    macro_rules! rejected_decoder_cases {
+        ($($name:ident: $actual:expr;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!($actual, None);
+                }
+            )+
+        };
+    }
+
+    decoder_cases! {
+        decodes_primary_key_constraint: constraint_kind("PRIMARY KEY") => crate::ConstraintKind::PrimaryKey;
+        decodes_unique_constraint: constraint_kind("UNIQUE") => crate::ConstraintKind::Unique;
+        decodes_foreign_key_constraint: constraint_kind("FOREIGN KEY") => crate::ConstraintKind::ForeignKey;
+        decodes_check_constraint: constraint_kind("CHECK") => crate::ConstraintKind::Check;
+        decodes_column_check_constraint_level_case_insensitively: check_constraint_level("column") => CheckConstraintLevel::Column;
+        decodes_table_check_constraint_level_case_insensitively: check_constraint_level("table") => CheckConstraintLevel::Table;
+        decodes_no_action_foreign_key_action: foreign_key_action("NO ACTION") => ForeignKeyAction::NoAction;
+        decodes_restrict_foreign_key_action: foreign_key_action("RESTRICT") => ForeignKeyAction::Restrict;
+        decodes_set_null_foreign_key_action: foreign_key_action("SET NULL") => ForeignKeyAction::SetNull;
+        decodes_set_default_foreign_key_action: foreign_key_action("SET DEFAULT") => ForeignKeyAction::SetDefault;
+        decodes_cascade_foreign_key_action: foreign_key_action("CASCADE") => ForeignKeyAction::Cascade;
+        decodes_ascending_index_order: index_sort_order("A") => IndexSortOrder::Ascending;
+        decodes_descending_index_order: index_sort_order("D") => IndexSortOrder::Descending;
+        decodes_yes_as_true: yes_no("YES") => true;
+        decodes_no_as_false: yes_no("NO") => false;
+        decodes_y_as_true: y_n("Y") => true;
+        decodes_n_as_false: y_n("N") => false;
+        decodes_zero_binary_flag_as_false: binary_flag(0) => false;
+        decodes_one_binary_flag_as_true: binary_flag(1) => true;
+        decodes_virtual_generated_column_storage: generated_column_storage("VIRTUAL GENERATED") => GeneratedColumnStorage::Virtual;
+        decodes_stored_generated_column_storage: generated_column_storage("STORED GENERATED") => GeneratedColumnStorage::Stored;
+        decodes_persistent_generated_column_as_stored: generated_column_storage("PERSISTENT GENERATED") => GeneratedColumnStorage::Stored;
+        decodes_range_partition_method: partition_method("RANGE") => PartitionMethod::Range;
+        decodes_range_columns_partition_method: partition_method("RANGE COLUMNS") => PartitionMethod::RangeColumns;
+        decodes_list_partition_method: partition_method("LIST") => PartitionMethod::List;
+        decodes_list_columns_partition_method: partition_method("LIST COLUMNS") => PartitionMethod::ListColumns;
+        decodes_hash_partition_method: partition_method("HASH") => PartitionMethod::Hash;
+        decodes_linear_hash_partition_method: partition_method("LINEAR HASH") => PartitionMethod::LinearHash;
+        decodes_key_partition_method: partition_method("KEY") => PartitionMethod::Key;
+        decodes_linear_key_partition_method: partition_method("LINEAR KEY") => PartitionMethod::LinearKey;
+        decodes_system_time_partition_method: partition_method("SYSTEM_TIME") => PartitionMethod::SystemTime;
+        decodes_none_view_check_option: view_check_option("NONE") => ViewCheckOption::None;
+        decodes_cascaded_view_check_option: view_check_option("CASCADED") => ViewCheckOption::Cascaded;
+        decodes_local_view_check_option: view_check_option("LOCAL") => ViewCheckOption::Local;
+        decodes_undefined_view_algorithm: view_algorithm("UNDEFINED") => ViewAlgorithm::Undefined;
+        decodes_merge_view_algorithm: view_algorithm("MERGE") => ViewAlgorithm::Merge;
+        decodes_temporary_table_view_algorithm: view_algorithm("TEMPTABLE") => ViewAlgorithm::TemporaryTable;
+        decodes_definer_sql_security: sql_security("DEFINER") => SqlSecurity::Definer;
+        decodes_invoker_sql_security: sql_security("INVOKER") => SqlSecurity::Invoker;
+        decodes_function_routine_kind: routine_kind("FUNCTION") => RoutineKind::Function;
+        decodes_procedure_routine_kind: routine_kind("PROCEDURE") => RoutineKind::Procedure;
+        decodes_contains_sql_data_access: routine_data_access("CONTAINS SQL") => RoutineDataAccess::ContainsSql;
+        decodes_no_sql_data_access: routine_data_access("NO SQL") => RoutineDataAccess::NoSql;
+        decodes_reads_sql_data_access: routine_data_access("READS SQL DATA") => RoutineDataAccess::ReadsSqlData;
+        decodes_modifies_sql_data_access: routine_data_access("MODIFIES SQL DATA") => RoutineDataAccess::ModifiesSqlData;
+        decodes_in_parameter_mode: parameter_mode("IN") => ParameterMode::In;
+        decodes_out_parameter_mode: parameter_mode("OUT") => ParameterMode::Out;
+        decodes_inout_parameter_mode: parameter_mode("INOUT") => ParameterMode::InOut;
+        decodes_before_trigger_timing: trigger_timing("BEFORE") => TriggerTiming::Before;
+        decodes_after_trigger_timing: trigger_timing("AFTER") => TriggerTiming::After;
+        decodes_row_trigger_orientation: trigger_orientation("ROW") => TriggerOrientation::Row;
+        decodes_one_time_scheduled_event: scheduled_event_kind("ONE TIME") => ScheduledEventKind::OneTime;
+        decodes_recurring_scheduled_event: scheduled_event_kind("RECURRING") => ScheduledEventKind::Recurring;
+        decodes_enabled_scheduled_event: scheduled_event_status("ENABLED") => ScheduledEventStatus::Enabled;
+        decodes_disabled_scheduled_event: scheduled_event_status("DISABLED") => ScheduledEventStatus::Disabled;
+        decodes_replica_side_disabled_scheduled_event: scheduled_event_status("REPLICA_SIDE_DISABLED") => ScheduledEventStatus::ReplicaSideDisabled;
+        decodes_legacy_slave_side_disabled_scheduled_event: scheduled_event_status("SLAVESIDE_DISABLED") => ScheduledEventStatus::ReplicaSideDisabled;
+        decodes_preserved_scheduled_event: scheduled_event_completion("PRESERVE") => ScheduledEventCompletion::Preserve;
+        decodes_dropped_scheduled_event: scheduled_event_completion("NOT PRESERVE") => ScheduledEventCompletion::Drop;
+        decodes_year_interval_unit: scheduled_interval_unit("YEAR") => ScheduledIntervalUnit::Year;
+        decodes_quarter_interval_unit: scheduled_interval_unit("QUARTER") => ScheduledIntervalUnit::Quarter;
+        decodes_month_interval_unit: scheduled_interval_unit("MONTH") => ScheduledIntervalUnit::Month;
+        decodes_week_interval_unit: scheduled_interval_unit("WEEK") => ScheduledIntervalUnit::Week;
+        decodes_day_interval_unit: scheduled_interval_unit("DAY") => ScheduledIntervalUnit::Day;
+        decodes_hour_interval_unit: scheduled_interval_unit("HOUR") => ScheduledIntervalUnit::Hour;
+        decodes_minute_interval_unit: scheduled_interval_unit("MINUTE") => ScheduledIntervalUnit::Minute;
+        decodes_second_interval_unit: scheduled_interval_unit("SECOND") => ScheduledIntervalUnit::Second;
+        decodes_microsecond_interval_unit: scheduled_interval_unit("MICROSECOND") => ScheduledIntervalUnit::Microsecond;
+        decodes_year_month_interval_unit: scheduled_interval_unit("YEAR_MONTH") => ScheduledIntervalUnit::YearMonth;
+        decodes_day_hour_interval_unit: scheduled_interval_unit("DAY_HOUR") => ScheduledIntervalUnit::DayHour;
+        decodes_day_minute_interval_unit: scheduled_interval_unit("DAY_MINUTE") => ScheduledIntervalUnit::DayMinute;
+        decodes_day_second_interval_unit: scheduled_interval_unit("DAY_SECOND") => ScheduledIntervalUnit::DaySecond;
+        decodes_hour_minute_interval_unit: scheduled_interval_unit("HOUR_MINUTE") => ScheduledIntervalUnit::HourMinute;
+        decodes_hour_second_interval_unit: scheduled_interval_unit("HOUR_SECOND") => ScheduledIntervalUnit::HourSecond;
+        decodes_minute_second_interval_unit: scheduled_interval_unit("MINUTE_SECOND") => ScheduledIntervalUnit::MinuteSecond;
+        decodes_day_microsecond_interval_unit: scheduled_interval_unit("DAY_MICROSECOND") => ScheduledIntervalUnit::DayMicrosecond;
+        decodes_hour_microsecond_interval_unit: scheduled_interval_unit("HOUR_MICROSECOND") => ScheduledIntervalUnit::HourMicrosecond;
+        decodes_minute_microsecond_interval_unit: scheduled_interval_unit("MINUTE_MICROSECOND") => ScheduledIntervalUnit::MinuteMicrosecond;
+        decodes_second_microsecond_interval_unit: scheduled_interval_unit("SECOND_MICROSECOND") => ScheduledIntervalUnit::SecondMicrosecond;
+        decodes_string_loadable_function_return_type: loadable_function_return_type(0) => LoadableFunctionReturnType::String;
+        decodes_real_loadable_function_return_type: loadable_function_return_type(1) => LoadableFunctionReturnType::Real;
+        decodes_integer_loadable_function_return_type: loadable_function_return_type(2) => LoadableFunctionReturnType::Integer;
+        decodes_row_loadable_function_return_type: loadable_function_return_type(3) => LoadableFunctionReturnType::Row;
+        decodes_decimal_loadable_function_return_type: loadable_function_return_type(4) => LoadableFunctionReturnType::Decimal;
+        decodes_temporal_loadable_function_return_type: loadable_function_return_type(5) => LoadableFunctionReturnType::Temporal;
+        decodes_scalar_loadable_function_kind_case_insensitively: loadable_function_kind("FUNCTION") => LoadableFunctionKind::Scalar;
+        decodes_aggregate_loadable_function_kind_case_insensitively: loadable_function_kind("AGGREGATE") => LoadableFunctionKind::Aggregate;
+        decodes_active_plugin_status: plugin_status("ACTIVE") => PluginStatus::Active;
+        decodes_inactive_plugin_status: plugin_status("INACTIVE") => PluginStatus::Inactive;
+        decodes_disabled_plugin_status: plugin_status("DISABLED") => PluginStatus::Disabled;
+        decodes_deleted_plugin_status: plugin_status("DELETED") => PluginStatus::Deleted;
+        decodes_udf_plugin_kind: plugin_kind("UDF") => PluginKind::Udf;
+        decodes_storage_engine_plugin_kind: plugin_kind("STORAGE ENGINE") => PluginKind::StorageEngine;
+        decodes_full_text_parser_plugin_kind: plugin_kind("FTPARSER") => PluginKind::FullTextParser;
+        decodes_daemon_plugin_kind: plugin_kind("DAEMON") => PluginKind::Daemon;
+        decodes_information_schema_plugin_kind: plugin_kind("INFORMATION SCHEMA") => PluginKind::InformationSchema;
+        decodes_audit_plugin_kind: plugin_kind("AUDIT") => PluginKind::Audit;
+        decodes_replication_plugin_kind: plugin_kind("REPLICATION") => PluginKind::Replication;
+        decodes_authentication_plugin_kind: plugin_kind("AUTHENTICATION") => PluginKind::Authentication;
+        decodes_password_validation_plugin_kind: plugin_kind("PASSWORD VALIDATION") => PluginKind::PasswordValidation;
+        decodes_encryption_plugin_kind: plugin_kind("ENCRYPTION") => PluginKind::Encryption;
+        decodes_data_type_plugin_kind: plugin_kind("DATA TYPE") => PluginKind::DataType;
+        decodes_function_plugin_kind: plugin_kind("FUNCTION") => PluginKind::Function;
+        decodes_proprietary_plugin_license: plugin_license("PROPRIETARY") => PluginLicense::Proprietary;
+        decodes_gpl_plugin_license: plugin_license("GPL") => PluginLicense::Gpl;
+        decodes_bsd_plugin_license: plugin_license("BSD") => PluginLicense::Bsd;
+        decodes_off_plugin_load_option: plugin_load_option("OFF") => PluginLoadOption::Off;
+        decodes_on_plugin_load_option: plugin_load_option("ON") => PluginLoadOption::On;
+        decodes_force_plugin_load_option: plugin_load_option("FORCE") => PluginLoadOption::Force;
+        decodes_permanent_plugin_load_option: plugin_load_option("FORCE_PLUS_PERMANENT") => PluginLoadOption::ForcePlusPermanent;
+        decodes_unknown_plugin_maturity_case_insensitively: plugin_maturity("UNKNOWN") => PluginMaturity::Unknown;
+        decodes_experimental_plugin_maturity: plugin_maturity("experimental") => PluginMaturity::Experimental;
+        decodes_alpha_plugin_maturity: plugin_maturity("alpha") => PluginMaturity::Alpha;
+        decodes_beta_plugin_maturity: plugin_maturity("beta") => PluginMaturity::Beta;
+        decodes_gamma_plugin_maturity: plugin_maturity("gamma") => PluginMaturity::Gamma;
+        decodes_stable_plugin_maturity: plugin_maturity("stable") => PluginMaturity::Stable;
+        decodes_no_tls_requirement: tls_requirement("") => TlsRequirement::None;
+        decodes_any_tls_requirement: tls_requirement("ANY") => TlsRequirement::Any;
+        decodes_x509_tls_requirement: tls_requirement("X509") => TlsRequirement::X509;
+        decodes_specified_tls_requirement: tls_requirement("SPECIFIED") => TlsRequirement::Specified;
+        decodes_global_privilege_object: privilege_object_kind("global") => PrivilegeObjectKind::Global;
+        decodes_schema_privilege_object: privilege_object_kind("schema") => PrivilegeObjectKind::Schema;
+        decodes_table_privilege_object: privilege_object_kind("table") => PrivilegeObjectKind::Table;
+        decodes_column_privilege_object: privilege_object_kind("column") => PrivilegeObjectKind::Column;
+        decodes_function_privilege_object: privilege_object_kind("function") => PrivilegeObjectKind::Function;
+        decodes_procedure_privilege_object: privilege_object_kind("procedure") => PrivilegeObjectKind::Procedure;
+        decodes_package_privilege_object: privilege_object_kind("package") => PrivilegeObjectKind::Package;
+        decodes_package_body_privilege_object: privilege_object_kind("package_body") => PrivilegeObjectKind::PackageBody;
+        decodes_proxy_privilege_object: privilege_object_kind("proxy") => PrivilegeObjectKind::Proxy;
+    }
+
+    rejected_decoder_cases! {
+        rejects_unknown_constraint_kind: constraint_kind("EXCLUSION");
+        rejects_unknown_check_constraint_level: check_constraint_level("SCHEMA");
+        rejects_unknown_foreign_key_action: foreign_key_action("ARCHIVE");
+        rejects_unknown_index_sort_order: index_sort_order("X");
+        rejects_unknown_yes_no_boolean: yes_no("TRUE");
+        rejects_unknown_y_n_boolean: y_n("T");
+        rejects_unknown_binary_flag: binary_flag(2);
+        rejects_non_generated_column_storage: generated_column_storage("DEFAULT_GENERATED");
+        rejects_unknown_partition_method: partition_method("MAGIC");
+        rejects_unknown_view_check_option: view_check_option("GLOBAL");
+        rejects_unknown_view_algorithm: view_algorithm("MATERIALIZED");
+        rejects_unknown_sql_security: sql_security("OWNER");
+        rejects_unknown_routine_kind: routine_kind("AGGREGATE");
+        rejects_unknown_routine_data_access: routine_data_access("WRITES SQL DATA");
+        rejects_unknown_parameter_mode: parameter_mode("RETURN");
+        rejects_empty_trigger_event_list: trigger_events("");
+        rejects_trigger_event_list_with_unknown_member: trigger_events("INSERT,TRUNCATE");
+        rejects_unknown_trigger_timing: trigger_timing("INSTEAD OF");
+        rejects_unknown_trigger_orientation: trigger_orientation("STATEMENT");
+        rejects_unknown_scheduled_event_kind: scheduled_event_kind("CONTINUOUS");
+        rejects_unknown_scheduled_event_status: scheduled_event_status("PAUSED");
+        rejects_unknown_scheduled_event_completion: scheduled_event_completion("RETAIN");
+        rejects_unknown_scheduled_interval_unit: scheduled_interval_unit("FORTNIGHT");
+        rejects_unknown_loadable_function_return_type: loadable_function_return_type(6);
+        rejects_unknown_loadable_function_kind: loadable_function_kind("window");
+        rejects_unknown_plugin_status: plugin_status("STARTING");
+        rejects_unknown_plugin_kind: plugin_kind("MYSTERY");
+        rejects_unknown_plugin_license: plugin_license("MIT");
+        rejects_unknown_plugin_load_option: plugin_load_option("AUTO");
+        rejects_unknown_plugin_maturity: plugin_maturity("production");
+        rejects_unknown_tls_requirement: tls_requirement("OPTIONAL");
+        rejects_unknown_privilege_object_kind: privilege_object_kind("tablespace");
+    }
+
+    #[test]
+    fn decodes_multiple_trigger_events_in_native_order() {
+        assert_eq!(
+            trigger_events("INSERT, UPDATE, DELETE"),
+            Some(vec![
+                TriggerEvent::Insert,
+                TriggerEvent::Update,
+                TriggerEvent::Delete
+            ])
+        );
+    }
 
     #[test]
     fn removes_only_the_volatile_auto_increment_counter() {
@@ -1683,56 +1894,6 @@ mod tests {
             ),
             "CREATE TABLE `items` (`id` bigint NOT NULL AUTO_INCREMENT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
         );
-    }
-
-    #[test]
-    fn decodes_closed_native_catalog_values_semantically() {
-        assert_eq!(
-            trigger_events("INSERT,UPDATE,DELETE"),
-            Some(vec![
-                TriggerEvent::Insert,
-                TriggerEvent::Update,
-                TriggerEvent::Delete
-            ])
-        );
-        assert_eq!(
-            generated_column_storage("STORED GENERATED"),
-            Some(GeneratedColumnStorage::Stored)
-        );
-        assert_eq!(
-            partition_method("SYSTEM_TIME"),
-            Some(PartitionMethod::SystemTime)
-        );
-        assert_eq!(
-            scheduled_interval_unit("SECOND_MICROSECOND"),
-            Some(ScheduledIntervalUnit::SecondMicrosecond)
-        );
-        assert_eq!(plugin_kind("FUNCTION"), Some(PluginKind::Function));
-        assert_eq!(plugin_license("BSD"), Some(PluginLicense::Bsd));
-        assert_eq!(
-            (0..=5)
-                .map(loadable_function_return_type)
-                .collect::<Vec<_>>(),
-            vec![
-                Some(LoadableFunctionReturnType::String),
-                Some(LoadableFunctionReturnType::Real),
-                Some(LoadableFunctionReturnType::Integer),
-                Some(LoadableFunctionReturnType::Row),
-                Some(LoadableFunctionReturnType::Decimal),
-                Some(LoadableFunctionReturnType::Temporal),
-            ]
-        );
-    }
-
-    #[test]
-    fn rejects_unknown_closed_native_catalog_values() {
-        assert_eq!(trigger_events("TRUNCATE"), None);
-        assert_eq!(partition_method("MAGIC"), None);
-        assert_eq!(scheduled_interval_unit("FORTNIGHT"), None);
-        assert_eq!(plugin_kind("MYSTERY"), None);
-        assert_eq!(plugin_license("UNKNOWN"), None);
-        assert_eq!(plugin_status("STARTING"), None);
-        assert_eq!(loadable_function_return_type(6), None);
     }
 }
 

@@ -1507,24 +1507,120 @@ mod tests {
 
     use dbmd_core::SourceId;
 
-    use super::{closed_value, constraint_kind, default_kind, ClickHouseSource};
-    use crate::{ColumnDefaultKind, ConstraintKind};
+    use super::{
+        closed_value, constraint_kind, database_filter, default_kind, dictionary_fields,
+        dictionary_layout, optional, references, table_kind, ClickHouseSource,
+    };
+    use crate::{ColumnDefaultKind, ConstraintKind, TableKind};
+
+    macro_rules! decoder_cases {
+        ($($name:ident: $actual:expr => $expected:expr;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!($actual, Some($expected));
+                }
+            )+
+        };
+    }
+
+    decoder_cases! {
+        decodes_absent_column_default: default_kind("") => ColumnDefaultKind::None;
+        decodes_default_column_default: default_kind("DEFAULT") => ColumnDefaultKind::Default;
+        decodes_materialized_column_default: default_kind("MATERIALIZED") => ColumnDefaultKind::Materialized;
+        decodes_alias_column_default: default_kind("ALIAS") => ColumnDefaultKind::Alias;
+        decodes_ephemeral_column_default: default_kind("EPHEMERAL") => ColumnDefaultKind::Ephemeral;
+        decodes_check_constraint: constraint_kind("CHECK") => ConstraintKind::Check;
+        decodes_assume_constraint: constraint_kind("ASSUME") => ConstraintKind::Assume;
+    }
 
     #[test]
-    fn decodes_closed_catalog_values_into_semantic_enums() {
-        assert_eq!(default_kind(""), Some(ColumnDefaultKind::None));
-        assert_eq!(default_kind("DEFAULT"), Some(ColumnDefaultKind::Default));
-        assert_eq!(
-            default_kind("MATERIALIZED"),
-            Some(ColumnDefaultKind::Materialized)
+    fn rejects_unknown_column_default_kind() {
+        assert_eq!(default_kind("GENERATED"), None);
+    }
+
+    #[test]
+    fn rejects_unknown_constraint_kind() {
+        assert_eq!(constraint_kind("UNIQUE"), None);
+    }
+
+    #[test]
+    fn classifies_every_clickhouse_table_family() {
+        for (engine, expected) in [
+            ("View", TableKind::View),
+            ("MaterializedView", TableKind::MaterializedView),
+            ("LiveView", TableKind::LiveView),
+            ("WindowView", TableKind::WindowView),
+            ("Dictionary", TableKind::Dictionary),
+            ("MergeTree", TableKind::Table),
+        ] {
+            assert_eq!(table_kind(engine), expected, "engine {engine}");
+        }
+    }
+
+    #[test]
+    fn pairs_only_complete_table_references_in_catalog_order() {
+        let values = references(
+            vec!["analytics".to_string(), "ignored".to_string()],
+            vec!["events".to_string()],
         );
-        assert_eq!(default_kind("ALIAS"), Some(ColumnDefaultKind::Alias));
-        assert_eq!(
-            default_kind("EPHEMERAL"),
-            Some(ColumnDefaultKind::Ephemeral)
+
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].database, "analytics");
+        assert_eq!(values[0].table, "events");
+    }
+
+    #[test]
+    fn pairs_only_complete_dictionary_fields_in_catalog_order() {
+        let values = dictionary_fields(
+            vec!["id".to_string(), "ignored".to_string()],
+            vec!["UInt64".to_string()],
         );
-        assert_eq!(constraint_kind("CHECK"), Some(ConstraintKind::Check));
-        assert_eq!(constraint_kind("ASSUME"), Some(ConstraintKind::Assume));
+
+        assert_eq!(values.len(), 1);
+        assert_eq!(values[0].name, "id");
+        assert_eq!(values[0].data_type, "UInt64");
+    }
+
+    #[test]
+    fn extracts_simple_and_parameterized_dictionary_layouts() {
+        assert_eq!(
+            dictionary_layout("CREATE DICTIONARY d LAYOUT(HASHED())"),
+            Some("HASHED".to_string())
+        );
+        assert_eq!(
+            dictionary_layout("CREATE DICTIONARY d LAYOUT(COMPLEX_KEY_CACHE(SIZE_IN_CELLS 10))"),
+            Some("COMPLEX_KEY_CACHE".to_string())
+        );
+    }
+
+    #[test]
+    fn rejects_absent_or_empty_dictionary_layouts() {
+        assert_eq!(dictionary_layout("CREATE DICTIONARY d"), None);
+        assert_eq!(dictionary_layout("CREATE DICTIONARY d LAYOUT()"), None);
+    }
+
+    #[test]
+    fn escapes_configured_database_filter_literals() {
+        assert_eq!(
+            database_filter(Some("tenant\\'one"), "database"),
+            "database = 'tenant\\\\\\'one'"
+        );
+    }
+
+    #[test]
+    fn excludes_every_clickhouse_system_namespace_by_default() {
+        assert_eq!(
+            database_filter(None, "database"),
+            "database NOT IN ('system', 'information_schema', 'INFORMATION_SCHEMA')"
+        );
+    }
+
+    #[test]
+    fn normalizes_only_empty_optional_catalog_strings_to_absence() {
+        assert_eq!(optional(String::new()), None);
+        assert_eq!(optional(" ".to_string()), Some(" ".to_string()));
+        assert_eq!(optional("value".to_string()), Some("value".to_string()));
     }
 
     #[test]

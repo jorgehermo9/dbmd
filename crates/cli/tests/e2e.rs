@@ -5,23 +5,28 @@ use rusqlite::Connection;
 const DUCKDB_SCHEMA: &str = include_str!("../../backends/duckdb/tests/fixtures/schema_surface.sql");
 
 #[test]
-fn root_help_and_version_succeed_without_project_state() {
+fn root_help_succeeds_without_project_state() {
     let project = tempfile::tempdir().expect("temporary CLI project should be created");
     let help = Command::new(env!("CARGO_BIN_EXE_dbmd"))
         .current_dir(project.path())
         .arg("--help")
         .output()
         .expect("dbmd help should execute");
+    assert!(help.status.success());
+    assert!(String::from_utf8(help.stdout)
+        .expect("help should be UTF-8")
+        .contains("Generate agent-readable database schema markdown"));
+}
+
+#[test]
+fn root_version_succeeds_without_project_state() {
+    let project = tempfile::tempdir().expect("temporary CLI project should be created");
     let version = Command::new(env!("CARGO_BIN_EXE_dbmd"))
         .current_dir(project.path())
         .arg("--version")
         .output()
         .expect("dbmd version should execute");
 
-    assert!(help.status.success());
-    assert!(String::from_utf8(help.stdout)
-        .expect("help should be UTF-8")
-        .contains("Generate agent-readable database schema markdown"));
     assert!(version.status.success());
     assert_eq!(
         String::from_utf8(version.stdout).expect("version should be UTF-8"),
@@ -47,93 +52,46 @@ fn render_help_exposes_configured_and_one_off_application_inputs() {
     assert!(stdout.contains("--template-root"));
 }
 
-#[test]
-fn clap_rejects_every_conflicting_or_unsupported_command_shape_before_application_work() {
+fn assert_clap_rejection(arguments: &[&str], expected: &str) {
     let project = tempfile::tempdir().expect("temporary CLI project should be created");
-    let cases = [
-        (
-            "backend requires path",
-            vec!["render", "--backend", "sqlite", "--stdout"],
-            "--path",
-        ),
-        (
-            "path requires backend",
-            vec!["render", "--path", "app.db", "--stdout"],
-            "--backend",
-        ),
-        (
-            "config conflicts with backend",
-            vec![
-                "render",
-                "--config",
-                "dbmd.toml",
-                "--backend",
-                "sqlite",
-                "--path",
-                "app.db",
-            ],
-            "cannot be used with",
-        ),
-        (
-            "source conflicts with one-off backend",
-            vec![
-                "render",
-                "--source",
-                "app",
-                "--backend",
-                "sqlite",
-                "--path",
-                "app.db",
-            ],
-            "cannot be used with",
-        ),
-        (
-            "stdout conflicts with output",
-            vec!["render", "--stdout", "--output", "DATABASE.md"],
-            "cannot be used with",
-        ),
-        (
-            "server backend is not a configless value",
-            vec![
-                "render",
-                "--backend",
-                "postgres",
-                "--path",
-                "ignored",
-                "--stdout",
-            ],
-            "invalid value",
-        ),
-        (
-            "verify has no output override",
-            vec!["verify", "--output", "OTHER.md"],
-            "unexpected argument",
-        ),
-        (
-            "explain has no structured format",
-            vec!["explain", "--format", "json"],
-            "unexpected argument",
-        ),
-    ];
+    let output = Command::new(env!("CARGO_BIN_EXE_dbmd"))
+        .current_dir(project.path())
+        .args(arguments)
+        .output()
+        .expect("dbmd should report the argument error");
+    let stderr = String::from_utf8(output.stderr).expect("Clap error should be UTF-8");
 
-    for (case, arguments, expected) in cases {
-        let output = Command::new(env!("CARGO_BIN_EXE_dbmd"))
-            .current_dir(project.path())
-            .args(arguments)
-            .output()
-            .expect(case);
-        let stderr = String::from_utf8(output.stderr).expect("Clap error should be UTF-8");
-
-        assert_eq!(output.status.code(), Some(2), "{case}: {stderr}");
-        assert!(stderr.contains(expected), "{case}: {stderr}");
-        assert!(output.stdout.is_empty(), "{case}");
-    }
+    assert_eq!(output.status.code(), Some(2), "{stderr}");
+    assert!(stderr.contains(expected), "{stderr}");
+    assert!(output.stdout.is_empty());
     assert_eq!(
         fs::read_dir(project.path())
             .expect("temporary project should remain readable")
             .count(),
         0
     );
+}
+
+macro_rules! clap_rejection_cases {
+    ($($name:ident: [$($argument:literal),+ $(,)?] => $expected:literal;)+) => {
+        $(
+            #[test]
+            fn $name() {
+                assert_clap_rejection(&[$($argument),+], $expected);
+            }
+        )+
+    };
+}
+
+clap_rejection_cases! {
+    render_backend_requires_path: ["render", "--backend", "sqlite", "--stdout"] => "--path";
+    render_path_requires_backend: ["render", "--path", "app.db", "--stdout"] => "--backend";
+    render_config_conflicts_with_one_off_backend: ["render", "--config", "dbmd.toml", "--backend", "sqlite", "--path", "app.db"] => "cannot be used with";
+    render_source_selection_conflicts_with_one_off_backend: ["render", "--source", "app", "--backend", "sqlite", "--path", "app.db"] => "cannot be used with";
+    render_stdout_conflicts_with_output_path: ["render", "--stdout", "--output", "DATABASE.md"] => "cannot be used with";
+    render_rejects_server_backend_as_configless_value: ["render", "--backend", "postgres", "--path", "ignored", "--stdout"] => "invalid value";
+    verify_rejects_output_override: ["verify", "--output", "OTHER.md"] => "unexpected argument";
+    explain_rejects_unimplemented_structured_format: ["explain", "--format", "json"] => "unexpected argument";
 }
 
 #[test]

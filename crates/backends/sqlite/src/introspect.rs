@@ -1571,3 +1571,163 @@ pub enum IntrospectionError {
         source: rusqlite::Error,
     },
 }
+
+#[cfg(test)]
+mod tests {
+    use rusqlite::types::Type;
+    use sqlite3_parser::ast::{DeferSubclause, InitDeferredPred, RefAct, ResolveType};
+
+    use super::{
+        foreign_key_action, parse_conflict_resolution, parse_deferrability, parse_index_definition,
+        parse_reference_action, sqlite_column_kind, sqlite_foreign_key_match, sqlite_identifier,
+        sqlite_index_origin,
+    };
+    use crate::{ColumnKind, ConflictResolution, IndexOrigin};
+    use dbmd_relational::{
+        ForeignKeyAction, ForeignKeyDeferrability, ForeignKeyInitialTiming, ForeignKeyMatch,
+    };
+
+    macro_rules! value_cases {
+        ($($name:ident: $actual:expr => $expected:expr;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!($actual, $expected);
+                }
+            )+
+        };
+    }
+
+    value_cases! {
+        decodes_simple_foreign_key_match_case_insensitively: sqlite_foreign_key_match("SiMpLe") => ForeignKeyMatch::Simple;
+        decodes_partial_foreign_key_match_case_insensitively: sqlite_foreign_key_match("PaRtIaL") => ForeignKeyMatch::Partial;
+        decodes_full_foreign_key_match_case_insensitively: sqlite_foreign_key_match("FuLl") => ForeignKeyMatch::Full;
+        preserves_named_foreign_key_match: sqlite_foreign_key_match("application_match") => ForeignKeyMatch::Named("application_match".to_string());
+        decodes_set_null_reference_action: parse_reference_action(RefAct::SetNull) => ForeignKeyAction::SetNull;
+        decodes_set_default_reference_action: parse_reference_action(RefAct::SetDefault) => ForeignKeyAction::SetDefault;
+        decodes_cascade_reference_action: parse_reference_action(RefAct::Cascade) => ForeignKeyAction::Cascade;
+        decodes_restrict_reference_action: parse_reference_action(RefAct::Restrict) => ForeignKeyAction::Restrict;
+        decodes_no_action_reference_action: parse_reference_action(RefAct::NoAction) => ForeignKeyAction::NoAction;
+        decodes_rollback_conflict_resolution: parse_conflict_resolution(ResolveType::Rollback) => ConflictResolution::Rollback;
+        decodes_abort_conflict_resolution: parse_conflict_resolution(ResolveType::Abort) => ConflictResolution::Abort;
+        decodes_fail_conflict_resolution: parse_conflict_resolution(ResolveType::Fail) => ConflictResolution::Fail;
+        decodes_ignore_conflict_resolution: parse_conflict_resolution(ResolveType::Ignore) => ConflictResolution::Ignore;
+        decodes_replace_conflict_resolution: parse_conflict_resolution(ResolveType::Replace) => ConflictResolution::Replace;
+        decodes_create_index_origin: sqlite_index_origin("c", 7).unwrap() => IndexOrigin::CreateIndex;
+        decodes_unique_constraint_index_origin: sqlite_index_origin("u", 7).unwrap() => IndexOrigin::UniqueConstraint;
+        decodes_primary_key_index_origin: sqlite_index_origin("pk", 7).unwrap() => IndexOrigin::PrimaryKey;
+        decodes_no_action_catalog_foreign_key_action: foreign_key_action("NO ACTION", 8).unwrap() => ForeignKeyAction::NoAction;
+        decodes_restrict_catalog_foreign_key_action: foreign_key_action("RESTRICT", 8).unwrap() => ForeignKeyAction::Restrict;
+        decodes_set_null_catalog_foreign_key_action: foreign_key_action("SET NULL", 8).unwrap() => ForeignKeyAction::SetNull;
+        decodes_set_default_catalog_foreign_key_action: foreign_key_action("SET DEFAULT", 8).unwrap() => ForeignKeyAction::SetDefault;
+        decodes_cascade_catalog_foreign_key_action: foreign_key_action("CASCADE", 8).unwrap() => ForeignKeyAction::Cascade;
+        decodes_normal_column_kind: sqlite_column_kind(0).unwrap() => ColumnKind::Normal;
+        decodes_hidden_virtual_table_column_kind: sqlite_column_kind(1).unwrap() => ColumnKind::VirtualTableHidden;
+        decodes_virtual_generated_column_kind: sqlite_column_kind(2).unwrap() => ColumnKind::VirtualGenerated;
+        decodes_stored_generated_column_kind: sqlite_column_kind(3).unwrap() => ColumnKind::StoredGenerated;
+        preserves_unquoted_identifier: sqlite_identifier("customer") => "customer".to_string();
+        unquotes_double_quoted_identifier: sqlite_identifier("\"customer\"") => "customer".to_string();
+        unquotes_single_quoted_identifier: sqlite_identifier("'customer'") => "customer".to_string();
+        unquotes_backtick_identifier: sqlite_identifier("`customer`") => "customer".to_string();
+        unquotes_bracket_identifier: sqlite_identifier("[customer]") => "customer".to_string();
+        unescapes_doubled_double_quotes_in_identifier: sqlite_identifier("\"customer\"\"name\"") => "customer\"name".to_string();
+        unescapes_doubled_single_quotes_in_identifier: sqlite_identifier("'customer''name'") => "customer'name".to_string();
+        unescapes_doubled_backticks_in_identifier: sqlite_identifier("`customer``name`") => "customer`name".to_string();
+        preserves_unterminated_quoted_identifier: sqlite_identifier("\"customer") => "\"customer".to_string();
+        preserves_empty_identifier: sqlite_identifier("") => String::new();
+    }
+
+    #[test]
+    fn defaults_absent_deferrability_to_not_deferrable_and_immediate() {
+        assert_eq!(
+            parse_deferrability(None),
+            ForeignKeyDeferrability::default()
+        );
+    }
+
+    #[test]
+    fn decodes_deferrable_initially_deferred() {
+        let clause = DeferSubclause {
+            deferrable: true,
+            init_deferred: Some(InitDeferredPred::InitiallyDeferred),
+        };
+
+        assert_eq!(
+            parse_deferrability(Some(&clause)),
+            ForeignKeyDeferrability::new(true, ForeignKeyInitialTiming::Deferred)
+        );
+    }
+
+    #[test]
+    fn decodes_not_deferrable_initially_immediate() {
+        let clause = DeferSubclause {
+            deferrable: false,
+            init_deferred: Some(InitDeferredPred::InitiallyImmediate),
+        };
+
+        assert_eq!(
+            parse_deferrability(Some(&clause)),
+            ForeignKeyDeferrability::new(false, ForeignKeyInitialTiming::Immediate)
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_index_origin_with_catalog_column_context() {
+        let error = sqlite_index_origin("future", 7).expect_err("unknown origin must fail");
+
+        match error {
+            rusqlite::Error::FromSqlConversionFailure(index, Type::Text, source) => {
+                assert_eq!(index, 7);
+                assert!(source.to_string().contains("future"));
+            }
+            other => panic!("unexpected error: {other}"),
+        }
+    }
+
+    #[test]
+    fn rejects_unknown_foreign_key_action_with_catalog_column_context() {
+        let error = foreign_key_action("ARCHIVE", 8).expect_err("unknown action must fail");
+
+        match error {
+            rusqlite::Error::FromSqlConversionFailure(index, Type::Text, source) => {
+                assert_eq!(index, 8);
+                assert!(source.to_string().contains("ARCHIVE"));
+            }
+            other => panic!("unexpected error: {other}"),
+        }
+    }
+
+    #[test]
+    fn rejects_unknown_column_kind_with_integer_catalog_context() {
+        let error = sqlite_column_kind(4).expect_err("unknown column kind must fail");
+
+        match error {
+            rusqlite::Error::FromSqlConversionFailure(index, Type::Integer, source) => {
+                assert_eq!(index, 5);
+                assert!(source.to_string().contains('4'));
+            }
+            other => panic!("unexpected error: {other}"),
+        }
+    }
+
+    #[test]
+    fn parses_expression_collation_order_and_partial_index_predicate() {
+        let parsed = parse_index_definition(
+            "CREATE INDEX idx ON events ((lower(name)) COLLATE nocase DESC, created_at ASC) WHERE archived = 0",
+        )
+        .expect("valid SQLite index should parse");
+
+        assert_eq!(parsed.terms, ["(lower (name))", "created_at"]);
+        assert_eq!(parsed.predicate.as_deref(), Some("archived = 0"));
+    }
+
+    #[test]
+    fn rejects_non_index_definition_in_index_parser() {
+        let error = match parse_index_definition("CREATE TABLE events (id INTEGER)") {
+            Ok(_) => panic!("non-index DDL must fail"),
+            Err(error) => error,
+        };
+
+        assert!(error.to_string().contains("index"));
+    }
+}

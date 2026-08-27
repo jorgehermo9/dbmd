@@ -4937,10 +4937,319 @@ mod tests {
     use dbmd_core::SourceId;
 
     use super::{
-        default_privilege_object, policy_command, privilege_kind, privilege_object_kind,
-        trigger_when_expression,
+        access_method_kind, aggregate_final_modify, aggregate_kind, cast_context, cast_method,
+        collation_provider, column_compression, column_storage, constraint_kind,
+        database_locale_provider, default_privilege_object, event_trigger_event,
+        foreign_key_action, foreign_key_match, function_kind, function_parallel,
+        function_volatility, operator_purpose, policy_command, privilege_kind,
+        privilege_object_kind, publication_generated_columns, relation_option_enabled,
+        relation_persistence, replica_identity, rewrite_rule_event, security_label_object_kind,
+        sequence_persistence, statistics_kind, subscription_origin, subscription_streaming,
+        subscription_two_phase, synchronous_commit, table_kind, trigger_enabled,
+        trigger_when_expression, type_alignment, type_storage, view_check_option,
     };
-    use crate::{DefaultPrivilegeObject, PolicyCommand, PrivilegeKind, PrivilegeObjectKind};
+    use crate::{
+        AccessMethodKind, AggregateFinalModify, AggregateKind, CastContext, CastMethod,
+        CollationProvider, ColumnCompression, ColumnStorage, ConstraintKind,
+        DatabaseLocaleProvider, DefaultPrivilegeObject, EventTriggerEvent, FunctionKind,
+        FunctionParallel, FunctionVolatility, OperatorPurpose, PolicyCommand, PrivilegeKind,
+        PrivilegeObjectKind, PublicationGeneratedColumns, RelationPersistence, ReplicaIdentity,
+        RewriteRuleEvent, SecurityLabelObjectKind, SequencePersistence, StatisticsKind,
+        SubscriptionOrigin, SubscriptionStreaming, SubscriptionTwoPhase, SynchronousCommit,
+        TableKind, TriggerEnabled, TypeAlignment, TypeStorage, ViewCheckOption,
+    };
+    use dbmd_relational::{ForeignKeyAction, ForeignKeyMatch};
+
+    fn source() -> SourceId {
+        SourceId::from_str("app").expect("test source ID should be valid")
+    }
+
+    macro_rules! decoder_cases {
+        ($($name:ident: $actual:expr => $expected:expr;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!(
+                        $actual.expect("documented PostgreSQL catalog value should decode"),
+                        $expected
+                    );
+                }
+            )+
+        };
+    }
+
+    macro_rules! rejected_decoder_cases {
+        ($($name:ident: $actual:expr => $catalog:literal;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    let error = $actual.expect_err("unknown PostgreSQL catalog value must fail");
+                    let message = error.to_string();
+                    assert!(message.contains("source `app`"), "{message}");
+                    assert!(message.contains($catalog), "{message}");
+                }
+            )+
+        };
+    }
+
+    decoder_cases! {
+        decodes_builtin_database_locale_provider: database_locale_provider(&source(), "b") => DatabaseLocaleProvider::Builtin;
+        decodes_libc_database_locale_provider: database_locale_provider(&source(), "c") => DatabaseLocaleProvider::Libc;
+        decodes_icu_database_locale_provider: database_locale_provider(&source(), "i") => DatabaseLocaleProvider::Icu;
+        decodes_no_publication_generated_columns: publication_generated_columns(&source(), "n") => PublicationGeneratedColumns::None;
+        decodes_stored_publication_generated_columns: publication_generated_columns(&source(), "s") => PublicationGeneratedColumns::Stored;
+        decodes_disabled_subscription_streaming: subscription_streaming(&source(), "f") => SubscriptionStreaming::Off;
+        decodes_enabled_subscription_streaming: subscription_streaming(&source(), "t") => SubscriptionStreaming::On;
+        decodes_parallel_subscription_streaming: subscription_streaming(&source(), "p") => SubscriptionStreaming::Parallel;
+        decodes_disabled_subscription_two_phase: subscription_two_phase(&source(), "d") => SubscriptionTwoPhase::Disabled;
+        decodes_pending_subscription_two_phase: subscription_two_phase(&source(), "p") => SubscriptionTwoPhase::Pending;
+        decodes_enabled_subscription_two_phase: subscription_two_phase(&source(), "e") => SubscriptionTwoPhase::Enabled;
+        decodes_off_synchronous_commit: synchronous_commit(&source(), "off") => SynchronousCommit::Off;
+        decodes_local_synchronous_commit: synchronous_commit(&source(), "local") => SynchronousCommit::Local;
+        decodes_remote_write_synchronous_commit: synchronous_commit(&source(), "remote_write") => SynchronousCommit::RemoteWrite;
+        decodes_on_synchronous_commit: synchronous_commit(&source(), "on") => SynchronousCommit::On;
+        decodes_remote_apply_synchronous_commit: synchronous_commit(&source(), "remote_apply") => SynchronousCommit::RemoteApply;
+        decodes_none_subscription_origin: subscription_origin(&source(), "none") => SubscriptionOrigin::None;
+        decodes_any_subscription_origin: subscription_origin(&source(), "any") => SubscriptionOrigin::Any;
+        decodes_database_default_collation_provider: collation_provider(&source(), "d") => CollationProvider::DatabaseDefault;
+        decodes_builtin_collation_provider: collation_provider(&source(), "b") => CollationProvider::Builtin;
+        decodes_libc_collation_provider: collation_provider(&source(), "c") => CollationProvider::Libc;
+        decodes_icu_collation_provider: collation_provider(&source(), "i") => CollationProvider::Icu;
+        decodes_permanent_sequence_persistence: sequence_persistence(&source(), "p") => SequencePersistence::Permanent;
+        decodes_unlogged_sequence_persistence: sequence_persistence(&source(), "u") => SequencePersistence::Unlogged;
+        decodes_char_type_alignment: type_alignment(&source(), "c") => TypeAlignment::Char;
+        decodes_short_type_alignment: type_alignment(&source(), "s") => TypeAlignment::Short;
+        decodes_int_type_alignment: type_alignment(&source(), "i") => TypeAlignment::Int;
+        decodes_double_type_alignment: type_alignment(&source(), "d") => TypeAlignment::Double;
+        decodes_plain_type_storage: type_storage(&source(), "p") => TypeStorage::Plain;
+        decodes_external_type_storage: type_storage(&source(), "e") => TypeStorage::External;
+        decodes_main_type_storage: type_storage(&source(), "m") => TypeStorage::Main;
+        decodes_extended_type_storage: type_storage(&source(), "x") => TypeStorage::Extended;
+        decodes_plain_column_storage: column_storage(&source(), "p") => ColumnStorage::Plain;
+        decodes_external_column_storage: column_storage(&source(), "e") => ColumnStorage::External;
+        decodes_main_column_storage: column_storage(&source(), "m") => ColumnStorage::Main;
+        decodes_extended_column_storage: column_storage(&source(), "x") => ColumnStorage::Extended;
+        decodes_pglz_column_compression: column_compression(&source(), "p") => ColumnCompression::Pglz;
+        decodes_lz4_column_compression: column_compression(&source(), "l") => ColumnCompression::Lz4;
+        decodes_ordinary_function_kind: function_kind(&source(), "f") => FunctionKind::Ordinary;
+        decodes_window_function_kind: function_kind(&source(), "w") => FunctionKind::Window;
+        decodes_normal_aggregate_kind: aggregate_kind(&source(), "n") => AggregateKind::Normal;
+        decodes_ordered_set_aggregate_kind: aggregate_kind(&source(), "o") => AggregateKind::OrderedSet;
+        decodes_hypothetical_set_aggregate_kind: aggregate_kind(&source(), "h") => AggregateKind::HypotheticalSet;
+        decodes_read_only_aggregate_final_modify: aggregate_final_modify(&source(), "r") => AggregateFinalModify::ReadOnly;
+        decodes_shareable_aggregate_final_modify: aggregate_final_modify(&source(), "s") => AggregateFinalModify::Shareable;
+        decodes_read_write_aggregate_final_modify: aggregate_final_modify(&source(), "w") => AggregateFinalModify::ReadWrite;
+        decodes_select_rewrite_rule_event: rewrite_rule_event(&source(), "1") => RewriteRuleEvent::Select;
+        decodes_update_rewrite_rule_event: rewrite_rule_event(&source(), "2") => RewriteRuleEvent::Update;
+        decodes_insert_rewrite_rule_event: rewrite_rule_event(&source(), "3") => RewriteRuleEvent::Insert;
+        decodes_delete_rewrite_rule_event: rewrite_rule_event(&source(), "4") => RewriteRuleEvent::Delete;
+        decodes_login_event_trigger_event: event_trigger_event(&source(), "login") => EventTriggerEvent::Login;
+        decodes_ddl_start_event_trigger_event: event_trigger_event(&source(), "ddl_command_start") => EventTriggerEvent::DdlCommandStart;
+        decodes_ddl_end_event_trigger_event: event_trigger_event(&source(), "ddl_command_end") => EventTriggerEvent::DdlCommandEnd;
+        decodes_sql_drop_event_trigger_event: event_trigger_event(&source(), "sql_drop") => EventTriggerEvent::SqlDrop;
+        decodes_table_rewrite_event_trigger_event: event_trigger_event(&source(), "table_rewrite") => EventTriggerEvent::TableRewrite;
+        decodes_nd_distinct_statistics_kind: statistics_kind(&source(), 'd') => StatisticsKind::NdDistinct;
+        decodes_dependencies_statistics_kind: statistics_kind(&source(), 'f') => StatisticsKind::Dependencies;
+        decodes_most_common_values_statistics_kind: statistics_kind(&source(), 'm') => StatisticsKind::MostCommonValues;
+        decodes_expressions_statistics_kind: statistics_kind(&source(), 'e') => StatisticsKind::Expressions;
+        decodes_partitioned_table_kind: table_kind(&source(), "p", false) => TableKind::PartitionedTable;
+        decodes_foreign_table_kind: table_kind(&source(), "f", false) => TableKind::ForeignTable;
+        decodes_ordinary_table_kind: table_kind(&source(), "r", false) => TableKind::Table;
+        partition_flag_overrides_relation_kind: table_kind(&source(), "future", true) => TableKind::Partition;
+        decodes_permanent_relation_persistence: relation_persistence(&source(), "p") => RelationPersistence::Permanent;
+        decodes_unlogged_relation_persistence: relation_persistence(&source(), "u") => RelationPersistence::Unlogged;
+        decodes_default_replica_identity: replica_identity(&source(), "d") => ReplicaIdentity::Default;
+        decodes_nothing_replica_identity: replica_identity(&source(), "n") => ReplicaIdentity::Nothing;
+        decodes_full_replica_identity: replica_identity(&source(), "f") => ReplicaIdentity::Full;
+        decodes_index_replica_identity: replica_identity(&source(), "i") => ReplicaIdentity::Index;
+        decodes_select_policy_command: policy_command(&source(), "r") => PolicyCommand::Select;
+        decodes_insert_policy_command: policy_command(&source(), "a") => PolicyCommand::Insert;
+        decodes_update_policy_command: policy_command(&source(), "w") => PolicyCommand::Update;
+        decodes_delete_policy_command: policy_command(&source(), "d") => PolicyCommand::Delete;
+        decodes_all_policy_command: policy_command(&source(), "*") => PolicyCommand::All;
+        decodes_primary_key_constraint: constraint_kind(&source(), "p") => ConstraintKind::PrimaryKey;
+        decodes_foreign_key_constraint: constraint_kind(&source(), "f") => ConstraintKind::ForeignKey;
+        decodes_unique_constraint: constraint_kind(&source(), "u") => ConstraintKind::Unique;
+        decodes_exclusion_constraint: constraint_kind(&source(), "x") => ConstraintKind::Exclusion;
+        decodes_check_constraint: constraint_kind(&source(), "c") => ConstraintKind::Check;
+        decodes_not_null_constraint: constraint_kind(&source(), "n") => ConstraintKind::NotNull;
+        decodes_restrict_foreign_key_action: foreign_key_action(&source(), "r") => ForeignKeyAction::Restrict;
+        decodes_cascade_foreign_key_action: foreign_key_action(&source(), "c") => ForeignKeyAction::Cascade;
+        decodes_set_null_foreign_key_action: foreign_key_action(&source(), "n") => ForeignKeyAction::SetNull;
+        decodes_set_default_foreign_key_action: foreign_key_action(&source(), "d") => ForeignKeyAction::SetDefault;
+        decodes_no_action_foreign_key_action: foreign_key_action(&source(), "a") => ForeignKeyAction::NoAction;
+        decodes_full_foreign_key_match: foreign_key_match(&source(), "f") => ForeignKeyMatch::Full;
+        decodes_partial_foreign_key_match: foreign_key_match(&source(), "p") => ForeignKeyMatch::Partial;
+        decodes_simple_foreign_key_match: foreign_key_match(&source(), "s") => ForeignKeyMatch::Simple;
+        decodes_immutable_function_volatility: function_volatility(&source(), "i") => FunctionVolatility::Immutable;
+        decodes_stable_function_volatility: function_volatility(&source(), "s") => FunctionVolatility::Stable;
+        decodes_volatile_function_volatility: function_volatility(&source(), "v") => FunctionVolatility::Volatile;
+        decodes_safe_function_parallelism: function_parallel(&source(), "s") => FunctionParallel::Safe;
+        decodes_restricted_function_parallelism: function_parallel(&source(), "r") => FunctionParallel::Restricted;
+        decodes_unsafe_function_parallelism: function_parallel(&source(), "u") => FunctionParallel::Unsafe;
+        decodes_explicit_cast_context: cast_context(&source(), "e") => CastContext::Explicit;
+        decodes_assignment_cast_context: cast_context(&source(), "a") => CastContext::Assignment;
+        decodes_implicit_cast_context: cast_context(&source(), "i") => CastContext::Implicit;
+        decodes_function_cast_method: cast_method(&source(), "f") => CastMethod::Function;
+        decodes_input_output_cast_method: cast_method(&source(), "i") => CastMethod::InputOutput;
+        decodes_binary_cast_method: cast_method(&source(), "b") => CastMethod::Binary;
+        decodes_search_operator_purpose: operator_purpose(&source(), "s") => OperatorPurpose::Search;
+        decodes_ordering_operator_purpose: operator_purpose(&source(), "o") => OperatorPurpose::Ordering;
+        decodes_table_access_method_kind: access_method_kind(&source(), "t") => AccessMethodKind::Table;
+        decodes_index_access_method_kind: access_method_kind(&source(), "i") => AccessMethodKind::Index;
+        decodes_origin_trigger_enablement: trigger_enabled(&source(), "O") => TriggerEnabled::Origin;
+        decodes_disabled_trigger_enablement: trigger_enabled(&source(), "D") => TriggerEnabled::Disabled;
+        decodes_replica_trigger_enablement: trigger_enabled(&source(), "R") => TriggerEnabled::Replica;
+        decodes_always_trigger_enablement: trigger_enabled(&source(), "A") => TriggerEnabled::Always;
+        decodes_database_privilege_object: privilege_object_kind(&source(), "database") => PrivilegeObjectKind::Database;
+        decodes_schema_privilege_object: privilege_object_kind(&source(), "schema") => PrivilegeObjectKind::Schema;
+        decodes_table_privilege_object: privilege_object_kind(&source(), "table") => PrivilegeObjectKind::Table;
+        decodes_table_column_privilege_object: privilege_object_kind(&source(), "table column") => PrivilegeObjectKind::TableColumn;
+        decodes_sequence_privilege_object: privilege_object_kind(&source(), "sequence") => PrivilegeObjectKind::Sequence;
+        decodes_view_privilege_object: privilege_object_kind(&source(), "view") => PrivilegeObjectKind::View;
+        decodes_materialized_view_privilege_object: privilege_object_kind(&source(), "materialized view") => PrivilegeObjectKind::MaterializedView;
+        decodes_foreign_table_privilege_object: privilege_object_kind(&source(), "foreign table") => PrivilegeObjectKind::ForeignTable;
+        decodes_function_privilege_object: privilege_object_kind(&source(), "function") => PrivilegeObjectKind::Function;
+        decodes_procedure_privilege_object: privilege_object_kind(&source(), "procedure") => PrivilegeObjectKind::Procedure;
+        decodes_aggregate_privilege_object: privilege_object_kind(&source(), "aggregate") => PrivilegeObjectKind::Aggregate;
+        decodes_type_privilege_object: privilege_object_kind(&source(), "type") => PrivilegeObjectKind::Type;
+        decodes_domain_privilege_object: privilege_object_kind(&source(), "domain") => PrivilegeObjectKind::Domain;
+        decodes_language_privilege_object: privilege_object_kind(&source(), "language") => PrivilegeObjectKind::Language;
+        decodes_large_object_privilege_object: privilege_object_kind(&source(), "large object") => PrivilegeObjectKind::LargeObject;
+        decodes_foreign_data_wrapper_privilege_object: privilege_object_kind(&source(), "foreign-data wrapper") => PrivilegeObjectKind::ForeignDataWrapper;
+        decodes_foreign_server_privilege_object: privilege_object_kind(&source(), "server") => PrivilegeObjectKind::ForeignServer;
+        decodes_parameter_privilege_object: privilege_object_kind(&source(), "parameter ACL") => PrivilegeObjectKind::Parameter;
+        decodes_tablespace_privilege_object: privilege_object_kind(&source(), "tablespace") => PrivilegeObjectKind::Tablespace;
+        decodes_select_privilege: privilege_kind(&source(), "SELECT") => PrivilegeKind::Select;
+        decodes_insert_privilege: privilege_kind(&source(), "INSERT") => PrivilegeKind::Insert;
+        decodes_update_privilege: privilege_kind(&source(), "UPDATE") => PrivilegeKind::Update;
+        decodes_delete_privilege: privilege_kind(&source(), "DELETE") => PrivilegeKind::Delete;
+        decodes_truncate_privilege: privilege_kind(&source(), "TRUNCATE") => PrivilegeKind::Truncate;
+        decodes_references_privilege: privilege_kind(&source(), "REFERENCES") => PrivilegeKind::References;
+        decodes_trigger_privilege: privilege_kind(&source(), "TRIGGER") => PrivilegeKind::Trigger;
+        decodes_maintain_privilege: privilege_kind(&source(), "MAINTAIN") => PrivilegeKind::Maintain;
+        decodes_usage_privilege: privilege_kind(&source(), "USAGE") => PrivilegeKind::Usage;
+        decodes_create_privilege: privilege_kind(&source(), "CREATE") => PrivilegeKind::Create;
+        decodes_connect_privilege: privilege_kind(&source(), "CONNECT") => PrivilegeKind::Connect;
+        decodes_temporary_privilege: privilege_kind(&source(), "TEMPORARY") => PrivilegeKind::Temporary;
+        decodes_execute_privilege: privilege_kind(&source(), "EXECUTE") => PrivilegeKind::Execute;
+        decodes_set_privilege: privilege_kind(&source(), "SET") => PrivilegeKind::Set;
+        decodes_alter_system_privilege: privilege_kind(&source(), "ALTER SYSTEM") => PrivilegeKind::AlterSystem;
+        decodes_tables_default_privilege_object: default_privilege_object(&source(), "r") => DefaultPrivilegeObject::Tables;
+        decodes_sequences_default_privilege_object: default_privilege_object(&source(), "S") => DefaultPrivilegeObject::Sequences;
+        decodes_routines_default_privilege_object: default_privilege_object(&source(), "f") => DefaultPrivilegeObject::Routines;
+        decodes_types_default_privilege_object: default_privilege_object(&source(), "T") => DefaultPrivilegeObject::Types;
+        decodes_schemas_default_privilege_object: default_privilege_object(&source(), "n") => DefaultPrivilegeObject::Schemas;
+        decodes_large_objects_default_privilege_object: default_privilege_object(&source(), "L") => DefaultPrivilegeObject::LargeObjects;
+        decodes_aggregate_security_label_object: security_label_object_kind(&source(), "aggregate") => SecurityLabelObjectKind::Aggregate;
+        decodes_database_security_label_object: security_label_object_kind(&source(), "database") => SecurityLabelObjectKind::Database;
+        decodes_domain_security_label_object: security_label_object_kind(&source(), "domain") => SecurityLabelObjectKind::Domain;
+        decodes_event_trigger_security_label_object: security_label_object_kind(&source(), "event trigger") => SecurityLabelObjectKind::EventTrigger;
+        decodes_foreign_table_security_label_object: security_label_object_kind(&source(), "foreign table") => SecurityLabelObjectKind::ForeignTable;
+        decodes_function_security_label_object: security_label_object_kind(&source(), "function") => SecurityLabelObjectKind::Function;
+        decodes_large_object_security_label_object: security_label_object_kind(&source(), "large object") => SecurityLabelObjectKind::LargeObject;
+        decodes_materialized_view_security_label_object: security_label_object_kind(&source(), "materialized view") => SecurityLabelObjectKind::MaterializedView;
+        decodes_procedure_security_label_object: security_label_object_kind(&source(), "procedure") => SecurityLabelObjectKind::Procedure;
+        decodes_publication_security_label_object: security_label_object_kind(&source(), "publication") => SecurityLabelObjectKind::Publication;
+        decodes_role_security_label_object: security_label_object_kind(&source(), "role") => SecurityLabelObjectKind::Role;
+        decodes_schema_security_label_object: security_label_object_kind(&source(), "schema") => SecurityLabelObjectKind::Schema;
+        decodes_sequence_security_label_object: security_label_object_kind(&source(), "sequence") => SecurityLabelObjectKind::Sequence;
+        decodes_subscription_security_label_object: security_label_object_kind(&source(), "subscription") => SecurityLabelObjectKind::Subscription;
+        decodes_table_security_label_object: security_label_object_kind(&source(), "table") => SecurityLabelObjectKind::Table;
+        decodes_table_column_security_label_object: security_label_object_kind(&source(), "table column") => SecurityLabelObjectKind::TableColumn;
+        decodes_tablespace_security_label_object: security_label_object_kind(&source(), "tablespace") => SecurityLabelObjectKind::Tablespace;
+        decodes_type_security_label_object: security_label_object_kind(&source(), "type") => SecurityLabelObjectKind::Type;
+        decodes_view_security_label_object: security_label_object_kind(&source(), "view") => SecurityLabelObjectKind::View;
+    }
+
+    rejected_decoder_cases! {
+        rejects_unknown_database_locale_provider: database_locale_provider(&source(), "future") => "pg_database.datlocprovider";
+        rejects_unknown_publication_generated_columns: publication_generated_columns(&source(), "future") => "pg_publication.pubgencols";
+        rejects_unknown_subscription_streaming: subscription_streaming(&source(), "future") => "pg_subscription.substream";
+        rejects_unknown_subscription_two_phase: subscription_two_phase(&source(), "future") => "pg_subscription.subtwophasestate";
+        rejects_unknown_synchronous_commit: synchronous_commit(&source(), "future") => "pg_subscription.subsynccommit";
+        rejects_unknown_subscription_origin: subscription_origin(&source(), "future") => "pg_subscription.suborigin";
+        rejects_unknown_collation_provider: collation_provider(&source(), "future") => "pg_collation.collprovider";
+        rejects_unknown_sequence_persistence: sequence_persistence(&source(), "future") => "pg_class.relpersistence";
+        rejects_unknown_type_alignment: type_alignment(&source(), "future") => "pg_type.typalign";
+        rejects_unknown_type_storage: type_storage(&source(), "future") => "pg_type.typstorage";
+        rejects_unknown_column_storage: column_storage(&source(), "future") => "pg_attribute.attstorage";
+        rejects_unknown_column_compression: column_compression(&source(), "future") => "pg_attribute.attcompression";
+        rejects_unknown_function_kind: function_kind(&source(), "future") => "pg_proc.prokind";
+        rejects_unknown_aggregate_kind: aggregate_kind(&source(), "future") => "pg_aggregate.aggkind";
+        rejects_unknown_aggregate_final_modify: aggregate_final_modify(&source(), "future") => "final-function mutation mode";
+        rejects_unknown_rewrite_rule_event: rewrite_rule_event(&source(), "future") => "pg_rewrite.ev_type";
+        rejects_unknown_event_trigger_event: event_trigger_event(&source(), "future") => "pg_event_trigger.evtevent";
+        rejects_unknown_statistics_kind: statistics_kind(&source(), 'z') => "pg_statistic_ext.stxkind";
+        rejects_unknown_table_kind: table_kind(&source(), "future", false) => "relation kind";
+        rejects_unknown_relation_persistence: relation_persistence(&source(), "future") => "pg_class.relpersistence";
+        rejects_unknown_replica_identity: replica_identity(&source(), "future") => "pg_class.relreplident";
+        rejects_unknown_policy_command: policy_command(&source(), "future") => "policy command";
+        rejects_unknown_constraint_kind: constraint_kind(&source(), "future") => "constraint kind";
+        rejects_unknown_foreign_key_action: foreign_key_action(&source(), "future") => "foreign-key action";
+        rejects_unknown_foreign_key_match: foreign_key_match(&source(), "future") => "foreign-key match type";
+        rejects_unknown_function_volatility: function_volatility(&source(), "future") => "function volatility";
+        rejects_unknown_function_parallelism: function_parallel(&source(), "future") => "function parallel safety";
+        rejects_unknown_cast_context: cast_context(&source(), "future") => "pg_cast.castcontext";
+        rejects_unknown_cast_method: cast_method(&source(), "future") => "pg_cast.castmethod";
+        rejects_unknown_operator_purpose: operator_purpose(&source(), "future") => "pg_amop.amoppurpose";
+        rejects_unknown_access_method_kind: access_method_kind(&source(), "future") => "pg_am.amtype";
+        rejects_unknown_trigger_enablement: trigger_enabled(&source(), "future") => "trigger enablement";
+        rejects_unknown_privilege_object: privilege_object_kind(&source(), "future") => "privilege type";
+        rejects_unknown_privilege_kind: privilege_kind(&source(), "future") => "aclexplode.privilege_type";
+        rejects_unknown_default_privilege_object: default_privilege_object(&source(), "future") => "pg_default_acl.defaclobjtype";
+        rejects_unknown_security_label_object: security_label_object_kind(&source(), "future") => "security-label type";
+    }
+
+    #[test]
+    fn recognizes_enabled_relation_option_spellings() {
+        for value in [
+            "security_barrier",
+            "security_barrier=true",
+            "security_barrier=on",
+            "security_barrier=1",
+        ] {
+            assert!(relation_option_enabled(
+                &[value.to_string()],
+                "security_barrier"
+            ));
+        }
+    }
+
+    #[test]
+    fn rejects_disabled_or_similarly_prefixed_relation_options() {
+        for value in [
+            "security_barrier=false",
+            "security_barrier=off",
+            "security_barrier=0",
+            "security_barrier_extra=true",
+        ] {
+            assert!(!relation_option_enabled(
+                &[value.to_string()],
+                "security_barrier"
+            ));
+        }
+    }
+
+    #[test]
+    fn decodes_absent_local_and_cascaded_view_check_options() {
+        assert_eq!(view_check_option(&source(), &[]).unwrap(), None);
+        assert_eq!(
+            view_check_option(&source(), &["check_option=local".to_string()]).unwrap(),
+            Some(ViewCheckOption::Local)
+        );
+        assert_eq!(
+            view_check_option(&source(), &["check_option=cascaded".to_string()]).unwrap(),
+            Some(ViewCheckOption::Cascaded)
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_view_check_option() {
+        let error = view_check_option(&source(), &["check_option=global".to_string()])
+            .expect_err("unknown view check option must fail");
+        assert!(error.to_string().contains("view check_option"));
+    }
 
     #[test]
     fn decodes_access_control_catalog_values_into_semantic_enums() {

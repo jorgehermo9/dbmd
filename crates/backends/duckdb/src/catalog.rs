@@ -246,3 +246,45 @@ pub struct Secret {
     pub storage: String,
     pub scope: Vec<String>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    macro_rules! semantic_cases {
+        ($($name:ident: $value:expr => $display:literal, $serialized:literal;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!($value.display_name(), $display);
+                    assert_eq!(
+                        serde_json::to_string(&$value).expect("semantic enum should serialize"),
+                        $serialized
+                    );
+                }
+            )+
+        };
+    }
+
+    semantic_cases! {
+        presents_check_constraint: ConstraintKind::Check => "check", "\"check\"";
+        presents_foreign_key_constraint: ConstraintKind::ForeignKey => "foreign key", "\"foreign_key\"";
+        presents_primary_key_constraint: ConstraintKind::PrimaryKey => "primary key", "\"primary_key\"";
+        presents_not_null_constraint: ConstraintKind::NotNull => "not null", "\"not_null\"";
+        presents_unique_constraint: ConstraintKind::Unique => "unique", "\"unique\"";
+        presents_table_function: FunctionKind::Table => "table function", "\"table\"";
+        presents_scalar_function: FunctionKind::Scalar => "scalar function", "\"scalar\"";
+        presents_aggregate_function: FunctionKind::Aggregate => "aggregate function", "\"aggregate\"";
+        presents_pragma_function: FunctionKind::Pragma => "pragma", "\"pragma\"";
+        presents_macro_function: FunctionKind::Macro => "macro", "\"macro\"";
+        presents_table_macro_function: FunctionKind::TableMacro => "table macro", "\"table_macro\"";
+        presents_consistent_stability: FunctionStability::Consistent => "consistent", "\"consistent\"";
+        presents_volatile_stability: FunctionStability::Volatile => "volatile", "\"volatile\"";
+        presents_query_consistent_stability: FunctionStability::ConsistentWithinQuery => "consistent within query", "\"consistent_within_query\"";
+        presents_unknown_install_mode: ExtensionInstallMode::Unknown => "unknown", "\"unknown\"";
+        presents_repository_install_mode: ExtensionInstallMode::Repository => "repository", "\"repository\"";
+        presents_custom_path_install_mode: ExtensionInstallMode::CustomPath => "custom path", "\"custom_path\"";
+        presents_statically_linked_install_mode: ExtensionInstallMode::StaticallyLinked => "statically linked", "\"statically_linked\"";
+        presents_not_installed_mode: ExtensionInstallMode::NotInstalled => "not installed", "\"not_installed\"";
+    }
+}

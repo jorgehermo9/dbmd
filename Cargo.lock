@@ -1018,6 +1018,7 @@ dependencies = [
  "insta",
  "mysql",
  "serde",
+ "serde_json",
  "thiserror",
 ]
 
@@ -1032,6 +1033,7 @@ dependencies = [
  "insta",
  "mysql",
  "serde",
+ "serde_json",
  "thiserror",
 ]
 
@@ -1046,6 +1048,7 @@ dependencies = [
  "insta",
  "postgres",
  "serde",
+ "serde_json",
  "thiserror",
 ]
 
@@ -1061,6 +1064,7 @@ dependencies = [
  "insta",
  "rusqlite",
  "serde",
+ "serde_json",
  "sqlite3-parser",
  "tempfile",
  "thiserror",

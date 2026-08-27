@@ -287,3 +287,56 @@ pub enum TriggerEvent {
     /// An update event, optionally restricted to columns.
     Update { columns: Vec<String> },
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    macro_rules! serialization_cases {
+        ($($name:ident: $value:expr => $expected:expr;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!(
+                        serde_json::to_value(&$value).expect("semantic enum should serialize"),
+                        $expected
+                    );
+                }
+            )+
+        };
+    }
+
+    serialization_cases! {
+        serializes_normal_column_kind: ColumnKind::Normal => json!("normal");
+        serializes_hidden_virtual_table_column_kind: ColumnKind::VirtualTableHidden => json!("virtual_table_hidden");
+        serializes_virtual_generated_column_kind: ColumnKind::VirtualGenerated => json!("virtual_generated");
+        serializes_stored_generated_column_kind: ColumnKind::StoredGenerated => json!("stored_generated");
+        serializes_primary_key_constraint: ConstraintKind::PrimaryKey => json!("primary_key");
+        serializes_foreign_key_constraint: ConstraintKind::ForeignKey => json!("foreign_key");
+        serializes_unique_constraint: ConstraintKind::Unique => json!("unique");
+        serializes_check_constraint: ConstraintKind::Check => json!("check");
+        serializes_not_null_constraint: ConstraintKind::NotNull => json!("not_null");
+        serializes_rollback_conflict_resolution: ConflictResolution::Rollback => json!("rollback");
+        serializes_abort_conflict_resolution: ConflictResolution::Abort => json!("abort");
+        serializes_fail_conflict_resolution: ConflictResolution::Fail => json!("fail");
+        serializes_ignore_conflict_resolution: ConflictResolution::Ignore => json!("ignore");
+        serializes_replace_conflict_resolution: ConflictResolution::Replace => json!("replace");
+        serializes_column_index_target: IndexTarget::Column("account_id".to_string()) => json!({"column": "account_id"});
+        serializes_expression_index_target: IndexTarget::Expression("lower(email)".to_string()) => json!({"expression": "lower(email)"});
+        serializes_rowid_index_target: IndexTarget::RowId => json!("row_id");
+        serializes_create_index_origin: IndexOrigin::CreateIndex => json!("create_index");
+        serializes_unique_constraint_index_origin: IndexOrigin::UniqueConstraint => json!("unique_constraint");
+        serializes_primary_key_index_origin: IndexOrigin::PrimaryKey => json!("primary_key");
+        serializes_ordinary_table_kind: TableKind::Ordinary => json!({"kind": "ordinary"});
+        serializes_virtual_table_kind: TableKind::Virtual { module: "fts5".to_string(), arguments: vec!["body".to_string()] } => json!({"kind": "virtual", "module": "fts5", "arguments": ["body"]});
+        serializes_shadow_table_kind: TableKind::Shadow { virtual_table: Some("documents".to_string()) } => json!({"kind": "shadow", "virtual_table": "documents"});
+        serializes_before_trigger_timing: TriggerTiming::Before => json!("before");
+        serializes_after_trigger_timing: TriggerTiming::After => json!("after");
+        serializes_instead_of_trigger_timing: TriggerTiming::InsteadOf => json!("instead_of");
+        serializes_delete_trigger_event: TriggerEvent::Delete => json!({"event": "delete"});
+        serializes_insert_trigger_event: TriggerEvent::Insert => json!({"event": "insert"});
+        serializes_update_trigger_event: TriggerEvent::Update { columns: vec!["email".to_string()] } => json!({"event": "update", "columns": ["email"]});
+    }
+}

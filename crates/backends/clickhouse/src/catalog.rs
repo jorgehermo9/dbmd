@@ -697,3 +697,90 @@ pub struct WorkloadSetting {
     pub value: String,
     pub resource: Option<String>,
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    macro_rules! serialization_cases {
+        ($($name:ident: $value:expr => $expected:expr;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!(
+                        serde_json::to_value(&$value).expect("semantic enum should serialize"),
+                        $expected
+                    );
+                }
+            )+
+        };
+    }
+
+    serialization_cases! {
+        serializes_definer_view_security: ViewSqlSecurity::Definer => json!({"kind": "definer"});
+        serializes_invoker_view_security: ViewSqlSecurity::Invoker => json!({"kind": "invoker"});
+        serializes_none_view_security: ViewSqlSecurity::None => json!({"kind": "none"});
+        serializes_unknown_view_security_with_raw_value: ViewSqlSecurity::Unknown { raw: "future".to_string() } => json!({"kind": "unknown", "raw": "future"});
+        serializes_table_kind: TableKind::Table => json!("table");
+        serializes_view_kind: TableKind::View => json!("view");
+        serializes_materialized_view_kind: TableKind::MaterializedView => json!("materialized_view");
+        serializes_live_view_kind: TableKind::LiveView => json!("live_view");
+        serializes_window_view_kind: TableKind::WindowView => json!("window_view");
+        serializes_dictionary_kind: TableKind::Dictionary => json!("dictionary");
+        serializes_delete_ttl_action: TtlAction::Delete { predicate: Some("expired".to_string()) } => json!({"kind": "delete", "predicate": "expired"});
+        serializes_move_ttl_action: TtlAction::Move { destination: TtlDestination::Disk, target: "archive".to_string() } => json!({"kind": "move", "destination": "disk", "target": "archive"});
+        serializes_recompress_ttl_action: TtlAction::Recompress { codec: "ZSTD(1)".to_string() } => json!({"kind": "recompress", "codec": "ZSTD(1)"});
+        serializes_group_by_ttl_action: TtlAction::GroupBy { keys: "tenant_id".to_string(), assignments: vec!["amount = sum(amount)".to_string()] } => json!({"kind": "group_by", "keys": "tenant_id", "assignments": ["amount = sum(amount)"]});
+        serializes_unknown_ttl_action_with_raw_value: TtlAction::Unknown { raw: "future".to_string() } => json!({"kind": "unknown", "raw": "future"});
+        serializes_disk_ttl_destination: TtlDestination::Disk => json!("disk");
+        serializes_volume_ttl_destination: TtlDestination::Volume => json!("volume");
+        serializes_every_refresh_schedule: RefreshSchedule::Every { interval: "1 HOUR".to_string() } => json!({"kind": "every", "interval": "1 HOUR"});
+        serializes_after_refresh_schedule: RefreshSchedule::After { interval: "1 HOUR".to_string() } => json!({"kind": "after", "interval": "1 HOUR"});
+        serializes_dependency_only_refresh_schedule: RefreshSchedule::DependenciesOnly => json!({"kind": "dependencies_only"});
+        serializes_none_column_default: ColumnDefaultKind::None => json!({"kind": "none"});
+        serializes_default_column_default: ColumnDefaultKind::Default => json!({"kind": "default"});
+        serializes_materialized_column_default: ColumnDefaultKind::Materialized => json!({"kind": "materialized"});
+        serializes_alias_column_default: ColumnDefaultKind::Alias => json!({"kind": "alias"});
+        serializes_ephemeral_column_default: ColumnDefaultKind::Ephemeral => json!({"kind": "ephemeral"});
+        serializes_check_constraint: ConstraintKind::Check => json!("check");
+        serializes_assume_constraint: ConstraintKind::Assume => json!("assume");
+        serializes_sql_defined_function_origin: UserDefinedFunctionOrigin::SqlDefined => json!("sql_defined");
+        serializes_webassembly_function_origin: UserDefinedFunctionOrigin::WebAssemblyDefined => json!("web_assembly_defined");
+        serializes_master_thread_resource_operation: ResourceOperation::MasterThread => json!({"kind": "master_thread"});
+        serializes_worker_thread_resource_operation: ResourceOperation::WorkerThread => json!({"kind": "worker_thread"});
+        serializes_query_resource_operation: ResourceOperation::Query => json!({"kind": "query"});
+        serializes_memory_reservation_resource_operation: ResourceOperation::MemoryReservation => json!({"kind": "memory_reservation"});
+        serializes_read_disk_resource_operation: ResourceOperation::ReadDisk { disk: Some("archive".to_string()) } => json!({"kind": "read_disk", "disk": "archive"});
+        serializes_write_disk_resource_operation: ResourceOperation::WriteDisk { disk: None } => json!({"kind": "write_disk", "disk": null});
+        serializes_unknown_resource_operation_with_raw_value: ResourceOperation::Unknown { raw: "future".to_string() } => json!({"kind": "unknown", "raw": "future"});
+    }
+
+    #[test]
+    fn presents_column_default_kinds_semantically() {
+        assert_eq!(ColumnDefaultKind::None.as_str(), "none");
+        assert_eq!(ColumnDefaultKind::Default.as_str(), "default");
+        assert_eq!(ColumnDefaultKind::Materialized.as_str(), "materialized");
+        assert_eq!(ColumnDefaultKind::Alias.as_str(), "alias");
+        assert_eq!(ColumnDefaultKind::Ephemeral.as_str(), "ephemeral");
+    }
+
+    #[test]
+    fn presents_constraint_kinds_semantically() {
+        assert_eq!(ConstraintKind::Check.display_name(), "check");
+        assert_eq!(ConstraintKind::Assume.display_name(), "assumption");
+    }
+
+    #[test]
+    fn presents_function_origins_semantically() {
+        assert_eq!(
+            UserDefinedFunctionOrigin::SqlDefined.display_name(),
+            "SQL-defined"
+        );
+        assert_eq!(
+            UserDefinedFunctionOrigin::WebAssemblyDefined.display_name(),
+            "WebAssembly-defined"
+        );
+    }
+}

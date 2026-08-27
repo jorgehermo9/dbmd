@@ -10,27 +10,50 @@ use dbmd_core::SourceId;
 use dbmd_relational::ForeignKeyAction;
 use support::TestDatabase;
 
-#[test]
-fn attachment_configuration_rejects_empty_reserved_duplicate_and_nul_names() {
-    let id = || SourceId::from_str("app").expect("test source ID should be valid");
+fn source_id() -> SourceId {
+    SourceId::from_str("app").expect("test source ID should be valid")
+}
 
+#[test]
+fn attachment_configuration_rejects_an_empty_namespace() {
     assert!(matches!(
-        SqliteSource::new(id(), "app.db").with_attached_database("", "analytics.db"),
+        SqliteSource::new(source_id(), "app.db").with_attached_database("", "analytics.db"),
         Err(SqliteSourceError::EmptyNamespace)
     ));
+}
+
+#[test]
+fn attachment_configuration_rejects_the_main_namespace_case_insensitively() {
     assert!(matches!(
-        SqliteSource::new(id(), "app.db").with_attached_database("MAIN", "analytics.db"),
+        SqliteSource::new(source_id(), "app.db").with_attached_database("MAIN", "analytics.db"),
         Err(SqliteSourceError::ReservedNamespace(name)) if name == "MAIN"
     ));
+}
+
+#[test]
+fn attachment_configuration_rejects_the_temp_namespace_case_insensitively() {
     assert!(matches!(
-        SqliteSource::new(id(), "app.db")
+        SqliteSource::new(source_id(), "app.db").with_attached_database("TeMp", "analytics.db"),
+        Err(SqliteSourceError::ReservedNamespace(name)) if name == "TeMp"
+    ));
+}
+
+#[test]
+fn attachment_configuration_rejects_duplicate_namespaces_case_insensitively() {
+    assert!(matches!(
+        SqliteSource::new(source_id(), "app.db")
             .with_attached_database("analytics", "analytics.db")
             .expect("first attachment should be valid")
             .with_attached_database("ANALYTICS", "other.db"),
         Err(SqliteSourceError::DuplicateNamespace(name)) if name == "ANALYTICS"
     ));
+}
+
+#[test]
+fn attachment_configuration_rejects_a_nul_namespace() {
     assert!(matches!(
-        SqliteSource::new(id(), "app.db").with_attached_database("bad\0namespace", "analytics.db"),
+        SqliteSource::new(source_id(), "app.db")
+            .with_attached_database("bad\0namespace", "analytics.db"),
         Err(SqliteSourceError::NamespaceContainsNul)
     ));
 }

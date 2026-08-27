@@ -1617,13 +1617,168 @@ fn stable_create_statement(definition: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        json_duality_view_status, loadable_function_kind, loadable_function_return_type,
-        plugin_kind, plugin_license, stable_create_statement,
+        constraint_kind, foreign_key_action, index_sort_order, json_duality_view_status,
+        loadable_function_kind, loadable_function_return_type, parameter_mode, plugin_kind,
+        plugin_license, plugin_load_option, plugin_status, privilege_object_kind,
+        resource_group_kind, routine_data_access, routine_kind, scheduled_event_completion,
+        scheduled_event_kind, scheduled_event_status, sql_security, stable_create_statement,
+        tls_requirement, trigger_event, trigger_orientation, trigger_timing, view_check_option,
+        y_n, yes_no,
     };
     use crate::{
-        JsonDualityViewStatus, LoadableFunctionKind, LoadableFunctionReturnType, PluginKind,
-        PluginLicense,
+        JsonDualityViewStatus, LoadableFunctionKind, LoadableFunctionReturnType, ParameterMode,
+        PluginKind, PluginLicense, PluginLoadOption, PluginStatus, PrivilegeObjectKind,
+        ResourceGroupKind, RoutineDataAccess, RoutineKind, ScheduledEventCompletion,
+        ScheduledEventKind, ScheduledEventStatus, SqlSecurity, TlsRequirement, TriggerEvent,
+        TriggerOrientation, TriggerTiming, ViewCheckOption,
     };
+    use dbmd_relational::{ForeignKeyAction, IndexSortOrder};
+
+    macro_rules! decoder_cases {
+        ($($name:ident: $actual:expr => $expected:expr;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!($actual, Some($expected));
+                }
+            )+
+        };
+    }
+
+    macro_rules! rejected_decoder_cases {
+        ($($name:ident: $actual:expr;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!($actual, None);
+                }
+            )+
+        };
+    }
+
+    decoder_cases! {
+        decodes_primary_key_constraint: constraint_kind("PRIMARY KEY") => crate::ConstraintKind::PrimaryKey;
+        decodes_unique_constraint: constraint_kind("UNIQUE") => crate::ConstraintKind::Unique;
+        decodes_foreign_key_constraint: constraint_kind("FOREIGN KEY") => crate::ConstraintKind::ForeignKey;
+        decodes_check_constraint: constraint_kind("CHECK") => crate::ConstraintKind::Check;
+        decodes_no_action_foreign_key_action: foreign_key_action("NO ACTION") => ForeignKeyAction::NoAction;
+        decodes_restrict_foreign_key_action: foreign_key_action("RESTRICT") => ForeignKeyAction::Restrict;
+        decodes_set_null_foreign_key_action: foreign_key_action("SET NULL") => ForeignKeyAction::SetNull;
+        decodes_set_default_foreign_key_action: foreign_key_action("SET DEFAULT") => ForeignKeyAction::SetDefault;
+        decodes_cascade_foreign_key_action: foreign_key_action("CASCADE") => ForeignKeyAction::Cascade;
+        decodes_ascending_index_order: index_sort_order("A") => IndexSortOrder::Ascending;
+        decodes_descending_index_order: index_sort_order("D") => IndexSortOrder::Descending;
+        decodes_yes_as_true: yes_no("YES") => true;
+        decodes_no_as_false: yes_no("NO") => false;
+        decodes_y_as_true: y_n("Y") => true;
+        decodes_n_as_false: y_n("N") => false;
+        decodes_none_view_check_option: view_check_option("NONE") => ViewCheckOption::None;
+        decodes_cascaded_view_check_option: view_check_option("CASCADED") => ViewCheckOption::Cascaded;
+        decodes_local_view_check_option: view_check_option("LOCAL") => ViewCheckOption::Local;
+        decodes_definer_sql_security: sql_security("DEFINER") => SqlSecurity::Definer;
+        decodes_invoker_sql_security: sql_security("INVOKER") => SqlSecurity::Invoker;
+        decodes_function_routine_kind: routine_kind("FUNCTION") => RoutineKind::Function;
+        decodes_procedure_routine_kind: routine_kind("PROCEDURE") => RoutineKind::Procedure;
+        decodes_contains_sql_data_access: routine_data_access("CONTAINS SQL") => RoutineDataAccess::ContainsSql;
+        decodes_no_sql_data_access: routine_data_access("NO SQL") => RoutineDataAccess::NoSql;
+        decodes_reads_sql_data_access: routine_data_access("READS SQL DATA") => RoutineDataAccess::ReadsSqlData;
+        decodes_modifies_sql_data_access: routine_data_access("MODIFIES SQL DATA") => RoutineDataAccess::ModifiesSqlData;
+        decodes_in_parameter_mode: parameter_mode("IN") => ParameterMode::In;
+        decodes_out_parameter_mode: parameter_mode("OUT") => ParameterMode::Out;
+        decodes_inout_parameter_mode: parameter_mode("INOUT") => ParameterMode::InOut;
+        decodes_insert_trigger_event: trigger_event("INSERT") => TriggerEvent::Insert;
+        decodes_update_trigger_event: trigger_event("UPDATE") => TriggerEvent::Update;
+        decodes_delete_trigger_event: trigger_event("DELETE") => TriggerEvent::Delete;
+        decodes_before_trigger_timing: trigger_timing("BEFORE") => TriggerTiming::Before;
+        decodes_after_trigger_timing: trigger_timing("AFTER") => TriggerTiming::After;
+        decodes_row_trigger_orientation: trigger_orientation("ROW") => TriggerOrientation::Row;
+        decodes_one_time_scheduled_event: scheduled_event_kind("ONE TIME") => ScheduledEventKind::OneTime;
+        decodes_recurring_scheduled_event: scheduled_event_kind("RECURRING") => ScheduledEventKind::Recurring;
+        decodes_enabled_scheduled_event: scheduled_event_status("ENABLED") => ScheduledEventStatus::Enabled;
+        decodes_disabled_scheduled_event: scheduled_event_status("DISABLED") => ScheduledEventStatus::Disabled;
+        decodes_replica_side_disabled_scheduled_event: scheduled_event_status("REPLICA_SIDE_DISABLED") => ScheduledEventStatus::ReplicaSideDisabled;
+        decodes_legacy_slave_side_disabled_scheduled_event: scheduled_event_status("SLAVESIDE_DISABLED") => ScheduledEventStatus::ReplicaSideDisabled;
+        decodes_preserved_scheduled_event: scheduled_event_completion("PRESERVE") => ScheduledEventCompletion::Preserve;
+        decodes_dropped_scheduled_event: scheduled_event_completion("NOT PRESERVE") => ScheduledEventCompletion::Drop;
+        decodes_user_resource_group: resource_group_kind("USER") => ResourceGroupKind::User;
+        decodes_system_resource_group: resource_group_kind("SYSTEM") => ResourceGroupKind::System;
+        decodes_valid_json_duality_view: json_duality_view_status("valid") => JsonDualityViewStatus::Valid;
+        decodes_invalid_json_duality_view: json_duality_view_status("invalid") => JsonDualityViewStatus::Invalid;
+        decodes_int_loadable_function_return_type: loadable_function_return_type("int") => LoadableFunctionReturnType::Integer;
+        decodes_integer_loadable_function_return_type_alias: loadable_function_return_type("integer") => LoadableFunctionReturnType::Integer;
+        decodes_decimal_loadable_function_return_type: loadable_function_return_type("decimal") => LoadableFunctionReturnType::Decimal;
+        decodes_real_loadable_function_return_type: loadable_function_return_type("real") => LoadableFunctionReturnType::Real;
+        decodes_char_loadable_function_return_type: loadable_function_return_type("char") => LoadableFunctionReturnType::Character;
+        decodes_character_loadable_function_return_type_alias: loadable_function_return_type("character") => LoadableFunctionReturnType::Character;
+        decodes_string_loadable_function_return_type_alias: loadable_function_return_type("string") => LoadableFunctionReturnType::Character;
+        decodes_row_loadable_function_return_type: loadable_function_return_type("row") => LoadableFunctionReturnType::Row;
+        decodes_scalar_loadable_function_kind: loadable_function_kind("function") => LoadableFunctionKind::Scalar;
+        decodes_aggregate_loadable_function_kind: loadable_function_kind("aggregate") => LoadableFunctionKind::Aggregate;
+        decodes_loadable_function_plugin_kind: plugin_kind("UDF") => PluginKind::LoadableFunction;
+        decodes_storage_engine_plugin_kind: plugin_kind("STORAGE ENGINE") => PluginKind::StorageEngine;
+        decodes_full_text_parser_plugin_kind: plugin_kind("FTPARSER") => PluginKind::FullTextParser;
+        decodes_daemon_plugin_kind: plugin_kind("DAEMON") => PluginKind::Daemon;
+        decodes_information_schema_plugin_kind: plugin_kind("INFORMATION SCHEMA") => PluginKind::InformationSchema;
+        decodes_audit_plugin_kind: plugin_kind("AUDIT") => PluginKind::Audit;
+        decodes_replication_plugin_kind: plugin_kind("REPLICATION") => PluginKind::Replication;
+        decodes_authentication_plugin_kind: plugin_kind("AUTHENTICATION") => PluginKind::Authentication;
+        decodes_password_validation_plugin_kind: plugin_kind("VALIDATE PASSWORD") => PluginKind::PasswordValidation;
+        decodes_group_replication_plugin_kind: plugin_kind("GROUP REPLICATION") => PluginKind::GroupReplication;
+        decodes_keyring_plugin_kind: plugin_kind("KEYRING") => PluginKind::Keyring;
+        decodes_clone_plugin_kind: plugin_kind("CLONE") => PluginKind::Clone;
+        decodes_proprietary_plugin_license: plugin_license("PROPRIETARY") => PluginLicense::Proprietary;
+        decodes_gpl_plugin_license: plugin_license("GPL") => PluginLicense::Gpl;
+        decodes_bsd_plugin_license: plugin_license("BSD") => PluginLicense::Bsd;
+        decodes_active_plugin_status: plugin_status("ACTIVE") => PluginStatus::Active;
+        decodes_inactive_plugin_status: plugin_status("INACTIVE") => PluginStatus::Inactive;
+        decodes_disabled_plugin_status: plugin_status("DISABLED") => PluginStatus::Disabled;
+        decodes_deleting_plugin_status: plugin_status("DELETING") => PluginStatus::Deleting;
+        decodes_deleted_plugin_status: plugin_status("DELETED") => PluginStatus::Deleted;
+        decodes_off_plugin_load_option: plugin_load_option("OFF") => PluginLoadOption::Off;
+        decodes_on_plugin_load_option: plugin_load_option("ON") => PluginLoadOption::On;
+        decodes_force_plugin_load_option: plugin_load_option("FORCE") => PluginLoadOption::Force;
+        decodes_permanent_plugin_load_option: plugin_load_option("FORCE_PLUS_PERMANENT") => PluginLoadOption::ForcePlusPermanent;
+        decodes_no_tls_requirement: tls_requirement("") => TlsRequirement::None;
+        decodes_any_tls_requirement: tls_requirement("ANY") => TlsRequirement::Any;
+        decodes_x509_tls_requirement: tls_requirement("X509") => TlsRequirement::X509;
+        decodes_specified_tls_requirement: tls_requirement("SPECIFIED") => TlsRequirement::Specified;
+        decodes_global_privilege_object: privilege_object_kind("global") => PrivilegeObjectKind::Global;
+        decodes_schema_privilege_object: privilege_object_kind("schema") => PrivilegeObjectKind::Schema;
+        decodes_table_privilege_object: privilege_object_kind("table") => PrivilegeObjectKind::Table;
+        decodes_column_privilege_object: privilege_object_kind("column") => PrivilegeObjectKind::Column;
+        decodes_function_privilege_object: privilege_object_kind("function") => PrivilegeObjectKind::Function;
+        decodes_procedure_privilege_object: privilege_object_kind("procedure") => PrivilegeObjectKind::Procedure;
+        decodes_proxy_privilege_object: privilege_object_kind("proxy") => PrivilegeObjectKind::Proxy;
+    }
+
+    rejected_decoder_cases! {
+        rejects_unknown_constraint_kind: constraint_kind("EXCLUSION");
+        rejects_unknown_foreign_key_action: foreign_key_action("ARCHIVE");
+        rejects_unknown_index_sort_order: index_sort_order("X");
+        rejects_unknown_yes_no_boolean: yes_no("TRUE");
+        rejects_unknown_y_n_boolean: y_n("T");
+        rejects_unknown_view_check_option: view_check_option("GLOBAL");
+        rejects_unknown_sql_security: sql_security("OWNER");
+        rejects_unknown_routine_kind: routine_kind("AGGREGATE");
+        rejects_unknown_routine_data_access: routine_data_access("WRITES SQL DATA");
+        rejects_unknown_parameter_mode: parameter_mode("RETURN");
+        rejects_unknown_trigger_event: trigger_event("TRUNCATE");
+        rejects_unknown_trigger_timing: trigger_timing("INSTEAD OF");
+        rejects_unknown_trigger_orientation: trigger_orientation("STATEMENT");
+        rejects_unknown_scheduled_event_kind: scheduled_event_kind("CONTINUOUS");
+        rejects_unknown_scheduled_event_status: scheduled_event_status("PAUSED");
+        rejects_unknown_scheduled_event_completion: scheduled_event_completion("RETAIN");
+        rejects_unknown_resource_group_kind: resource_group_kind("BACKGROUND");
+        rejects_unknown_json_duality_view_status: json_duality_view_status("stale");
+        rejects_unknown_loadable_function_return_type: loadable_function_return_type("json");
+        rejects_unknown_loadable_function_kind: loadable_function_kind("window");
+        rejects_unknown_plugin_kind: plugin_kind("QUERY REWRITER");
+        rejects_unknown_plugin_license: plugin_license("MIT");
+        rejects_unknown_plugin_status: plugin_status("STARTING");
+        rejects_unknown_plugin_load_option: plugin_load_option("AUTO");
+        rejects_unknown_tls_requirement: tls_requirement("OPTIONAL");
+        rejects_unknown_privilege_object_kind: privilege_object_kind("tablespace");
+    }
 
     #[test]
     fn removes_only_the_volatile_auto_increment_counter() {
@@ -1633,33 +1788,6 @@ mod tests {
             ),
             "CREATE TABLE `items` (`id` bigint NOT NULL AUTO_INCREMENT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
         );
-    }
-
-    #[test]
-    fn decodes_closed_extension_abi_values_semantically() {
-        assert_eq!(
-            loadable_function_return_type("char"),
-            Some(LoadableFunctionReturnType::Character)
-        );
-        assert_eq!(
-            loadable_function_kind("function"),
-            Some(LoadableFunctionKind::Scalar)
-        );
-        assert_eq!(plugin_kind("FTPARSER"), Some(PluginKind::FullTextParser));
-        assert_eq!(plugin_license("GPL"), Some(PluginLicense::Gpl));
-        assert_eq!(
-            json_duality_view_status("valid"),
-            Some(JsonDualityViewStatus::Valid)
-        );
-    }
-
-    #[test]
-    fn rejects_unknown_closed_extension_abi_values() {
-        assert_eq!(loadable_function_return_type("json"), None);
-        assert_eq!(loadable_function_kind("window"), None);
-        assert_eq!(plugin_kind("QUERY REWRITER"), None);
-        assert_eq!(plugin_license("MIT"), None);
-        assert_eq!(json_duality_view_status("stale"), None);
     }
 }
 

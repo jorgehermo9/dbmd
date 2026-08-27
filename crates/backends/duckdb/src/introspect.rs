@@ -700,6 +700,39 @@ mod tests {
     };
     use crate::{ConstraintKind, ExtensionInstallMode, FunctionKind, FunctionStability};
 
+    macro_rules! decoder_cases {
+        ($($name:ident: $actual:expr => $expected:expr;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!($actual, Some($expected));
+                }
+            )+
+        };
+    }
+
+    decoder_cases! {
+        decodes_check_constraint: constraint_kind("CHECK") => ConstraintKind::Check;
+        decodes_foreign_key_constraint: constraint_kind("FOREIGN KEY") => ConstraintKind::ForeignKey;
+        decodes_primary_key_constraint: constraint_kind("PRIMARY KEY") => ConstraintKind::PrimaryKey;
+        decodes_not_null_constraint: constraint_kind("NOT NULL") => ConstraintKind::NotNull;
+        decodes_unique_constraint: constraint_kind("UNIQUE") => ConstraintKind::Unique;
+        decodes_table_function_kind: function_kind("table") => FunctionKind::Table;
+        decodes_scalar_function_kind: function_kind("scalar") => FunctionKind::Scalar;
+        decodes_aggregate_function_kind: function_kind("aggregate") => FunctionKind::Aggregate;
+        decodes_pragma_function_kind: function_kind("pragma") => FunctionKind::Pragma;
+        decodes_macro_function_kind: function_kind("macro") => FunctionKind::Macro;
+        decodes_table_macro_function_kind: function_kind("table_macro") => FunctionKind::TableMacro;
+        decodes_consistent_function_stability: function_stability("CONSISTENT") => FunctionStability::Consistent;
+        decodes_volatile_function_stability: function_stability("VOLATILE") => FunctionStability::Volatile;
+        decodes_query_consistent_function_stability: function_stability("CONSISTENT_WITHIN_QUERY") => FunctionStability::ConsistentWithinQuery;
+        decodes_unknown_extension_install_mode: extension_install_mode("UNKNOWN") => ExtensionInstallMode::Unknown;
+        decodes_repository_extension_install_mode: extension_install_mode("REPOSITORY") => ExtensionInstallMode::Repository;
+        decodes_custom_path_extension_install_mode: extension_install_mode("CUSTOM_PATH") => ExtensionInstallMode::CustomPath;
+        decodes_statically_linked_extension_install_mode: extension_install_mode("STATICALLY_LINKED") => ExtensionInstallMode::StaticallyLinked;
+        decodes_not_installed_extension_install_mode: extension_install_mode("NOT_INSTALLED") => ExtensionInstallMode::NotInstalled;
+    }
+
     #[test]
     fn identifies_only_the_matching_generated_column_declaration() {
         let definition = r#"CREATE TABLE items (
@@ -722,27 +755,22 @@ mod tests {
     }
 
     #[test]
-    fn decodes_closed_metadata_values_semantically() {
-        assert_eq!(
-            constraint_kind("FOREIGN KEY"),
-            Some(ConstraintKind::ForeignKey)
-        );
-        assert_eq!(function_kind("table_macro"), Some(FunctionKind::TableMacro));
-        assert_eq!(
-            function_stability("CONSISTENT_WITHIN_QUERY"),
-            Some(FunctionStability::ConsistentWithinQuery)
-        );
-        assert_eq!(
-            extension_install_mode("STATICALLY_LINKED"),
-            Some(ExtensionInstallMode::StaticallyLinked)
-        );
+    fn rejects_unknown_constraint_kind() {
+        assert_eq!(constraint_kind("EXCLUSION"), None);
     }
 
     #[test]
-    fn rejects_unknown_closed_metadata_values() {
-        assert_eq!(constraint_kind("EXCLUSION"), None);
+    fn rejects_unknown_function_kind() {
         assert_eq!(function_kind("window"), None);
+    }
+
+    #[test]
+    fn rejects_unknown_function_stability() {
         assert_eq!(function_stability("IMMUTABLE"), None);
+    }
+
+    #[test]
+    fn rejects_unknown_extension_install_mode() {
         assert_eq!(extension_install_mode("REMOTE"), None);
     }
 }

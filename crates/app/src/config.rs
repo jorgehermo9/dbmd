@@ -779,62 +779,66 @@ dir = "configured-templates"
         );
     }
 
-    #[test]
-    fn classifies_configuration_schema_failures_without_echoing_values() {
-        let cases = [
-            (
-                "syntax",
-                "this is not = valid toml",
-                ConfigParseKind::Syntax,
-            ),
-            (
-                "unknown field",
-                r#"
+    fn assert_parse_failure(contents: &str, expected_kind: ConfigParseKind) {
+        let error = resolve(
+            contents,
+            Path::new("/project/dbmd.toml"),
+            &BTreeMap::new(),
+            Overrides::default(),
+        )
+        .expect_err("invalid configuration should fail");
+        let ConfigError::Parse { kind, line, column } = error else {
+            panic!("expected parse error, got {error}");
+        };
+        assert_eq!(kind, expected_kind);
+        assert!(line > 0);
+        assert!(column > 0);
+        assert!(!format!("{error}").contains("sentinel-secret"));
+    }
+
+    macro_rules! config_parse_cases {
+        ($($name:ident: $contents:expr => $kind:expr;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_parse_failure($contents, $kind);
+                }
+            )+
+        };
+    }
+
+    config_parse_cases! {
+        classifies_invalid_toml_syntax: "this is not = valid toml" => ConfigParseKind::Syntax;
+        classifies_unknown_configuration_field: r#"
 [sources.app]
 backend = "sqlite"
 path = "app.db"
 password = "sentinel-secret"
 [output]
 path = "DATABASE.md"
-"#,
-                ConfigParseKind::UnknownField,
-            ),
-            (
-                "missing field",
-                r#"
+"# => ConfigParseKind::UnknownField;
+        classifies_missing_required_configuration_field: r#"
 [sources.app]
 backend = "sqlite"
 [output]
 path = "DATABASE.md"
-"#,
-                ConfigParseKind::MissingField,
-            ),
-            (
-                "invalid type",
-                r#"
+"# => ConfigParseKind::MissingField;
+        classifies_invalid_configuration_field_type: r#"
 [sources.app]
 backend = "sqlite"
 path = 7
 [output]
 path = "DATABASE.md"
-"#,
-                ConfigParseKind::InvalidType,
-            ),
-            (
-                "duplicate field",
-                r#"
+"# => ConfigParseKind::InvalidType;
+        classifies_duplicate_configuration_field: r#"
 [sources.app]
 backend = "sqlite"
 path = "app.db"
 path = "other.db"
 [output]
 path = "DATABASE.md"
-"#,
-                ConfigParseKind::DuplicateField,
-            ),
-            (
-                "invalid value",
-                r#"
+"# => ConfigParseKind::DuplicateField;
+        classifies_invalid_configuration_value: r#"
 [sources.app]
 backend = "sqlite"
 path = "app.db"
@@ -842,41 +846,12 @@ path = "app.db"
 path = "DATABASE.md"
 [output.layout]
 kind = "archive"
-"#,
-                ConfigParseKind::InvalidValue,
-            ),
-        ];
-
-        for (case, contents, expected_kind) in cases {
-            let error = resolve(
-                contents,
-                Path::new("/project/dbmd.toml"),
-                &BTreeMap::new(),
-                Overrides::default(),
-            )
-            .expect_err(case);
-            let ConfigError::Parse { kind, line, column } = error else {
-                panic!("{case}: expected parse error, got {error}");
-            };
-            assert_eq!(kind, expected_kind, "{case}");
-            assert!(line > 0, "{case}");
-            assert!(column > 0, "{case}");
-            assert!(!format!("{error}").contains("sentinel-secret"), "{case}");
-        }
+"# => ConfigParseKind::InvalidValue;
     }
 
-    #[test]
-    fn rejects_every_malformed_environment_reference_before_source_use() {
-        let cases = [
-            ("unclosed", "${DATABASE_PATH"),
-            ("empty", "${}"),
-            ("numeric prefix", "${1DATABASE_PATH}"),
-            ("punctuation", "${DATABASE-PATH}"),
-        ];
-
-        for (case, value) in cases {
-            let config = format!(
-                r#"
+    fn assert_invalid_environment_reference(value: &str) {
+        let config = format!(
+            r#"
 [sources.app]
 backend = "sqlite"
 path = "{value}"
@@ -884,23 +859,40 @@ path = "{value}"
 [output]
 path = "DATABASE.md"
 "#
-            );
-            let error = resolve(
-                &config,
-                Path::new("/project/dbmd.toml"),
-                &BTreeMap::new(),
-                Overrides::default(),
-            )
-            .expect_err(case);
+        );
+        let error = resolve(
+            &config,
+            Path::new("/project/dbmd.toml"),
+            &BTreeMap::new(),
+            Overrides::default(),
+        )
+        .expect_err("malformed environment reference should fail");
 
-            assert!(
-                matches!(
-                    error,
-                    ConfigError::UnclosedEnvironment | ConfigError::InvalidEnvironmentName(_)
-                ),
-                "{case}: {error}"
-            );
-        }
+        assert!(
+            matches!(
+                error,
+                ConfigError::UnclosedEnvironment | ConfigError::InvalidEnvironmentName(_)
+            ),
+            "{error}"
+        );
+    }
+
+    macro_rules! invalid_environment_cases {
+        ($($name:ident: $value:literal;)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_invalid_environment_reference($value);
+                }
+            )+
+        };
+    }
+
+    invalid_environment_cases! {
+        rejects_unclosed_environment_reference: "${DATABASE_PATH";
+        rejects_empty_environment_name: "${}";
+        rejects_environment_name_with_numeric_prefix: "${1DATABASE_PATH}";
+        rejects_environment_name_with_punctuation: "${DATABASE-PATH}";
     }
 
     #[test]

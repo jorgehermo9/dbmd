@@ -2111,3 +2111,421 @@ pub enum FunctionParallel {
     /// Unsafe in a parallel plan.
     Unsafe,
 }
+
+#[cfg(test)]
+mod tests {
+    use serde::Serialize;
+    use serde_json::{json, to_value, Value};
+
+    use super::*;
+
+    fn assert_serializes_as<T>(value: T, expected: Value)
+    where
+        T: Serialize,
+    {
+        assert_eq!(
+            to_value(value).expect("semantic catalog value should serialize"),
+            expected
+        );
+    }
+
+    #[test]
+    fn cast_context_serialization_is_semantic() {
+        assert_serializes_as(CastContext::Explicit, json!("explicit"));
+        assert_serializes_as(CastContext::Assignment, json!("assignment"));
+        assert_serializes_as(CastContext::Implicit, json!("implicit"));
+    }
+
+    #[test]
+    fn cast_method_serialization_is_semantic() {
+        assert_serializes_as(CastMethod::Function, json!("function"));
+        assert_serializes_as(CastMethod::InputOutput, json!("input_output"));
+        assert_serializes_as(CastMethod::Binary, json!("binary"));
+    }
+
+    #[test]
+    fn operator_kind_serialization_is_semantic() {
+        assert_serializes_as(OperatorKind::Binary, json!("binary"));
+        assert_serializes_as(OperatorKind::Prefix, json!("prefix"));
+    }
+
+    #[test]
+    fn operator_purpose_serialization_is_semantic() {
+        assert_serializes_as(OperatorPurpose::Search, json!("search"));
+        assert_serializes_as(OperatorPurpose::Ordering, json!("ordering"));
+    }
+
+    #[test]
+    fn access_method_kind_serialization_is_semantic() {
+        assert_serializes_as(AccessMethodKind::Table, json!("table"));
+        assert_serializes_as(AccessMethodKind::Index, json!("index"));
+    }
+
+    #[test]
+    fn rewrite_rule_event_serialization_is_semantic() {
+        assert_serializes_as(RewriteRuleEvent::Select, json!("select"));
+        assert_serializes_as(RewriteRuleEvent::Update, json!("update"));
+        assert_serializes_as(RewriteRuleEvent::Insert, json!("insert"));
+        assert_serializes_as(RewriteRuleEvent::Delete, json!("delete"));
+    }
+
+    #[test]
+    fn event_trigger_event_serialization_is_semantic() {
+        assert_serializes_as(EventTriggerEvent::Login, json!("login"));
+        assert_serializes_as(
+            EventTriggerEvent::DdlCommandStart,
+            json!("ddl_command_start"),
+        );
+        assert_serializes_as(EventTriggerEvent::DdlCommandEnd, json!("ddl_command_end"));
+        assert_serializes_as(EventTriggerEvent::SqlDrop, json!("sql_drop"));
+        assert_serializes_as(EventTriggerEvent::TableRewrite, json!("table_rewrite"));
+    }
+
+    #[test]
+    fn statistics_kind_serialization_is_semantic() {
+        assert_serializes_as(StatisticsKind::NdDistinct, json!("nd_distinct"));
+        assert_serializes_as(StatisticsKind::Dependencies, json!("dependencies"));
+        assert_serializes_as(
+            StatisticsKind::MostCommonValues,
+            json!("most_common_values"),
+        );
+        assert_serializes_as(StatisticsKind::Expressions, json!("expressions"));
+    }
+
+    #[test]
+    fn database_locale_provider_serialization_is_semantic() {
+        assert_serializes_as(DatabaseLocaleProvider::Builtin, json!("builtin"));
+        assert_serializes_as(DatabaseLocaleProvider::Libc, json!("libc"));
+        assert_serializes_as(DatabaseLocaleProvider::Icu, json!("icu"));
+    }
+
+    #[test]
+    fn collation_provider_serialization_is_semantic() {
+        assert_serializes_as(
+            CollationProvider::DatabaseDefault,
+            json!("database_default"),
+        );
+        assert_serializes_as(CollationProvider::Builtin, json!("builtin"));
+        assert_serializes_as(CollationProvider::Libc, json!("libc"));
+        assert_serializes_as(CollationProvider::Icu, json!("icu"));
+    }
+
+    #[test]
+    fn publication_generated_columns_serialization_is_semantic() {
+        assert_serializes_as(PublicationGeneratedColumns::None, json!("none"));
+        assert_serializes_as(PublicationGeneratedColumns::Stored, json!("stored"));
+    }
+
+    #[test]
+    fn synchronous_commit_serialization_is_semantic() {
+        assert_serializes_as(SynchronousCommit::Off, json!("off"));
+        assert_serializes_as(SynchronousCommit::Local, json!("local"));
+        assert_serializes_as(SynchronousCommit::RemoteWrite, json!("remote_write"));
+        assert_serializes_as(SynchronousCommit::On, json!("on"));
+        assert_serializes_as(SynchronousCommit::RemoteApply, json!("remote_apply"));
+    }
+
+    #[test]
+    fn subscription_origin_serialization_is_semantic() {
+        assert_serializes_as(SubscriptionOrigin::None, json!("none"));
+        assert_serializes_as(SubscriptionOrigin::Any, json!("any"));
+    }
+
+    #[test]
+    fn subscription_streaming_serialization_is_semantic() {
+        assert_serializes_as(SubscriptionStreaming::Off, json!("off"));
+        assert_serializes_as(SubscriptionStreaming::On, json!("on"));
+        assert_serializes_as(SubscriptionStreaming::Parallel, json!("parallel"));
+    }
+
+    #[test]
+    fn subscription_two_phase_serialization_is_semantic() {
+        assert_serializes_as(SubscriptionTwoPhase::Disabled, json!("disabled"));
+        assert_serializes_as(SubscriptionTwoPhase::Pending, json!("pending"));
+        assert_serializes_as(SubscriptionTwoPhase::Enabled, json!("enabled"));
+    }
+
+    #[test]
+    fn privilege_object_kind_serialization_is_semantic() {
+        let cases = [
+            (PrivilegeObjectKind::Database, "database"),
+            (PrivilegeObjectKind::Schema, "schema"),
+            (PrivilegeObjectKind::Table, "table"),
+            (PrivilegeObjectKind::TableColumn, "table_column"),
+            (PrivilegeObjectKind::Sequence, "sequence"),
+            (PrivilegeObjectKind::View, "view"),
+            (PrivilegeObjectKind::MaterializedView, "materialized_view"),
+            (PrivilegeObjectKind::ForeignTable, "foreign_table"),
+            (PrivilegeObjectKind::Function, "function"),
+            (PrivilegeObjectKind::Procedure, "procedure"),
+            (PrivilegeObjectKind::Aggregate, "aggregate"),
+            (PrivilegeObjectKind::Type, "type"),
+            (PrivilegeObjectKind::Domain, "domain"),
+            (PrivilegeObjectKind::Language, "language"),
+            (PrivilegeObjectKind::LargeObject, "large_object"),
+            (
+                PrivilegeObjectKind::ForeignDataWrapper,
+                "foreign_data_wrapper",
+            ),
+            (PrivilegeObjectKind::ForeignServer, "foreign_server"),
+            (PrivilegeObjectKind::Parameter, "parameter"),
+            (PrivilegeObjectKind::Tablespace, "tablespace"),
+        ];
+        for (value, expected) in cases {
+            assert_serializes_as(value, json!(expected));
+        }
+    }
+
+    #[test]
+    fn privilege_kind_serialization_is_semantic() {
+        let cases = [
+            (PrivilegeKind::Select, "select"),
+            (PrivilegeKind::Insert, "insert"),
+            (PrivilegeKind::Update, "update"),
+            (PrivilegeKind::Delete, "delete"),
+            (PrivilegeKind::Truncate, "truncate"),
+            (PrivilegeKind::References, "references"),
+            (PrivilegeKind::Trigger, "trigger"),
+            (PrivilegeKind::Maintain, "maintain"),
+            (PrivilegeKind::Usage, "usage"),
+            (PrivilegeKind::Create, "create"),
+            (PrivilegeKind::Connect, "connect"),
+            (PrivilegeKind::Temporary, "temporary"),
+            (PrivilegeKind::Execute, "execute"),
+            (PrivilegeKind::Set, "set"),
+            (PrivilegeKind::AlterSystem, "alter_system"),
+        ];
+        for (value, expected) in cases {
+            assert_serializes_as(value, json!(expected));
+        }
+    }
+
+    #[test]
+    fn default_privilege_object_serialization_is_semantic() {
+        let cases = [
+            (DefaultPrivilegeObject::Tables, "tables"),
+            (DefaultPrivilegeObject::Sequences, "sequences"),
+            (DefaultPrivilegeObject::Routines, "routines"),
+            (DefaultPrivilegeObject::Types, "types"),
+            (DefaultPrivilegeObject::Schemas, "schemas"),
+            (DefaultPrivilegeObject::LargeObjects, "large_objects"),
+        ];
+        for (value, expected) in cases {
+            assert_serializes_as(value, json!(expected));
+        }
+    }
+
+    #[test]
+    fn security_label_object_kind_serialization_is_semantic() {
+        let cases = [
+            (SecurityLabelObjectKind::Aggregate, "aggregate"),
+            (SecurityLabelObjectKind::Database, "database"),
+            (SecurityLabelObjectKind::Domain, "domain"),
+            (SecurityLabelObjectKind::EventTrigger, "event_trigger"),
+            (SecurityLabelObjectKind::ForeignTable, "foreign_table"),
+            (SecurityLabelObjectKind::Function, "function"),
+            (SecurityLabelObjectKind::LargeObject, "large_object"),
+            (
+                SecurityLabelObjectKind::MaterializedView,
+                "materialized_view",
+            ),
+            (SecurityLabelObjectKind::Procedure, "procedure"),
+            (SecurityLabelObjectKind::Publication, "publication"),
+            (SecurityLabelObjectKind::Role, "role"),
+            (SecurityLabelObjectKind::Schema, "schema"),
+            (SecurityLabelObjectKind::Sequence, "sequence"),
+            (SecurityLabelObjectKind::Subscription, "subscription"),
+            (SecurityLabelObjectKind::Table, "table"),
+            (SecurityLabelObjectKind::TableColumn, "table_column"),
+            (SecurityLabelObjectKind::Tablespace, "tablespace"),
+            (SecurityLabelObjectKind::Type, "type"),
+            (SecurityLabelObjectKind::View, "view"),
+        ];
+        for (value, expected) in cases {
+            assert_serializes_as(value, json!(expected));
+        }
+    }
+
+    #[test]
+    fn type_alignment_serialization_is_semantic() {
+        assert_serializes_as(TypeAlignment::Char, json!("char"));
+        assert_serializes_as(TypeAlignment::Short, json!("short"));
+        assert_serializes_as(TypeAlignment::Int, json!("int"));
+        assert_serializes_as(TypeAlignment::Double, json!("double"));
+    }
+
+    #[test]
+    fn type_storage_serialization_is_semantic() {
+        assert_serializes_as(TypeStorage::Plain, json!("plain"));
+        assert_serializes_as(TypeStorage::External, json!("external"));
+        assert_serializes_as(TypeStorage::Main, json!("main"));
+        assert_serializes_as(TypeStorage::Extended, json!("extended"));
+    }
+
+    #[test]
+    fn sequence_persistence_serialization_is_semantic() {
+        assert_serializes_as(SequencePersistence::Permanent, json!("permanent"));
+        assert_serializes_as(SequencePersistence::Unlogged, json!("unlogged"));
+    }
+
+    #[test]
+    fn identity_generation_serialization_is_semantic() {
+        assert_serializes_as(IdentityGeneration::Always, json!("always"));
+        assert_serializes_as(IdentityGeneration::ByDefault, json!("by_default"));
+    }
+
+    #[test]
+    fn column_storage_serialization_is_semantic() {
+        assert_serializes_as(ColumnStorage::Plain, json!("plain"));
+        assert_serializes_as(ColumnStorage::External, json!("external"));
+        assert_serializes_as(ColumnStorage::Main, json!("main"));
+        assert_serializes_as(ColumnStorage::Extended, json!("extended"));
+    }
+
+    #[test]
+    fn column_compression_serialization_is_semantic() {
+        assert_serializes_as(ColumnCompression::Pglz, json!("pglz"));
+        assert_serializes_as(ColumnCompression::Lz4, json!("lz4"));
+    }
+
+    #[test]
+    fn relation_persistence_serialization_is_semantic() {
+        assert_serializes_as(RelationPersistence::Permanent, json!("permanent"));
+        assert_serializes_as(RelationPersistence::Unlogged, json!("unlogged"));
+    }
+
+    #[test]
+    fn replica_identity_serialization_is_semantic() {
+        assert_serializes_as(ReplicaIdentity::Default, json!("default"));
+        assert_serializes_as(ReplicaIdentity::Nothing, json!("nothing"));
+        assert_serializes_as(ReplicaIdentity::Full, json!("full"));
+        assert_serializes_as(ReplicaIdentity::Index, json!("index"));
+    }
+
+    #[test]
+    fn generated_column_kind_serialization_is_semantic() {
+        assert_serializes_as(GeneratedColumnKind::Virtual, json!("virtual"));
+        assert_serializes_as(GeneratedColumnKind::Stored, json!("stored"));
+    }
+
+    #[test]
+    fn constraint_kind_serialization_is_semantic() {
+        let cases = [
+            (ConstraintKind::PrimaryKey, "primary_key"),
+            (ConstraintKind::ForeignKey, "foreign_key"),
+            (ConstraintKind::Unique, "unique"),
+            (ConstraintKind::Check, "check"),
+            (ConstraintKind::NotNull, "not_null"),
+            (ConstraintKind::Exclusion, "exclusion"),
+        ];
+        for (value, expected) in cases {
+            assert_serializes_as(value, json!(expected));
+        }
+    }
+
+    #[test]
+    fn index_nulls_order_serialization_is_semantic() {
+        assert_serializes_as(IndexNullsOrder::First, json!("first"));
+        assert_serializes_as(IndexNullsOrder::Last, json!("last"));
+    }
+
+    #[test]
+    fn index_target_serialization_preserves_the_semantic_payload() {
+        assert_serializes_as(IndexTarget::Column("id".into()), json!({"column": "id"}));
+        assert_serializes_as(
+            IndexTarget::Expression("lower(name)".into()),
+            json!({"expression": "lower(name)"}),
+        );
+    }
+
+    #[test]
+    fn table_kind_serialization_is_semantic() {
+        assert_serializes_as(TableKind::Table, json!("table"));
+        assert_serializes_as(TableKind::PartitionedTable, json!("partitioned_table"));
+        assert_serializes_as(TableKind::Partition, json!("partition"));
+        assert_serializes_as(TableKind::ForeignTable, json!("foreign_table"));
+    }
+
+    #[test]
+    fn policy_command_serialization_is_semantic() {
+        assert_serializes_as(PolicyCommand::All, json!("all"));
+        assert_serializes_as(PolicyCommand::Select, json!("select"));
+        assert_serializes_as(PolicyCommand::Insert, json!("insert"));
+        assert_serializes_as(PolicyCommand::Update, json!("update"));
+        assert_serializes_as(PolicyCommand::Delete, json!("delete"));
+    }
+
+    #[test]
+    fn view_check_option_serialization_is_semantic() {
+        assert_serializes_as(ViewCheckOption::Local, json!("local"));
+        assert_serializes_as(ViewCheckOption::Cascaded, json!("cascaded"));
+    }
+
+    #[test]
+    fn trigger_timing_serialization_is_semantic() {
+        assert_serializes_as(TriggerTiming::Before, json!("before"));
+        assert_serializes_as(TriggerTiming::After, json!("after"));
+        assert_serializes_as(TriggerTiming::InsteadOf, json!("instead_of"));
+    }
+
+    #[test]
+    fn trigger_orientation_serialization_is_semantic() {
+        assert_serializes_as(TriggerOrientation::Row, json!("row"));
+        assert_serializes_as(TriggerOrientation::Statement, json!("statement"));
+    }
+
+    #[test]
+    fn trigger_event_serialization_preserves_semantic_payloads() {
+        assert_serializes_as(TriggerEvent::Delete, json!({"event": "delete"}));
+        assert_serializes_as(TriggerEvent::Insert, json!({"event": "insert"}));
+        assert_serializes_as(
+            TriggerEvent::Update {
+                columns: vec!["name".into()],
+            },
+            json!({"event": "update", "columns": ["name"]}),
+        );
+        assert_serializes_as(TriggerEvent::Truncate, json!({"event": "truncate"}));
+    }
+
+    #[test]
+    fn trigger_enabled_serialization_is_semantic() {
+        assert_serializes_as(TriggerEnabled::Origin, json!("origin"));
+        assert_serializes_as(TriggerEnabled::Disabled, json!("disabled"));
+        assert_serializes_as(TriggerEnabled::Replica, json!("replica"));
+        assert_serializes_as(TriggerEnabled::Always, json!("always"));
+    }
+
+    #[test]
+    fn function_kind_serialization_is_semantic() {
+        assert_serializes_as(FunctionKind::Ordinary, json!("ordinary"));
+        assert_serializes_as(FunctionKind::Window, json!("window"));
+    }
+
+    #[test]
+    fn aggregate_kind_serialization_is_semantic() {
+        assert_serializes_as(AggregateKind::Normal, json!("normal"));
+        assert_serializes_as(AggregateKind::OrderedSet, json!("ordered_set"));
+        assert_serializes_as(AggregateKind::HypotheticalSet, json!("hypothetical_set"));
+    }
+
+    #[test]
+    fn aggregate_final_modify_serialization_is_semantic() {
+        assert_serializes_as(AggregateFinalModify::ReadOnly, json!("read_only"));
+        assert_serializes_as(AggregateFinalModify::Shareable, json!("shareable"));
+        assert_serializes_as(AggregateFinalModify::ReadWrite, json!("read_write"));
+    }
+
+    #[test]
+    fn function_volatility_serialization_is_semantic() {
+        assert_serializes_as(FunctionVolatility::Immutable, json!("immutable"));
+        assert_serializes_as(FunctionVolatility::Stable, json!("stable"));
+        assert_serializes_as(FunctionVolatility::Volatile, json!("volatile"));
+    }
+
+    #[test]
+    fn function_parallel_serialization_is_semantic() {
+        assert_serializes_as(FunctionParallel::Safe, json!("safe"));
+        assert_serializes_as(FunctionParallel::Restricted, json!("restricted"));
+        assert_serializes_as(FunctionParallel::Unsafe, json!("unsafe"));
+    }
+}

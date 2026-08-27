@@ -8,48 +8,124 @@ use dbmd_core::SourceId;
 use dbmd_render::{OutputLayout, RenderContext, RenderOptions, RenderedArtifact, Renderer};
 use duckdb::{Config as DuckDbConnectionConfig, Connection};
 
-#[test]
-fn source_configuration_rejects_empty_reserved_duplicate_and_nul_values() {
-    let id = || SourceId::from_str("app").expect("test source ID should be valid");
+fn source_id() -> SourceId {
+    SourceId::from_str("app").expect("test source ID should be valid")
+}
 
+#[test]
+fn source_configuration_rejects_an_empty_database_path() {
     assert!(matches!(
-        DuckDbSource::new(id(), ""),
+        DuckDbSource::new(source_id(), ""),
         Err(DuckDbSourceError::EmptyPath)
     ));
+}
+
+#[test]
+fn source_configuration_rejects_an_empty_attachment_name() {
     assert!(matches!(
-        DuckDbSource::new(id(), "app.duckdb")
+        DuckDbSource::new(source_id(), "app.duckdb")
             .expect("base source should be valid")
             .with_attached_database("", "analytics.duckdb", true),
         Err(DuckDbSourceError::EmptyAttachmentName)
     ));
+}
+
+#[test]
+fn source_configuration_rejects_a_reserved_attachment_name() {
     assert!(matches!(
-        DuckDbSource::new(id(), "app.duckdb")
+        DuckDbSource::new(source_id(), "app.duckdb")
             .expect("base source should be valid")
             .with_attached_database("system", "analytics.duckdb", true),
         Err(DuckDbSourceError::ReservedAttachmentName(name)) if name == "system"
     ));
+}
+
+#[test]
+fn source_configuration_rejects_the_temp_attachment_name_case_insensitively() {
     assert!(matches!(
-        DuckDbSource::new(id(), "app.duckdb")
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("TeMp", "analytics.duckdb", true),
+        Err(DuckDbSourceError::ReservedAttachmentName(name)) if name == "TeMp"
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_a_nul_attachment_name() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("bad\0name", "analytics.duckdb", true),
+        Err(DuckDbSourceError::NulAttachmentName)
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_a_duplicate_attachment_name() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
             .expect("base source should be valid")
             .with_attached_database("analytics", "analytics.duckdb", true)
             .expect("first attachment should be valid")
             .with_attached_database("analytics", "other.duckdb", true),
         Err(DuckDbSourceError::DuplicateAttachmentName(name)) if name == "analytics"
     ));
+}
+
+#[test]
+fn source_configuration_rejects_an_empty_attachment_path() {
     assert!(matches!(
-        DuckDbSource::new(id(), "app.duckdb")
+        DuckDbSource::new(source_id(), "app.duckdb")
             .expect("base source should be valid")
             .with_attached_database("analytics", "", true),
         Err(DuckDbSourceError::EmptyAttachmentPath(name)) if name == "analytics"
     ));
+}
+
+#[test]
+fn source_configuration_rejects_a_nul_attachment_path() {
     assert!(matches!(
-        DuckDbSource::new(id(), "app.duckdb")
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("analytics", "bad\0path", true),
+        Err(DuckDbSourceError::NulAttachmentPath(name)) if name == "analytics"
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_an_empty_secret_directory() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
             .expect("base source should be valid")
             .with_secret_directory(""),
         Err(DuckDbSourceError::EmptySecretDirectory)
     ));
+}
+
+#[test]
+fn source_configuration_rejects_a_nul_secret_directory() {
     assert!(matches!(
-        DuckDbSource::new(id(), "app.duckdb")
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_secret_directory("bad\0directory"),
+        Err(DuckDbSourceError::NulSecretDirectory)
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_an_empty_extension_directory() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_extension_directory(""),
+        Err(DuckDbSourceError::EmptyExtensionDirectory)
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_a_nul_extension_directory() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
             .expect("base source should be valid")
             .with_extension_directory("bad\0directory"),
         Err(DuckDbSourceError::NulExtensionDirectory)
@@ -276,11 +352,9 @@ fn introspects_persistent_secret_metadata_without_secret_material() {
         .execute_batch(&format!(
             "SET secret_directory = '{escaped_directory}';
              CREATE PERSISTENT SECRET agent_storage (
-                 TYPE s3,
-                 KEY_ID 'dbmd-key-sentinel',
-                 SECRET 'dbmd-secret-sentinel',
-                 REGION 'eu-west-1',
-                 SCOPE 's3://dbmd-fixture'
+                 TYPE http,
+                 BEARER_TOKEN 'dbmd-secret-sentinel',
+                 SCOPE 'https://dbmd.invalid/api'
              );"
         ))
         .expect("persistent DuckDB secret fixture should be created");
@@ -300,12 +374,11 @@ fn introspects_persistent_secret_metadata_without_secret_material() {
     assert_eq!(snapshot.catalog().secrets.len(), 1);
     let secret = &snapshot.catalog().secrets[0];
     assert_eq!(secret.name, "agent_storage");
-    assert_eq!(secret.secret_type, "s3");
+    assert_eq!(secret.secret_type, "http");
     assert_eq!(secret.provider, "config");
     assert!(secret.persistent);
-    assert_eq!(secret.scope, ["s3://dbmd-fixture"]);
+    assert_eq!(secret.scope, ["https://dbmd.invalid/api"]);
     let serialized = serde_json::to_string(&snapshot).expect("catalog should serialize");
-    assert!(!serialized.contains("dbmd-key-sentinel"));
     assert!(!serialized.contains("dbmd-secret-sentinel"));
 
     let context = RenderContext::new(vec![render_source(
@@ -323,8 +396,7 @@ fn introspects_persistent_secret_metadata_without_secret_material() {
     };
     let markdown = String::from_utf8(markdown).expect("Markdown should be UTF-8");
     assert!(markdown.contains("agent_storage"));
-    assert!(markdown.contains("s3://dbmd-fixture"));
-    assert!(!markdown.contains("dbmd-key-sentinel"));
+    assert!(markdown.contains("https://dbmd.invalid/api"));
     assert!(!markdown.contains("dbmd-secret-sentinel"));
     insta::assert_snapshot!("duckdb_secret_metadata", markdown);
     let repeated = renderer
