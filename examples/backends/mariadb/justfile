@@ -1,0 +1,18 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list
+
+render: setup
+    MARIADB_URL=mysql://root@127.0.0.1:63306/test dbmd render
+
+verify: setup
+    MARIADB_URL=mysql://root@127.0.0.1:63306/test dbmd verify
+
+down:
+    docker compose down --volumes --remove-orphans
+
+[private]
+setup:
+    docker compose down --volumes --remove-orphans
+    docker compose up --detach --wait

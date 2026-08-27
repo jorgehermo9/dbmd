@@ -1,0 +1,129 @@
+version = 1
+
+[[example]]
+path = "quickstart/sqlite"
+cli = true
+
+[[example.source]]
+id = "app"
+backend = "sqlite"
+schema_dir = "schema/app"
+
+[[example]]
+path = "full"
+
+[[example.source]]
+id = "sqlite_app"
+backend = "sqlite"
+schema_dir = "schema/sqlite_app"
+
+[[example.source]]
+id = "duckdb_analytics"
+backend = "duckdb"
+schema_dir = "schema/duckdb_analytics"
+
+[[example.source]]
+id = "postgres_app"
+backend = "postgres"
+schema_dir = "schema/postgres_app"
+
+[[example.source]]
+id = "clickhouse_events"
+backend = "clickhouse"
+schema_dir = "schema/clickhouse_events"
+
+[[example.source]]
+id = "mysql_commerce"
+backend = "mysql"
+schema_dir = "schema/mysql_commerce"
+
+[[example.source]]
+id = "mariadb_commerce"
+backend = "mariadb"
+schema_dir = "schema/mariadb_commerce"
+
+[[example]]
+path = "backends/sqlite"
+
+[[example.source]]
+id = "app"
+backend = "sqlite"
+schema_dir = "schema/app"
+
+[[example]]
+path = "backends/duckdb"
+
+[[example.source]]
+id = "analytics"
+backend = "duckdb"
+schema_dir = "schema/analytics"
+
+[[example]]
+path = "backends/postgres"
+
+[[example.source]]
+id = "catalog"
+backend = "postgres"
+schema_dir = "schema/catalog"
+
+[[example]]
+path = "backends/clickhouse"
+
+[[example.source]]
+id = "analytics"
+backend = "clickhouse"
+schema_dir = "schema/analytics"
+
+[[example]]
+path = "backends/mysql"
+
+[[example.source]]
+id = "commerce"
+backend = "mysql"
+schema_dir = "schema/commerce"
+
+[[example]]
+path = "backends/mariadb"
+
+[[example.source]]
+id = "commerce"
+backend = "mariadb"
+schema_dir = "schema/commerce"
+
+[[example]]
+path = "workflows/multi-source-embedded"
+
+[[example.source]]
+id = "app"
+backend = "sqlite"
+schema_dir = "schema/app"
+
+[[example.source]]
+id = "analytics"
+backend = "duckdb"
+schema_dir = "schema/analytics"
+
+[[example]]
+path = "workflows/layouts"
+
+[[example.source]]
+id = "app"
+backend = "sqlite"
+schema_dir = "schema/app"
+
+[[example]]
+path = "workflows/custom-templates"
+
+[[example.source]]
+id = "app"
+backend = "sqlite"
+schema_dir = "schema/app"
+
+[[example]]
+path = "workflows/canonical-lifecycle"
+drift_check = true
+
+[[example.source]]
+id = "app"
+backend = "sqlite"
+schema_dir = "schema/app"

@@ -8,6 +8,12 @@ readme = "README.md"
 
 [features]
 clickhouse-tests = ["dep:dbmd-test-support", "dbmd-test-support/clickhouse"]
+full-examples = [
+    "clickhouse-tests",
+    "mariadb-tests",
+    "mysql-tests",
+    "postgres-tests",
+]
 mariadb-tests = ["dep:dbmd-test-support", "dbmd-test-support/mariadb"]
 mysql-tests = ["dep:dbmd-test-support", "dbmd-test-support/mysql"]
 postgres-tests = ["dep:dbmd-test-support", "dbmd-test-support/postgres"]
@@ -24,6 +30,7 @@ thiserror.workspace = true
 toml.workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
 dbmd-test-support = { path = "../test-support" }
 duckdb.workspace = true
 insta.workspace = true
@@ -45,3 +52,23 @@ required-features = ["mysql-tests"]
 [[test]]
 name = "mariadb"
 required-features = ["mariadb-tests"]
+
+[[test]]
+name = "examples_postgres"
+required-features = ["postgres-tests"]
+
+[[test]]
+name = "examples_clickhouse"
+required-features = ["clickhouse-tests"]
+
+[[test]]
+name = "examples_mysql"
+required-features = ["mysql-tests"]
+
+[[test]]
+name = "examples_mariadb"
+required-features = ["mariadb-tests"]
+
+[[test]]
+name = "examples_full"
+required-features = ["full-examples"]

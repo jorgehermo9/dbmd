@@ -1,0 +1,3 @@
+# dbmd's canonical Markdown artifacts end with a separator newline by design.
+examples/**/DATABASE.md whitespace=-blank-at-eof
+examples/**/database/** whitespace=-blank-at-eof

@@ -69,6 +69,20 @@ fn introspects_the_clickhouse_schema_surface_deterministically() {
         .tables
         .iter()
         .any(|table| table.name == "country_names" && table.kind == TableKind::Dictionary));
+    let country_source = first
+        .catalog()
+        .tables
+        .iter()
+        .find(|table| table.name == "country_source")
+        .expect("dictionary source table should be present");
+    assert_eq!(
+        country_source
+            .loading_dependents
+            .iter()
+            .map(|reference| reference.table.as_str())
+            .collect::<Vec<_>>(),
+        ["country_names", "country_rates"]
+    );
     let events = first
         .catalog()
         .tables

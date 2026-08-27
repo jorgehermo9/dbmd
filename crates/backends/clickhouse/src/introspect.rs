@@ -272,11 +272,15 @@ fn load_tables(
 }
 
 fn references(databases: Vec<String>, tables: Vec<String>) -> Vec<TableReference> {
-    databases
+    let mut references = databases
         .into_iter()
         .zip(tables)
         .map(|(database, table)| TableReference { database, table })
-        .collect()
+        .collect::<Vec<_>>();
+    references.sort_unstable_by(|left, right| {
+        (&left.database, &left.table).cmp(&(&right.database, &right.table))
+    });
+    references
 }
 
 const fn table_kind(engine: &str) -> TableKind {
@@ -1559,15 +1563,28 @@ mod tests {
     }
 
     #[test]
-    fn pairs_only_complete_table_references_in_catalog_order() {
+    fn pairs_only_complete_table_references_in_identity_order() {
         let values = references(
-            vec!["analytics".to_string(), "ignored".to_string()],
-            vec!["events".to_string()],
+            vec![
+                "warehouse".to_string(),
+                "analytics".to_string(),
+                "analytics".to_string(),
+                "ignored".to_string(),
+            ],
+            vec![
+                "events".to_string(),
+                "users".to_string(),
+                "events".to_string(),
+            ],
         );
 
-        assert_eq!(values.len(), 1);
+        assert_eq!(values.len(), 3);
         assert_eq!(values[0].database, "analytics");
         assert_eq!(values[0].table, "events");
+        assert_eq!(values[1].database, "analytics");
+        assert_eq!(values[1].table, "users");
+        assert_eq!(values[2].database, "warehouse");
+        assert_eq!(values[2].table, "events");
     }
 
     #[test]

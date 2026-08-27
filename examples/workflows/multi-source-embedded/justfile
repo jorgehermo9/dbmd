@@ -1,0 +1,20 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list
+
+render: setup
+    dbmd render
+
+verify: setup
+    dbmd verify
+
+down:
+    rm -f runtime/app.db runtime/warehouse.duckdb
+
+[private]
+setup:
+    mkdir -p runtime
+    rm -f runtime/app.db runtime/warehouse.duckdb
+    sqlite3 runtime/app.db < schema/app/01-schema.sql
+    duckdb runtime/warehouse.duckdb < schema/analytics/01-schema.sql

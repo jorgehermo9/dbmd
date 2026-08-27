@@ -1,0 +1,20 @@
+CREATE ROLE reporting NOLOGIN;
+COMMENT ON ROLE reporting IS 'Read-only reporting capability';
+
+CREATE ROLE analyst
+LOGIN
+NOSUPERUSER
+NOCREATEDB
+NOCREATEROLE
+INHERIT
+NOREPLICATION
+NOBYPASSRLS
+CONNECTION LIMIT 3
+PASSWORD 'role-secret'
+VALID UNTIL '2030-01-02 03:04:05+00';
+
+ALTER ROLE analyst SET statement_timeout = '5s';
+COMMENT ON ROLE analyst IS 'Human analytics login';
+
+GRANT reporting TO analyst
+WITH ADMIN TRUE, INHERIT FALSE, SET TRUE;

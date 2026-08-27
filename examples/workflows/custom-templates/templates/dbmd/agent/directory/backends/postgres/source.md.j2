@@ -1,0 +1,48 @@
+# Database: {{ source.name }}
+
+{% if source.nested -%}
+Source: `{{ source.id }}`
+
+Backend: `{{ source.backend }}`
+
+{% endif -%}
+## Database
+
+- [{{ source.data.database.qualified_name }}](database/{{ source.data.database.file_name }})
+
+{% if source.data.cluster_databases -%}
+## Cluster Databases
+
+{% for object in source.data.cluster_databases -%}
+- [{{ object.qualified_name }}](cluster-databases/{{ object.file_name }})
+{% endfor %}
+
+{% endif -%}
+{% if source.data.tablespaces -%}
+## Tablespaces
+
+{% for object in source.data.tablespaces -%}
+- [{{ object.qualified_name }}](tablespaces/{{ object.file_name }})
+{% endfor %}
+
+{% endif -%}
+{% if source.data.namespaces -%}
+## Namespaces
+
+| Name | Owner | Comment |
+|---|---|---|
+{% for namespace in source.data.namespaces -%}
+| {{ namespace.name }} | {{ namespace.owner }} | {{ namespace.comment or "-" }} |
+{% endfor %}
+
+{% endif -%}
+{% for pair in [("Enum Types", "enums", source.data.enums), ("Composite Types", "composite-types", source.data.composite_types), ("Domains", "domains", source.data.domains), ("Base and Shell Types", "base-types", source.data.base_types), ("Range and Multirange Types", "range-types", source.data.range_types), ("Sequences", "sequences", source.data.sequences), ("Tables", "tables", source.data.tables), ("Views", "views", source.data.views), ("Triggers", "triggers", source.data.triggers), ("Functions", "functions", source.data.functions), ("Procedures", "procedures", source.data.procedures), ("Aggregates", "aggregates", source.data.aggregates), ("Casts", "casts", source.data.casts), ("Encoding Conversions", "conversions", source.data.conversions), ("Operators", "operators", source.data.operators), ("Operator Families", "operator-families", source.data.operator_families), ("Operator Classes", "operator-classes", source.data.operator_classes), ("Access Methods", "access-methods", source.data.access_methods), ("Procedural Languages", "languages", source.data.languages), ("Transforms", "transforms", source.data.transforms), ("Rewrite Rules", "rules", source.data.rules), ("Event Triggers", "event-triggers", source.data.event_triggers), ("Extended Statistics", "statistics", source.data.statistics), ("Foreign-Data Wrappers", "foreign-data-wrappers", source.data.foreign_data_wrappers), ("Foreign Servers", "foreign-servers", source.data.foreign_servers), ("User Mappings", "user-mappings", source.data.user_mappings), ("Text Search Parsers", "text-search-parsers", source.data.text_search_parsers), ("Text Search Templates", "text-search-templates", source.data.text_search_templates), ("Text Search Dictionaries", "text-search-dictionaries", source.data.text_search_dictionaries), ("Text Search Configurations", "text-search-configurations", source.data.text_search_configurations), ("Publications", "publications", source.data.publications), ("Subscriptions", "subscriptions", source.data.subscriptions), ("Roles", "roles", source.data.roles), ("Role Database Settings", "role-database-settings", source.data.role_database_settings), ("Object Privileges", "privileges", source.data.privileges), ("Default Privileges", "default-privileges", source.data.default_privileges), ("Security Labels", "security-labels", source.data.security_labels), ("Large Objects", "large-objects", source.data.large_objects), ("Collations", "collations", source.data.collations), ("Extensions", "extensions", source.data.extensions)] -%}
+{% if pair[2] -%}
+## {{ pair[0] }}
+
+{% for object in pair[2] -%}
+- [{{ object.qualified_name }}]({{ pair[1] }}/{{ object.file_name }})
+{% endfor %}
+
+{% endif -%}
+{% endfor -%}

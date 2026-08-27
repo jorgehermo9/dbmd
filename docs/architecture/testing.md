@@ -192,11 +192,32 @@ factory framework:
 database, project, and output fixtures remain isolated per test; suite-wide
 fixtures never own mutable state.
 
-Cargo `examples/` binaries are not a test layer. If dbmd gains user-facing
-example projects, model them as realistic configuration, DDL, and expected
-artifact fixtures and exercise them through application integration or CLI E2E
-tests. Rustdoc doctests are not part of the gate because dbmd is delivered as a
-binary rather than a public Rust library.
+Cargo `examples/` binaries are not a test layer. Rustdoc doctests are not part
+of the gate because dbmd is delivered as a binary rather than a public Rust
+library.
+
+### Executable example acceptance
+
+Projects under `examples/` are user-facing executable documentation. Their
+test-only manifest and application-integration harness live under
+`crates/app/tests/examples/`; examples do not contain CI metadata. The manifest
+maps sources to readable schema directories and marks exceptional lifecycle or
+CLI checks. An inventory conformance test requires every runnable example to be
+registered and every registration to resolve to a complete project.
+
+Every example exposes `just render`, `just verify`, and `just down`. Embedded
+databases are recreated from committed SQL. Server examples mount those same
+SQL directories read-only into exact-version Compose services for humans, while
+CI applies them through the shared Testcontainers fixtures. Documentation and
+verification therefore cannot acquire separate schemas.
+
+The harness captures committed output before rendering, compares exact bytes
+and file sets, verifies freshness, renders again for determinism, and rejects
+credentials, mapped endpoints, and temporary paths. Example cases remain
+application integrations; the SQLite quickstart additionally crosses the
+compiled CLI boundary as one representative E2E case. The full six-backend
+showcase runs in its own CI lane because execution cost does not redefine its
+test layer.
 
 Use Insta for structural and Markdown snapshots. Commit `.snap` files, review changes intentionally with `cargo insta review`, and run CI with snapshot updates disabled. Prefer ordinary assertions when a value is small enough to understand more clearly without a snapshot.
 
@@ -232,6 +253,7 @@ just test-integration-hermetic
 just test-integration-backend
 just test-integration-application
 just test-e2e
+just test-examples
 just check
 ```
 
@@ -279,6 +301,8 @@ test taxonomy:
 - **Tests / Integration / Backend / _name_** matrix jobs run each server
   backend's compatibility integration and matching application integration in
   parallel.
+- **Tests / Integration / Application / Full example** composes all six
+  backends and verifies both canonical layouts from one example project.
 - **CI** is the stable aggregate status for branch protection.
 
 Every Rust lane has a distinct dependency cache because its enabled features

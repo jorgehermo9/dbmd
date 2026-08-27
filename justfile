@@ -40,6 +40,13 @@ test-integration-application target="all" snapshots="check": (_run-integration-a
 # Run compiled CLI end-to-end tests only.
 test-e2e snapshots="check": (_run-e2e snapshots)
 
+# Run executable example application integrations for all targets or one selected target.
+test-examples target="all": (_run-examples target "check")
+
+# Regenerate committed example artifacts for all targets or one selected target.
+examples-update target="all": (_run-examples target "update")
+    @printf 'Example artifacts were updated directly; review them as user-facing documentation.\n'
+
 # Update snapshots for every test layer, or one backend slice.
 snapshots backend="all": (_run-test-suite backend "update")
     @printf 'Snapshot files were updated directly; review their git diff before committing.\n'
@@ -232,15 +239,20 @@ _run-integration-application target snapshots:
                 ;;
             sqlite)
                 cargo nextest run -p dbmd-app --profile "$profile" -E 'kind(test) & binary(=render)'
+                just _run-examples sqlite check
                 ;;
             duckdb)
                 cargo nextest run -p dbmd-app --profile "$profile" -E 'kind(test) & binary(=duckdb)'
+                just _run-examples duckdb check
                 ;;
             postgres|clickhouse|mysql|mariadb)
-                cargo nextest run -p dbmd-app --features "${selected}-tests" --profile "$profile" -E "kind(test) & binary(=${selected})"
+                cargo nextest run -p dbmd-app --features "${selected}-tests" --profile "$profile" -E "kind(test) & (binary(=${selected}) | binary(=examples_${selected}))"
+                ;;
+            full)
+                just _run-examples full check
                 ;;
             *)
-                printf 'unknown application integration target: %s\nexpected one of: all, local, sqlite, postgres, clickhouse, mysql, mariadb, duckdb\n' "$selected" >&2
+                printf 'unknown application integration target: %s\nexpected one of: all, local, sqlite, postgres, clickhouse, mysql, mariadb, duckdb, full\n' "$selected" >&2
                 exit 2
                 ;;
         esac
@@ -251,6 +263,7 @@ _run-integration-application target snapshots:
         for server_backend in postgres clickhouse mysql mariadb; do
             run_application "$server_backend"
         done
+        run_application full
     else
         run_application "$target"
     fi
@@ -270,6 +283,63 @@ _run-e2e snapshots:
 
 [positional-arguments]
 [private]
+_run-examples target update:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    command -v cargo-nextest >/dev/null || { printf 'cargo-nextest is required: https://nexte.st/docs/installation/\n' >&2; exit 127; }
+
+    target="$1"
+    update="$2"
+    profile="${NEXTEST_PROFILE:-default}"
+    case "$update" in
+        check)
+            export DBMD_EXAMPLES_UPDATE=no
+            ;;
+        update)
+            export DBMD_EXAMPLES_UPDATE=always
+            ;;
+        *)
+            printf 'unknown example update mode: %s\nexpected one of: check, update\n' "$update" >&2
+            exit 2
+            ;;
+    esac
+
+    run_target() {
+        local selected="$1"
+        case "$selected" in
+            local)
+                cargo nextest run -p dbmd-app --profile "$profile" -E 'kind(test) & binary(=examples)'
+                ;;
+            sqlite)
+                cargo nextest run -p dbmd-app --profile "$profile" -E 'kind(test) & binary(=examples) & test(/sqlite|layout|custom_template|canonical_lifecycle|embedded_multi_source|example_inventory/)'
+                ;;
+            duckdb)
+                cargo nextest run -p dbmd-app --profile "$profile" -E 'kind(test) & binary(=examples) & test(/duckdb|embedded_multi_source|example_inventory/)'
+                ;;
+            postgres|clickhouse|mysql|mariadb)
+                cargo nextest run -p dbmd-app --features "${selected}-tests" --profile "$profile" -E "kind(test) & binary(=examples_${selected})"
+                ;;
+            full)
+                cargo nextest run -p dbmd-app --features full-examples --profile "$profile" -E 'kind(test) & binary(=examples_full)'
+                ;;
+            *)
+                printf 'unknown example target: %s\nexpected one of: all, local, sqlite, postgres, clickhouse, mysql, mariadb, duckdb, full\n' "$selected" >&2
+                exit 2
+                ;;
+        esac
+    }
+
+    if [[ "$target" == all ]]; then
+        run_target local
+        for selected in postgres clickhouse mysql mariadb full; do
+            run_target "$selected"
+        done
+    else
+        run_target "$target"
+    fi
+
+[positional-arguments]
+[private]
 _run-lint backend:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -283,12 +353,12 @@ _run-lint backend:
             cargo clippy -p "dbmd-backend-${backend}" --all-targets --all-features -- -D warnings
             app_test=render
             [[ "$backend" == duckdb ]] && app_test=duckdb
-            cargo clippy -p dbmd-app --test "$app_test" -- -D warnings
+            cargo clippy -p dbmd-app --test "$app_test" --test examples -- -D warnings
             ;;
         postgres|clickhouse|mysql|mariadb)
             feature="${backend}-tests"
             cargo clippy -p "dbmd-backend-${backend}" --all-targets --features "$feature" -- -D warnings
-            cargo clippy -p dbmd-app --features "$feature" --test "$backend" -- -D warnings
+            cargo clippy -p dbmd-app --features "$feature" --test "$backend" --test "examples_${backend}" -- -D warnings
             ;;
         *)
             printf 'unknown backend: %s\nexpected one of: all, sqlite, postgres, clickhouse, mysql, mariadb, duckdb\n' "$backend" >&2

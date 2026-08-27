@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:18.4-alpine
+    environment:
+      POSTGRES_DB: dbmd
+      POSTGRES_USER: dbmd
+      POSTGRES_PASSWORD: dbmd-example
+    ports: ["65432:5432"]
+    volumes:
+      - ./schema/postgres_app:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dbmd -d dbmd"]
+      interval: 1s
+      timeout: 5s
+      retries: 60
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.6.1.1193
+    environment:
+      CLICKHOUSE_SKIP_USER_SETUP: "1"
+    ports: ["48123:8123"]
+    volumes:
+      - ./schema/clickhouse_events:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          clickhouse-client --query "SELECT count() FROM system.workloads WHERE name = 'analytics_interactive'"
+          | grep --quiet '^1$'
+      interval: 1s
+      timeout: 5s
+      retries: 120
+
+  mysql:
+    image: mysql:9.7.1
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: test
+    ports: ["43307:3306"]
+    volumes:
+      - ./schema/mysql_commerce:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --host=127.0.0.1 --silent"]
+      interval: 1s
+      timeout: 5s
+      retries: 120
+
+  mariadb:
+    image: mariadb:12.3.2
+    command: ["--plugin-load-add=auth_mysql_sha2"]
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "1"
+      MARIADB_DATABASE: test
+    ports: ["43308:3306"]
+    volumes:
+      - ./schema/mariadb_commerce:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 1s
+      timeout: 5s
+      retries: 120

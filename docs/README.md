@@ -2,6 +2,9 @@
 
 This directory separates product behavior from implementation architecture and durable decisions.
 
+Runnable user projects and their committed generated artifacts live in the
+repository's [executable examples](../examples/README.md).
+
 ## Product specification
 
 - [Overview](product/overview.md) — thesis, users, goals, workflow, scope, and success criteria.

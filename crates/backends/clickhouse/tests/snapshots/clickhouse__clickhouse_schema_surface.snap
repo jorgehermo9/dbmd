@@ -448,9 +448,9 @@ catalog:
       loading_dependencies: []
       loading_dependents:
         - database: analytics
-          table: country_rates
-        - database: analytics
           table: country_names
+        - database: analytics
+          table: country_rates
       definer: ~
       sql_security: ~
       comment: ~

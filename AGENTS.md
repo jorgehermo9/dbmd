@@ -26,7 +26,9 @@ describe durable product contracts, architecture, and accepted decisions only.
 Use the root [`justfile`](justfile) for formatting, linting, tests, and snapshot
 updates. Run `just` to list recipes; prefer `just check [backend]`,
 `just test [backend]`, and `just snapshots [backend]` over manual Cargo or
-`INSTA_UPDATE` commands. The optional backend selector defaults to `all`.
+`INSTA_UPDATE` commands. Use `just test-examples [target]` and
+`just examples-update [target]` for executable documentation. Optional
+selectors default to `all`.
 
 ## Agent skills
 
@@ -41,6 +43,14 @@ Every code change must invoke and follow
 matrix before implementation, and close every applicable row before completion.
 Load the skill before authoring or editing any test, fixture, or snapshot; all
 test work must follow its layer, fixture, assertion, and determinism guidance.
+
+### Examples
+
+Load [`create-examples`](.agents/skills/create-examples/SKILL.md) before
+authoring, changing, or auditing anything under `examples/`. Example projects
+are executable product documentation; their test-only manifests and harnesses
+stay under the owning test suite. Load `create-tests` as well when executable
+verification, expected artifacts, fixtures, or snapshots change.
 
 ### Issue tracker
 

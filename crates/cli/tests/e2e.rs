@@ -6,6 +6,39 @@ use rstest::rstest;
 use support::CliProject;
 
 const DUCKDB_SCHEMA: &str = include_str!("../../backends/duckdb/tests/fixtures/schema_surface.sql");
+const QUICKSTART_CONFIG: &str = include_str!("../../../examples/quickstart/sqlite/dbmd.toml");
+const QUICKSTART_SCHEMA: &str =
+    include_str!("../../../examples/quickstart/sqlite/schema/app/01-schema.sql");
+const QUICKSTART_ARTIFACT: &str = include_str!("../../../examples/quickstart/sqlite/DATABASE.md");
+
+#[test]
+fn sqlite_quickstart_crosses_the_cli_process_boundary() {
+    let project = CliProject::new();
+    fs::create_dir_all(project.path().join("runtime"))
+        .expect("quickstart runtime directory should be created");
+    project.sqlite("runtime/app.db", QUICKSTART_SCHEMA);
+    project.write("dbmd.toml", QUICKSTART_CONFIG);
+    project.write("DATABASE.md", QUICKSTART_ARTIFACT);
+
+    let render = project.run(["render"]);
+    assert!(
+        render.status.success(),
+        "{}",
+        String::from_utf8_lossy(&render.stderr)
+    );
+    assert_eq!(
+        fs::read_to_string(project.path().join("DATABASE.md"))
+            .expect("quickstart artifact should be readable"),
+        QUICKSTART_ARTIFACT
+    );
+
+    let verify = project.run(["verify"]);
+    assert!(
+        verify.status.success(),
+        "{}",
+        String::from_utf8_lossy(&verify.stderr)
+    );
+}
 
 #[test]
 fn root_help_succeeds_without_project_state() {

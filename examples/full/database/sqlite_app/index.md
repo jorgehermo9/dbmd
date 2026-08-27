@@ -1,0 +1,39 @@
+# Database: `SQLite application`
+
+Source: `sqlite_app`
+
+Backend: `sqlite`
+
+## Namespaces
+
+| Name | Comment |
+|---|---|
+| `main` | - |
+
+
+## Tables
+
+- [`main.account_search`](tables/main.account_search.md)
+- [`main.account_search_config`](tables/main.account_search_config.md)
+- [`main.account_search_data`](tables/main.account_search_data.md)
+- [`main.account_search_docsize`](tables/main.account_search_docsize.md)
+- [`main.account_search_idx`](tables/main.account_search_idx.md)
+- [`main.accounts`](tables/main.accounts.md)
+- [`main.imported`](tables/main.imported.md)
+- [`main.migration_target`](tables/main.migration_target.md)
+- [`main.organizations`](tables/main.organizations.md)
+
+
+## Views
+
+- [`main.account_balances`](views/main.account_balances.md)
+- [`main.account_directory`](views/main.account_directory.md)
+
+
+## Triggers
+
+- [`main.account_directory.account_directory_insert`](triggers/main.account_directory%2Eaccount_directory_insert.md)
+- [`main.accounts.accounts_normalize_email`](triggers/main.accounts%2Eaccounts_normalize_email.md)
+- [`main.accounts.accounts_prevent_root_delete`](triggers/main.accounts%2Eaccounts_prevent_root_delete.md)
+
+

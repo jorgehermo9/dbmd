@@ -1,0 +1,8 @@
+[sources.app]
+display_name = "SQLite feature catalog"
+backend = "sqlite"
+path = "runtime/app.db"
+
+[output]
+path = "DATABASE.md"
+sources = ["app"]

@@ -1,0 +1,10 @@
+[sources.commerce]
+display_name = "MariaDB commerce database"
+backend = "mariadb"
+url = "${MARIADB_URL}"
+schema = "test"
+include_global_objects = true
+
+[output]
+path = "DATABASE.md"
+sources = ["commerce"]

@@ -1,0 +1,12 @@
+[sources.app]
+display_name = "Application database"
+backend = "sqlite"
+path = "runtime/app.db"
+
+[output]
+path = "database"
+sources = ["app"]
+
+[output.layout]
+kind = "directory"
+source_layout = "nested"

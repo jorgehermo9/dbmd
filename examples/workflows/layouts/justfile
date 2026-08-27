@@ -1,0 +1,21 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list
+
+render: setup
+    dbmd render
+    dbmd render --config dbmd.directory.toml
+
+verify: setup
+    dbmd verify
+    dbmd verify --config dbmd.directory.toml
+
+down:
+    rm -f runtime/app.db
+
+[private]
+setup:
+    mkdir -p runtime
+    rm -f runtime/app.db
+    sqlite3 runtime/app.db < schema/app/01-schema.sql

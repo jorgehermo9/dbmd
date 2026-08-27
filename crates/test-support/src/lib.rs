@@ -6,6 +6,9 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
+#[cfg(feature = "clickhouse")]
+use std::collections::BTreeMap;
+
 #[cfg(any(feature = "mariadb", feature = "mysql"))]
 use mysql::prelude::Queryable;
 #[cfg(feature = "postgres")]
@@ -275,14 +278,22 @@ impl ClickHouseServer {
 
     fn execute(&self, sql: &str, settings: &[(&str, &str)]) -> Result<(), TestError> {
         let client = reqwest::blocking::Client::new();
+        let mut effective_settings = settings
+            .iter()
+            .map(|(name, value)| ((*name).to_string(), (*value).to_string()))
+            .collect::<BTreeMap<_, _>>();
         for statement in sql
             .split(";\n")
             .map(str::trim)
             .filter(|statement| !statement.is_empty())
         {
+            if let Some((name, value)) = clickhouse_fixture_setting(statement) {
+                effective_settings.insert(name.to_string(), value.to_string());
+                continue;
+            }
             let response = client
                 .post(&self.endpoint)
-                .query(settings)
+                .query(&effective_settings)
                 .body(statement.to_string())
                 .send()?;
             let status = response.status();
@@ -310,6 +321,50 @@ impl ClickHouseServer {
             )
             .into())
         }
+    }
+}
+
+#[cfg(feature = "clickhouse")]
+fn clickhouse_fixture_setting(statement: &str) -> Option<(&str, &str)> {
+    let assignment = statement.strip_prefix("SET ")?;
+    let (name, value) = assignment.split_once('=')?;
+    let name = name.trim();
+    let value = value.trim().trim_matches('\'');
+    if name.is_empty()
+        || value.is_empty()
+        || !name
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || character == '_')
+    {
+        return None;
+    }
+    Some((name, value))
+}
+
+#[cfg(all(test, feature = "clickhouse"))]
+mod clickhouse_tests {
+    use super::clickhouse_fixture_setting;
+
+    #[test]
+    fn fixture_settings_are_parsed_for_subsequent_http_requests() {
+        assert_eq!(
+            clickhouse_fixture_setting("SET allow_experimental_window_view = 1"),
+            Some(("allow_experimental_window_view", "1"))
+        );
+        assert_eq!(
+            clickhouse_fixture_setting("SET output_format = 'JSONEachRow'"),
+            Some(("output_format", "JSONEachRow"))
+        );
+    }
+
+    #[test]
+    fn ordinary_or_malformed_statements_are_not_consumed_as_settings() {
+        assert_eq!(
+            clickhouse_fixture_setting("CREATE TABLE events (id UInt64)"),
+            None
+        );
+        assert_eq!(clickhouse_fixture_setting("SET ROLE analytics"), None);
+        assert_eq!(clickhouse_fixture_setting("SET invalid-name = 1"), None);
     }
 }
 
@@ -365,6 +420,9 @@ pub struct PostgresServer {
     _container: PostgresContainer,
     host: String,
     port: u16,
+    initial_database: String,
+    user: String,
+    password: String,
 }
 
 #[cfg(feature = "postgres")]
@@ -381,13 +439,32 @@ impl PostgresServer {
             .with_tag("18.4-alpine")
             .with_startup_timeout(Duration::from_secs(180))
             .start()?;
-        let host = container.get_host()?.to_string();
-        let port = container.get_host_port_ipv4(5432)?;
-        let server = Self {
-            _container: PostgresContainer::Core { _guard: container },
-            host,
-            port,
-        };
+        let server = Self::from_core_container(container, "postgres", "postgres", "postgres")?;
+        server.ensure_version("18.4")?;
+        Ok(server)
+    }
+
+    /// Starts the pinned image with one initialized database and fixture schema.
+    ///
+    /// This mirrors the official image's `POSTGRES_*` and
+    /// `/docker-entrypoint-initdb.d` contract so executable examples can use the
+    /// same database identity, owner, credentials, and SQL under Compose and in
+    /// the automated suite.
+    pub fn start_initialized(
+        database: &str,
+        user: &str,
+        password: &str,
+        sql: &str,
+    ) -> Result<Self, TestError> {
+        let container = Postgres::default()
+            .with_db_name(database)
+            .with_user(user)
+            .with_password(password)
+            .with_init_sql(sql.as_bytes().to_vec())
+            .with_tag("18.4-alpine")
+            .with_startup_timeout(Duration::from_secs(180))
+            .start()?;
+        let server = Self::from_core_container(container, database, user, password)?;
         server.ensure_version("18.4")?;
         Ok(server)
     }
@@ -418,13 +495,34 @@ impl PostgresServer {
             _container: PostgresContainer::PgVector { _guard: container },
             host,
             port,
+            initial_database: "postgres".to_string(),
+            user: "postgres".to_string(),
+            password: "postgres".to_string(),
         };
         server.ensure_version("18.4")?;
         Ok(server)
     }
 
+    fn from_core_container(
+        container: Container<Postgres>,
+        database: &str,
+        user: &str,
+        password: &str,
+    ) -> Result<Self, TestError> {
+        let host = container.get_host()?.to_string();
+        let port = container.get_host_port_ipv4(5432)?;
+        Ok(Self {
+            _container: PostgresContainer::Core { _guard: container },
+            host,
+            port,
+            initial_database: database.to_string(),
+            user: user.to_string(),
+            password: password.to_string(),
+        })
+    }
+
     fn ensure_version(&self, expected_prefix: &str) -> Result<(), TestError> {
-        let mut client = Client::connect(&self.connection_string("postgres"), NoTls)?;
+        let mut client = self.connect()?;
         let version = client
             .query_one("SELECT current_setting('server_version')", &[])?
             .get::<_, String>(0);
@@ -441,7 +539,7 @@ impl PostgresServer {
     /// Creates an isolated logical database and executes its fixture SQL.
     pub fn database(&self, sql: &str) -> Result<PostgresDatabase<'_>, TestError> {
         let name = format!("dbmd_test_{:016x}", fixture_hash(sql.as_bytes()));
-        let mut admin = Client::connect(&self.connection_string("postgres"), NoTls)?;
+        let mut admin = self.connect()?;
         admin.batch_execute(&format!("CREATE DATABASE {name}"))?;
 
         let database = PostgresDatabase { server: self, name };
@@ -452,9 +550,20 @@ impl PostgresServer {
 
     fn connection_string(&self, database: &str) -> String {
         format!(
-            "postgres://postgres:postgres@{}:{}/{database}",
-            self.host, self.port
+            "postgres://{}:{}@{}:{}/{database}",
+            self.user, self.password, self.host, self.port
         )
+    }
+
+    /// Opens a client connected to the image's initialized database.
+    pub fn connect(&self) -> Result<Client, postgres::Error> {
+        Client::connect(&self.initial_connection_string(), NoTls)
+    }
+
+    /// Returns the connection URL for the image's initialized database.
+    #[must_use]
+    pub fn initial_connection_string(&self) -> String {
+        self.connection_string(&self.initial_database)
     }
 }
 
@@ -493,7 +602,7 @@ impl PostgresDatabase<'_> {
 #[cfg(feature = "postgres")]
 impl Drop for PostgresDatabase<'_> {
     fn drop(&mut self) {
-        match Client::connect(&self.server.connection_string("postgres"), NoTls) {
+        match self.server.connect() {
             Ok(mut admin) => {
                 if let Err(error) = admin.batch_execute(&format!(
                     "DROP DATABASE IF EXISTS {} WITH (FORCE)",

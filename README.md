@@ -80,6 +80,7 @@ accepts no output-shaping overrides.
 
 ## Documentation
 
+- [Executable examples](examples/README.md)
 - [Product overview](docs/product/overview.md)
 - [Product concepts](docs/product/concepts.md)
 - [Feature specifications](docs/product/features/README.md)
@@ -109,6 +110,8 @@ Target one backend while iterating, or accept its reviewed Insta snapshots:
 ```sh
 just test postgres
 just snapshots postgres
+just test-examples postgres
+just examples-update postgres
 ```
 
 Run `just` to list the small, opinionated workflow surface. PostgreSQL,

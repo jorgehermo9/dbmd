@@ -1,0 +1,321 @@
+{% if source.nested -%}
+## Source: `{{ source.id }}`{% if source.has_display_name %} — {{ source.name }}{% endif %}
+
+Backend: `{{ source.backend }}`
+
+{% endif -%}
+{{ source.data.section_heading }} Database
+
+{% set object = source.data.database -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% if source.data.cluster_databases -%}
+{{ source.data.section_heading }} Cluster Databases
+
+{% for object in source.data.cluster_databases -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.tablespaces -%}
+{{ source.data.section_heading }} Tablespaces
+
+{% for object in source.data.tablespaces -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.namespaces -%}
+{{ source.data.section_heading }} Namespaces
+
+| Name | Owner | Comment |
+|---|---|---|
+{% for namespace in source.data.namespaces -%}
+| {{ namespace.name }} | {{ namespace.owner }} | {{ namespace.comment or "-" }} |
+{% endfor %}
+
+{% endif -%}
+{% if source.data.enums -%}
+{{ source.data.section_heading }} Enum Types
+
+| Type | Owner | Values | Comment |
+|---|---|---|---|
+{% for enum in source.data.enums -%}
+| {{ enum.qualified_name }} | {{ enum.owner }} | {{ enum.values }} | {{ enum.comment or "-" }} |
+{% endfor %}
+
+{% endif -%}
+{% if source.data.composite_types -%}
+{{ source.data.section_heading }} Composite Types
+
+{% for object in source.data.composite_types -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.domains -%}
+{{ source.data.section_heading }} Domains
+
+{% for object in source.data.domains -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.base_types -%}
+{{ source.data.section_heading }} Base and Shell Types
+
+{% for object in source.data.base_types -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.range_types -%}
+{{ source.data.section_heading }} Range and Multirange Types
+
+{% for object in source.data.range_types -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.sequences -%}
+{{ source.data.section_heading }} Sequences
+
+{% for object in source.data.sequences -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.tables -%}
+{{ source.data.section_heading }} Tables
+
+{% for object in source.data.tables -%}
+{% set heading = source.data.object_heading -%}
+{% set detail_heading = source.data.detail_heading -%}
+{% include "table.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.views -%}
+{{ source.data.section_heading }} Views
+
+{% for object in source.data.views -%}
+{% set heading = source.data.object_heading -%}
+{% set detail_heading = source.data.detail_heading -%}
+{% include "view.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.triggers -%}
+{{ source.data.section_heading }} Triggers
+
+{% for object in source.data.triggers -%}
+{% set heading = source.data.object_heading -%}
+{% include "trigger.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.functions -%}
+{{ source.data.section_heading }} Functions
+
+{% for object in source.data.functions -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.procedures -%}
+{{ source.data.section_heading }} Procedures
+
+{% for object in source.data.procedures -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.aggregates -%}
+{{ source.data.section_heading }} Aggregates
+
+{% for object in source.data.aggregates -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.casts -%}
+{{ source.data.section_heading }} Casts
+
+{% for object in source.data.casts -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.conversions -%}
+{{ source.data.section_heading }} Encoding Conversions
+
+{% for object in source.data.conversions -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.operators -%}
+{{ source.data.section_heading }} Operators
+
+{% for object in source.data.operators -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.operator_families -%}
+{{ source.data.section_heading }} Operator Families
+
+{% for object in source.data.operator_families -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.operator_classes -%}
+{{ source.data.section_heading }} Operator Classes
+
+{% for object in source.data.operator_classes -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.access_methods -%}
+{{ source.data.section_heading }} Access Methods
+
+{% for object in source.data.access_methods -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.languages -%}
+{{ source.data.section_heading }} Procedural Languages
+
+{% for object in source.data.languages -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.transforms -%}
+{{ source.data.section_heading }} Transforms
+
+{% for object in source.data.transforms -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% for pair in [("Rewrite Rules", source.data.rules), ("Event Triggers", source.data.event_triggers), ("Extended Statistics", source.data.statistics)] -%}
+{% if pair[1] -%}
+{{ source.data.section_heading }} {{ pair[0] }}
+
+{% for object in pair[1] -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% endfor -%}
+{% for pair in [("Foreign-Data Wrappers", source.data.foreign_data_wrappers), ("Foreign Servers", source.data.foreign_servers), ("User Mappings", source.data.user_mappings)] -%}
+{% if pair[1] -%}
+{{ source.data.section_heading }} {{ pair[0] }}
+
+{% for object in pair[1] -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% endfor -%}
+{% for pair in [("Text Search Parsers", source.data.text_search_parsers), ("Text Search Templates", source.data.text_search_templates), ("Text Search Dictionaries", source.data.text_search_dictionaries), ("Text Search Configurations", source.data.text_search_configurations)] -%}
+{% if pair[1] -%}
+{{ source.data.section_heading }} {{ pair[0] }}
+
+{% for object in pair[1] -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% endfor -%}
+{% if source.data.publications -%}
+{{ source.data.section_heading }} Publications
+
+{% for object in source.data.publications -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.subscriptions -%}
+{{ source.data.section_heading }} Subscriptions
+
+{% for object in source.data.subscriptions -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.roles -%}
+{{ source.data.section_heading }} Roles
+
+{% for object in source.data.roles -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.role_database_settings -%}
+{{ source.data.section_heading }} Role Database Settings
+
+{% for object in source.data.role_database_settings -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% for pair in [("Object Privileges", source.data.privileges), ("Default Privileges", source.data.default_privileges), ("Security Labels", source.data.security_labels), ("Large Objects", source.data.large_objects)] -%}
+{% if pair[1] -%}
+{{ source.data.section_heading }} {{ pair[0] }}
+
+{% for object in pair[1] -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% endfor -%}
+{% if source.data.collations -%}
+{{ source.data.section_heading }} Collations
+
+{% for object in source.data.collations -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.extensions -%}
+{{ source.data.section_heading }} Extensions
+
+{% for object in source.data.extensions -%}
+{% set heading = source.data.object_heading -%}
+{% include "function.md.j2" %}
+
+{% endfor -%}
+{% endif -%}

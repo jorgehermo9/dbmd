@@ -1,0 +1,17 @@
+[sources.app]
+display_name = "Transactional application"
+backend = "sqlite"
+path = "runtime/app.db"
+
+[sources.analytics]
+display_name = "Analytical warehouse"
+backend = "duckdb"
+path = "runtime/warehouse.duckdb"
+
+[output]
+path = "DATABASE.md"
+sources = ["analytics", "app"]
+
+[output.layout]
+kind = "single_file"
+source_layout = "auto"

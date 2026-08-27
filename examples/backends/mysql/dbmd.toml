@@ -1,0 +1,9 @@
+[sources.commerce]
+display_name = "MySQL commerce database"
+backend = "mysql"
+url = "${MYSQL_URL}"
+schema = "test"
+
+[output]
+path = "DATABASE.md"
+sources = ["commerce"]
