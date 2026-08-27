@@ -7,10 +7,10 @@ repository.workspace = true
 readme = "README.md"
 
 [features]
-clickhouse-tests = ["dep:dbmd-test-support"]
-mariadb-tests = ["dep:dbmd-test-support"]
-mysql-tests = ["dep:dbmd-test-support"]
-postgres-tests = ["dep:dbmd-test-support"]
+clickhouse-tests = ["dep:dbmd-test-support", "dbmd-test-support/clickhouse"]
+mariadb-tests = ["dep:dbmd-test-support", "dbmd-test-support/mariadb"]
+mysql-tests = ["dep:dbmd-test-support", "dbmd-test-support/mysql"]
+postgres-tests = ["dep:dbmd-test-support", "dbmd-test-support/postgres"]
 
 [dependencies]
 dbmd-core = { path = "../core" }
@@ -24,8 +24,10 @@ thiserror.workspace = true
 toml.workspace = true
 
 [dev-dependencies]
+dbmd-test-support = { path = "../test-support" }
 duckdb.workspace = true
 insta.workspace = true
+rstest.workspace = true
 rusqlite.workspace = true
 
 [[test]]

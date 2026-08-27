@@ -1,11 +1,14 @@
+mod support;
+
 use std::fs;
 
 use dbmd_app::{init, init_templates, render, InitRequest, InitTemplatesRequest, RenderRequest};
 use rusqlite::Connection;
+use support::TestProject;
 
 #[test]
 fn initializes_an_unambiguous_sqlite_project_that_can_render() {
-    let project = tempfile::tempdir().expect("temporary project should be created");
+    let project = TestProject::new();
     Connection::open(project.path().join("app.db"))
         .expect("SQLite database should open")
         .execute_batch("CREATE TABLE users (id INTEGER PRIMARY KEY);")
@@ -23,7 +26,7 @@ fn initializes_an_unambiguous_sqlite_project_that_can_render() {
 
 #[test]
 fn refuses_to_replace_an_existing_config() {
-    let project = tempfile::tempdir().expect("temporary project should be created");
+    let project = TestProject::new();
     let config_path = project.path().join("dbmd.toml");
     fs::write(&config_path, "user owned\n").expect("existing config should be written");
 
@@ -39,7 +42,7 @@ fn refuses_to_replace_an_existing_config() {
 
 #[test]
 fn writes_an_editable_example_when_sqlite_discovery_is_ambiguous() {
-    let project = tempfile::tempdir().expect("temporary project should be created");
+    let project = TestProject::new();
     for name in ["app.db", "test.db"] {
         Connection::open(project.path().join(name))
             .expect("SQLite database should open")
@@ -59,7 +62,7 @@ fn writes_an_editable_example_when_sqlite_discovery_is_ambiguous() {
 
 #[test]
 fn discovery_requires_a_regular_file_supported_extension_and_sqlite_header() {
-    let project = tempfile::tempdir().expect("temporary project should be created");
+    let project = TestProject::new();
     Connection::open(project.path().join("warehouse.SQLITE3"))
         .expect("valid SQLite database should open")
         .execute_batch("CREATE TABLE records (id INTEGER PRIMARY KEY);")
@@ -88,7 +91,7 @@ fn discovery_requires_a_regular_file_supported_extension_and_sqlite_header() {
 
 #[test]
 fn initializes_a_complete_project_owned_template_profile() {
-    let project = tempfile::tempdir().expect("temporary project should be created");
+    let project = TestProject::new();
     let root = project.path().join("templates/dbmd");
 
     let report = init_templates(InitTemplatesRequest::new(&root))
@@ -116,7 +119,7 @@ fn initializes_a_complete_project_owned_template_profile() {
 
 #[test]
 fn template_initialization_refuses_to_overlay_an_existing_directory() {
-    let project = tempfile::tempdir().expect("temporary project should be created");
+    let project = TestProject::new();
     let root = project.path().join("templates/dbmd");
     fs::create_dir_all(&root).expect("existing template root should be created");
     fs::write(root.join("user-owned.txt"), "preserve me\n").expect("marker should be written");

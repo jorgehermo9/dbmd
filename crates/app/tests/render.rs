@@ -26,7 +26,7 @@ fn request_debug_lists_environment_names_without_values() {
 
 #[test]
 fn renders_the_complete_sqlite_schema_surface_deterministically() {
-    let project = TestProject::from_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
 
     let first_report = render(project.request()).expect("first render should succeed");
     let first = fs::read_to_string(project.output_path()).expect("artifact should exist");
@@ -52,7 +52,7 @@ fn renders_the_complete_sqlite_schema_surface_deterministically() {
 
 #[test]
 fn preserves_the_previous_artifact_when_introspection_fails() {
-    let project = TestProject::from_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     fs::write(project.output_path(), "previous artifact\n")
         .expect("old artifact should be written");
     let request = RenderRequest::with_environment(
@@ -88,7 +88,7 @@ fn preserves_the_previous_artifact_when_introspection_fails() {
 
 #[test]
 fn renders_selected_sources_in_configured_order_with_source_sections() {
-    let project = TestProject::from_fixture(MULTI_SOURCE_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(MULTI_SOURCE_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
 
     let report = render(project.request()).expect("multiple SQLite sources should render");
     let markdown = fs::read_to_string(project.output_path()).expect("artifact should exist");
@@ -106,7 +106,7 @@ fn renders_selected_sources_in_configured_order_with_source_sections() {
 
 #[test]
 fn request_source_override_replaces_config_selection_and_preserves_order() {
-    let project = TestProject::from_fixture(MULTI_SOURCE_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(MULTI_SOURCE_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     let request = project.request().with_sources(["app", "analytics"]);
 
     let report = render(request).expect("request source override should render");
@@ -123,7 +123,7 @@ fn request_source_override_replaces_config_selection_and_preserves_order() {
 
 #[test]
 fn atomically_renders_a_directory_artifact_without_stale_files() {
-    let project = TestProject::from_fixture(DIRECTORY_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(DIRECTORY_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     let output = project.path().join("database");
     fs::create_dir_all(output.join("tables")).expect("old artifact tree should be created");
     fs::write(output.join("tables/stale.md"), "stale\n").expect("stale artifact should be created");
@@ -141,7 +141,7 @@ fn atomically_renders_a_directory_artifact_without_stale_files() {
 
 #[test]
 fn configured_stdout_returns_single_file_without_writing_the_canonical_artifact() {
-    let project = TestProject::from_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
 
     let report = render(project.request().to_stdout()).expect("stdout render should succeed");
 
@@ -155,7 +155,7 @@ fn configured_stdout_returns_single_file_without_writing_the_canonical_artifact(
 
 #[test]
 fn configless_sqlite_request_renders_without_reading_a_project_config() {
-    let project = TestProject::from_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     fs::remove_file(project.path().join("dbmd.toml")).expect("config should be removed");
     let output = project.path().join("ONE_OFF.md");
     let request = RenderRequest::sqlite(project.path().join("app.db")).with_output_path(&output);
@@ -178,7 +178,7 @@ path = "app.db"
 [output]
 path = "${CANONICAL_OUTPUT}"
 "#;
-    let project = TestProject::from_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
     let output = project.path().join("ALTERNATE.md");
     let request =
         RenderRequest::with_environment(project.path().join("dbmd.toml"), BTreeMap::new())
@@ -191,7 +191,7 @@ path = "${CANONICAL_OUTPUT}"
 
 #[test]
 fn single_file_render_creates_missing_parents_and_leaves_no_staging_files() {
-    let project = TestProject::from_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     let output = project.path().join("generated/nested/DATABASE.md");
 
     render(project.request().with_output_path(&output))
@@ -226,7 +226,7 @@ path = "."
 [output.layout]
 kind = "directory"
 "#;
-    let project = TestProject::from_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
     let marker = project.path().join("user-owned.txt");
     fs::write(&marker, "preserve me\n").expect("marker should be written");
 
@@ -241,7 +241,7 @@ kind = "directory"
 
 #[test]
 fn directory_output_rejects_every_lexically_dangerous_destination() {
-    let project = TestProject::from_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     let home = std::env::var("HOME").expect("test process should have a home directory");
     let cases = [
         ("empty", ""),
@@ -281,7 +281,7 @@ kind = "directory"
 
 #[test]
 fn nested_config_refuses_to_replace_the_discovered_repository_root() {
-    let project = TestProject::from_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     fs::create_dir(project.path().join(".git")).expect("repository marker should be created");
     let nested = project.path().join("config");
     fs::create_dir(&nested).expect("nested config directory should be created");
@@ -334,7 +334,7 @@ path = ".git/generated-schema"
 [output.layout]
 kind = "directory"
 "#;
-    let project = TestProject::from_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
 
     let error = render(project.request()).expect_err(".git output must be rejected");
 
@@ -347,7 +347,7 @@ kind = "directory"
 fn directory_output_refuses_a_symlink_root_without_touching_its_target() {
     use std::os::unix::fs::symlink;
 
-    let project = TestProject::from_fixture(DIRECTORY_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(DIRECTORY_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     let target = project.path().join("user-owned");
     fs::create_dir(&target).expect("symlink target should be created");
     fs::write(target.join("marker.txt"), "preserve me\n").expect("marker should be written");
@@ -378,7 +378,7 @@ path = "linked/generated"
 [output.layout]
 kind = "directory"
 "#;
-    let project = TestProject::from_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
     let target = project.path().join("user-owned");
     fs::create_dir(&target).expect("symlink target should be created");
     fs::write(target.join("marker.txt"), "preserve me\n").expect("marker should be written");
@@ -404,7 +404,7 @@ profile = "agent"
 [templates]
 dir = "templates/dbmd"
 "#;
-    let project = TestProject::from_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
     let root = project.path().join("templates/dbmd");
     write_complete_template_profile(&root);
     fs::write(
@@ -434,7 +434,7 @@ path = "DATABASE.md"
 [templates]
 dir = "templates/dbmd"
 "#;
-    let project = TestProject::from_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
     let entrypoint = project
         .path()
         .join("templates/dbmd/agent/single_file/database.md.j2");
@@ -465,7 +465,7 @@ path = "database"
 [output.layout]
 kind = "directory"
 "#;
-    let project = TestProject::from_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
 
     let error = render(project.request().to_stdout())
         .expect_err("directory stdout should fail during local preflight");
@@ -487,7 +487,7 @@ path = "."
 [output.layout]
 kind = "directory"
 "#;
-    let project = TestProject::from_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
 
     let error = render(project.request()).expect_err("unsafe output should fail local preflight");
 
@@ -511,7 +511,7 @@ kind = "directory"
 [templates]
 dir = "templates/dbmd"
 "#;
-    let project = TestProject::from_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
     let root = project.path().join("templates/dbmd");
     write_complete_template_profile(&root);
     fs::write(
@@ -555,7 +555,7 @@ path = "database"
 kind = "directory"
 source_layout = "nested"
 "#;
-    let project = TestProject::from_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(config, SCHEMA, ANALYTICS_SCHEMA);
 
     render(project.request()).expect("nested directory render should succeed");
 

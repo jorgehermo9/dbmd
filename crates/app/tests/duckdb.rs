@@ -1,13 +1,16 @@
+mod support;
+
 use std::fs;
 
 use dbmd_app::{render, RenderOutput, RenderRequest};
 use duckdb::Connection;
+use support::TestProject;
 
 const SCHEMA: &str = include_str!("../../backends/duckdb/tests/fixtures/schema_surface.sql");
 
 #[test]
 fn renders_duckdb_through_configured_and_one_off_application_inputs() {
-    let project = tempfile::tempdir().expect("temporary project should be created");
+    let project = TestProject::new();
     let database_path = project.path().join("app.duckdb");
     Connection::open(&database_path)
         .expect("DuckDB fixture should open")

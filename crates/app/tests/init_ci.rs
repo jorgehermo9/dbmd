@@ -1,10 +1,13 @@
+mod support;
+
 use std::fs;
 
 use dbmd_app::{init_ci, InitCiRequest};
+use support::TestProject;
 
 #[test]
 fn initializes_a_pinned_github_actions_verify_workflow() {
-    let project = tempfile::tempdir().expect("temporary project should be created");
+    let project = TestProject::new();
     let path = project.path().join(".github/workflows/dbmd.yml");
 
     let report = init_ci(InitCiRequest::new(&path)).expect("CI workflow should initialize");
@@ -19,7 +22,7 @@ fn initializes_a_pinned_github_actions_verify_workflow() {
 
 #[test]
 fn ci_initialization_requires_explicit_overwrite_for_an_existing_workflow() {
-    let project = tempfile::tempdir().expect("temporary project should be created");
+    let project = TestProject::new();
     let path = project.path().join("dbmd.yml");
     fs::write(&path, "user owned\n").expect("existing workflow should be written");
 

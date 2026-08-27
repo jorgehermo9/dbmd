@@ -176,6 +176,22 @@ crates/cli/tests/e2e.rs
 
 Shared helpers stay local to the owning crate until genuine cross-crate duplication justifies a test-support crate.
 
+### Test setup ownership
+
+Test setup uses ordinary Rust types and functions rather than a repository-wide
+factory framework:
+
+- One-off behavior-driving setup stays visible in the test.
+- Repeated setup within a crate lives under that crate's `tests/support/`.
+- `dbmd-test-support` owns only cross-crate RAII infrastructure: isolated
+  temporary project trees and real-server Testcontainers fixtures.
+- Named scenarios represent meaningful starting states reused by several
+  tests; they are composed from factories rather than forming a hierarchy.
+
+`rstest` is used selectively for named homogeneous case tables. Stateful
+database, project, and output fixtures remain isolated per test; suite-wide
+fixtures never own mutable state.
+
 Cargo `examples/` binaries are not a test layer. If dbmd gains user-facing
 example projects, model them as realistic configuration, DDL, and expected
 artifact fixtures and exercise them through application integration or CLI E2E
@@ -241,9 +257,14 @@ complete selected-backend workflow. Nextest keeps tests within each server
 family serialized while CI runs different families in parallel. Retries are
 disabled so intermittent failures remain visible.
 
-The shared lifecycle implementation lives in `crates/test-support`; fixture SQL,
-assertions, and snapshots remain in the crate whose public seam they test.
-Catalog coverage is documented beside every adapter in its `README.md`.
+The shared lifecycle implementation lives in `crates/test-support`. PostgreSQL,
+ClickHouse, MySQL, and MariaDB servers start declaratively through
+Testcontainers with exact image tags, explicit readiness conditions, runtime
+version checks, mapped endpoints, isolated case state where supported, and
+RAII teardown. No integration suite relies on shell-managed or persistent
+ambient containers. Fixture SQL, assertions, and snapshots remain in the crate
+whose public seam they test. Catalog coverage is documented beside every
+adapter in its `README.md`.
 
 ## CI execution lanes
 

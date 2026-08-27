@@ -7,7 +7,7 @@ repository.workspace = true
 readme = "README.md"
 
 [features]
-clickhouse-tests = ["dep:dbmd-test-support"]
+clickhouse-tests = ["dep:dbmd-test-support", "dbmd-test-support/clickhouse"]
 
 [dependencies]
 dbmd-core = { path = "../../core" }

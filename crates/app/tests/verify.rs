@@ -26,7 +26,7 @@ fn request_debug_lists_environment_names_without_values() {
 
 #[test]
 fn reports_an_unchanged_single_file_as_fresh() {
-    let project = TestProject::from_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     render(project.request()).expect("canonical artifact should render");
 
     let report = verify(VerifyRequest::with_environment(
@@ -42,7 +42,7 @@ fn reports_an_unchanged_single_file_as_fresh() {
 
 #[test]
 fn reports_modified_bytes_without_changing_the_canonical_file() {
-    let project = TestProject::from_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     render(project.request()).expect("canonical artifact should render");
     fs::write(project.output_path(), "manually edited\n")
         .expect("canonical artifact should be edited");
@@ -69,7 +69,7 @@ fn reports_modified_bytes_without_changing_the_canonical_file() {
 
 #[test]
 fn compares_complete_directory_file_sets() {
-    let project = TestProject::from_fixture(DIRECTORY_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(DIRECTORY_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     render(project.request()).expect("canonical directory should render");
     let output = project.path().join("database");
     fs::write(output.join("index.md"), "changed\n").expect("index should be changed");
@@ -102,7 +102,7 @@ fn compares_complete_directory_file_sets() {
 
 #[test]
 fn reports_missing_single_file_and_directory_outputs_as_added_drift() {
-    let file_project = TestProject::from_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let file_project = TestProject::from_sqlite_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     let file_report = verify(VerifyRequest::with_environment(
         file_project.path().join("dbmd.toml"),
         file_project.environment(),
@@ -119,7 +119,8 @@ fn reports_missing_single_file_and_directory_outputs_as_added_drift() {
     );
     assert!(!file_project.output_path().exists());
 
-    let directory_project = TestProject::from_fixture(DIRECTORY_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let directory_project =
+        TestProject::from_sqlite_fixture(DIRECTORY_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     let directory_report = verify(VerifyRequest::with_environment(
         directory_project.path().join("dbmd.toml"),
         directory_project.environment(),
@@ -136,7 +137,7 @@ fn reports_missing_single_file_and_directory_outputs_as_added_drift() {
 
 #[test]
 fn reports_semantically_equivalent_markdown_edits_as_exact_byte_drift() {
-    let project = TestProject::from_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     render(project.request()).expect("canonical artifact should render");
     let mut edited =
         fs::read_to_string(project.output_path()).expect("artifact should be readable");
@@ -160,7 +161,7 @@ fn reports_semantically_equivalent_markdown_edits_as_exact_byte_drift() {
 
 #[test]
 fn returns_introspection_failures_as_operational_errors_instead_of_drift() {
-    let project = TestProject::from_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     let mut environment = project.environment();
     environment.insert(
         "DBMD_TEST_DATABASE".to_string(),
@@ -182,7 +183,7 @@ fn returns_introspection_failures_as_operational_errors_instead_of_drift() {
 fn rejects_symlinks_inside_a_canonical_directory_as_unsafe_operational_state() {
     use std::os::unix::fs::symlink;
 
-    let project = TestProject::from_fixture(DIRECTORY_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
+    let project = TestProject::from_sqlite_fixture(DIRECTORY_CONFIG, SCHEMA, ANALYTICS_SCHEMA);
     render(project.request()).expect("canonical directory should render");
     let outside = project.path().join("user-owned.md");
     fs::write(&outside, "private user content\n").expect("symlink target should be written");

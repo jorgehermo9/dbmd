@@ -9,11 +9,22 @@ Test observable contracts at the repository's accepted module seams. Read the
 owning product specification, `docs/architecture/testing.md`, and the relevant
 Rust testing rules before changing a test.
 
+Before creating or refactoring shared fixtures, factories, scenarios, or
+external harnesses, read
+[references/test-fixtures.md](references/test-fixtures.md). It owns test-data
+organization and Testcontainers lifecycle guidance.
+
 ## Coverage matrix
 
 Before code, derive a coverage matrix from the contract rather than the current
 implementation. Include every distinct happy path, edge, error, determinism,
 safety/redaction, and compatibility behavior that applies.
+
+Sweep the contract for boundaries, empty or missing values, duplicates and
+idempotency, ordering, malformed input or catalog values, downstream failure,
+partial failure and rollback, backend-specific behavior, and credential
+redaction. Include only applicable classes, but do not silently omit a class
+because its setup is inconvenient.
 
 | # | Behavior | Class | Preconditions / input | Observable outcome | Layer | Status |
 |---|----------|-------|-----------------------|--------------------|-------|--------|
@@ -139,6 +150,27 @@ split the synthetic reaction from the real backend compatibility scenario.
 - Run repeat acquisition/rendering when determinism is part of the contract.
 - Assert secrets are absent from catalogs, debug output, errors, and Markdown.
 
+### Support ownership
+
+Keep one-off setup in the test and repeated crate-specific builders or scenarios
+in that crate's `tests/support/`. Put only genuinely cross-crate RAII
+infrastructure in `dbmd-test-support`: isolated test-project filesystem fixtures
+and declarative Testcontainers server fixtures, including pinned images,
+readiness, endpoints, version checks, isolation, and cleanup.
+
+A test-project fixture owns a real, disposable directory through
+`tempfile::TempDir`. It may provide small path and file-writing conveniences for
+`dbmd.toml`, database files, templates, and generated artifacts. Use the real
+filesystem for integration and end-to-end behavior; do not introduce an
+in-memory filesystem abstraction merely to make tests easier. An in-memory fake
+is appropriate only for unit-testing logic whose contract is independent of OS
+filesystem semantics.
+
+Keep product-specific configuration builders, DDL, catalogs, expected output,
+and assertions in the crate that owns the behavior. Introduce a named scenario
+only after multiple tests reuse the same meaningful starting state; do not make
+`dbmd-test-support` a general home for convenient test code.
+
 ## Assertions and snapshots
 
 Assert small semantic facts directly. Use Insta for rich normalized catalogs,
@@ -152,16 +184,41 @@ temporary paths, timestamps, unordered collections, or credentials.
 
 ## Test shape
 
+- When the filename is not enough, begin the test module with a short comment
+  naming the public contract it defends.
+- Keep stable constants and file-local helpers above the tests. Group tests by
+  owning operation and order them happy path, edge cases, then errors when that
+  improves navigation.
 - Name the behavior and expected outcome, not the function being called.
 - Arrange, act, and assert visibly; comments are optional when the structure is
   already clear.
+- Keep one independently failing behavior per test. Parameterize several inputs
+  only when setup and assertion shape remain the same.
+- Do not branch inside a test to select a case. Loops are appropriate only when
+  the collection itself is the observable contract.
 - Build expectations from specifications, documented database behavior, or
   worked literals rather than mirroring production code.
 - Prefer public results and effects over calls to internal helpers.
-- Keep shared helpers local until duplication proves a repository-level test
-  module is warranted.
+- Keep one-off setup inline, repeated crate setup under `tests/support/`, and
+  only cross-crate lifecycle infrastructure in `dbmd-test-support`.
 - Run independent scenarios safely in parallel; serialize only a proven shared
   resource through the test runner configuration.
+
+### `rstest`
+
+Use `rstest` selectively for homogeneous parameter tables whose named cases
+share one setup and assertion shape. Name every `#[case]`; use `#[values]` only
+when every Cartesian combination is meaningful. Derive conformance cases from
+the production registry when a newly registered member should automatically
+gain coverage.
+
+Fixture injection is appropriate only for universal RAII infrastructure whose
+setup is irrelevant to the behavior. Keep behavior-driving state explicit.
+Treat `#[once]` as immutable suite infrastructure only: database, project,
+environment, and output state stays isolated per test. Keep an existing macro
+when it expresses heterogeneous Rust types more clearly than type erasure or
+artificial parameterization. `rstest` is syntax, not the test architecture;
+ordinary constructors and functions remain the default when clearer.
 
 ## Workflow
 

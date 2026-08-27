@@ -1,11 +1,14 @@
+mod support;
+
 use std::{collections::BTreeMap, fs};
 
 use dbmd_app::{doctor, DiagnosticStage, DiagnosticStatus, DoctorRequest};
 use rusqlite::Connection;
+use support::TestProject;
 
 #[test]
 fn local_doctor_does_not_connect_by_default() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -31,7 +34,7 @@ path = "DATABASE.md"
 
 #[test]
 fn successful_connection_doctor_reports_every_stage_in_deterministic_order() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     Connection::open(project.path().join("app.db"))
         .expect("fixture database should open")
         .execute_batch("CREATE TABLE users (id INTEGER PRIMARY KEY);")
@@ -78,7 +81,7 @@ path = "DATABASE.md"
 
 #[test]
 fn connection_doctor_reports_failure_after_independent_local_checks() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -115,7 +118,7 @@ path = "DATABASE.md"
 
 #[test]
 fn all_sources_checks_sources_outside_the_canonical_selection() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     Connection::open(project.path().join("selected.db"))
         .expect("selected database should open")
         .execute_batch("CREATE TABLE users (id INTEGER PRIMARY KEY);")
@@ -160,7 +163,7 @@ sources = ["selected"]
 #[cfg(unix)]
 #[test]
 fn rejects_an_existing_non_regular_single_file_destination() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -188,7 +191,7 @@ path = "/dev/null"
 fn reports_an_unwritable_existing_output_parent_as_a_local_failure() {
     use std::os::unix::fs::PermissionsExt;
 
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     let output_parent = project.path().join("locked");
     fs::create_dir(&output_parent).expect("output parent should be created");
@@ -219,7 +222,7 @@ path = "locked/DATABASE.md"
 
 #[test]
 fn missing_source_environment_does_not_hide_independent_local_failures() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -253,7 +256,7 @@ dir = "missing-templates"
 
 #[test]
 fn invalid_custom_template_syntax_fails_template_preflight_without_connecting() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -299,7 +302,7 @@ dir = "templates/dbmd"
 
 #[test]
 fn missing_source_environment_skips_only_the_affected_connection_check() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,

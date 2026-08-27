@@ -7,7 +7,7 @@ repository.workspace = true
 readme = "README.md"
 
 [features]
-postgres-tests = ["dep:dbmd-test-support"]
+postgres-tests = ["dep:dbmd-test-support", "dbmd-test-support/postgres"]
 
 [dependencies]
 dbmd-core = { path = "../../core" }

@@ -7,7 +7,7 @@ repository.workspace = true
 readme = "README.md"
 
 [features]
-mariadb-tests = ["dep:dbmd-test-support"]
+mariadb-tests = ["dep:dbmd-test-support", "dbmd-test-support/mariadb"]
 
 [dependencies]
 dbmd-core = { path = "../../core" }

@@ -1,27 +1,133 @@
-//! Shared infrastructure for real-database integration tests.
+//! Shared RAII infrastructure for integration and end-to-end tests.
 
-use std::{error::Error, thread, time::Duration};
-
-use mysql::prelude::Queryable;
-use postgres::{Client, NoTls};
-use testcontainers_modules::{
-    clickhouse::ClickHouse,
-    mariadb::Mariadb,
-    mysql::Mysql,
-    postgres::Postgres,
-    testcontainers::{
-        core::{IntoContainerPort, WaitFor},
-        runners::SyncRunner,
-        Container, GenericImage, ImageExt,
-    },
+use std::{
+    error::Error,
+    fs,
+    path::{Component, Path, PathBuf},
 };
 
+#[cfg(any(feature = "mariadb", feature = "mysql"))]
+use mysql::prelude::Queryable;
+#[cfg(feature = "postgres")]
+use postgres::{Client, NoTls};
+#[cfg(any(feature = "mariadb", feature = "mysql", feature = "postgres"))]
+use std::thread;
+#[cfg(any(
+    feature = "clickhouse",
+    feature = "mariadb",
+    feature = "mysql",
+    feature = "postgres"
+))]
+use std::time::Duration;
+use tempfile::TempDir;
+#[cfg(feature = "clickhouse")]
+use testcontainers_modules::clickhouse::ClickHouse;
+#[cfg(feature = "mariadb")]
+use testcontainers_modules::mariadb::Mariadb;
+#[cfg(feature = "mysql")]
+use testcontainers_modules::mysql::Mysql;
+#[cfg(feature = "postgres")]
+use testcontainers_modules::postgres::Postgres;
+#[cfg(feature = "postgres")]
+use testcontainers_modules::testcontainers::{
+    core::{IntoContainerPort, WaitFor},
+    GenericImage,
+};
+#[cfg(any(
+    feature = "clickhouse",
+    feature = "mariadb",
+    feature = "mysql",
+    feature = "postgres"
+))]
+use testcontainers_modules::testcontainers::{runners::SyncRunner, Container, ImageExt};
+
+/// One isolated temporary project tree removed automatically on drop.
+pub struct TestProject {
+    directory: TempDir,
+}
+
+impl TestProject {
+    /// Creates an empty project tree.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            directory: tempfile::tempdir().expect("temporary test project should be created"),
+        }
+    }
+
+    /// Returns the project root.
+    #[must_use]
+    pub fn root(&self) -> &Path {
+        self.directory.path()
+    }
+
+    /// Resolves one safe project-relative path.
+    ///
+    /// # Panics
+    ///
+    /// Panics when `relative` is absolute or contains a parent traversal.
+    #[must_use]
+    pub fn path(&self, relative: impl AsRef<Path>) -> PathBuf {
+        let relative = relative.as_ref();
+        assert_safe_relative_path(relative);
+        self.root().join(relative)
+    }
+
+    /// Writes one project-relative fixture file, creating missing parents.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the path escapes the project or the file cannot be written.
+    pub fn write(&self, relative: impl AsRef<Path>, contents: impl AsRef<[u8]>) -> PathBuf {
+        let path = self.path(relative);
+        let parent = path
+            .parent()
+            .expect("project fixture file should have a parent");
+        fs::create_dir_all(parent).expect("project fixture parents should be created");
+        fs::write(&path, contents).expect("project fixture file should be written");
+        path
+    }
+
+    /// Creates one project-relative directory and its missing parents.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the path escapes the project or the directory cannot be created.
+    pub fn create_dir(&self, relative: impl AsRef<Path>) -> PathBuf {
+        let path = self.path(relative);
+        fs::create_dir_all(&path).expect("project fixture directory should be created");
+        path
+    }
+}
+
+impl Default for TestProject {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+fn assert_safe_relative_path(path: &Path) {
+    assert!(
+        !path.as_os_str().is_empty(),
+        "test project path cannot be empty"
+    );
+    for component in path.components() {
+        assert!(
+            matches!(component, Component::Normal(_) | Component::CurDir),
+            "test project path must stay relative: {}",
+            path.display()
+        );
+    }
+}
+
 /// One locally owned MySQL 9.7.1 fixture container.
+#[cfg(feature = "mysql")]
 pub struct MysqlServer {
     _container: Container<Mysql>,
     url: String,
 }
 
+#[cfg(feature = "mysql")]
 impl MysqlServer {
     /// Starts MySQL, executes `sql`, and waits until client connections succeed.
     pub fn start(sql: &str) -> Result<Self, TestError> {
@@ -47,11 +153,13 @@ impl MysqlServer {
 }
 
 /// One locally owned MariaDB 12.3.2 fixture container.
+#[cfg(feature = "mariadb")]
 pub struct MariaDbServer {
     _container: Container<Mariadb>,
     url: String,
 }
 
+#[cfg(feature = "mariadb")]
 impl MariaDbServer {
     /// Starts MariaDB, executes `sql`, and waits until client connections succeed.
     pub fn start(sql: &str) -> Result<Self, TestError> {
@@ -77,6 +185,7 @@ impl MariaDbServer {
     }
 }
 
+#[cfg(any(feature = "mariadb", feature = "mysql"))]
 fn mysql_family_url<I>(container: &Container<I>) -> Result<String, TestError>
 where
     I: testcontainers_modules::testcontainers::Image,
@@ -93,6 +202,7 @@ where
     ))
 }
 
+#[cfg(any(feature = "mariadb", feature = "mysql"))]
 fn wait_for_mysql_family(url: &str) -> Result<(), TestError> {
     let options = mysql::Opts::from_url(url)?;
     let options =
@@ -106,6 +216,7 @@ fn wait_for_mysql_family(url: &str) -> Result<(), TestError> {
     Err("database fixture did not accept MySQL-protocol connections".into())
 }
 
+#[cfg(any(feature = "mariadb", feature = "mysql"))]
 fn ensure_mysql_family_version(url: &str, expected_prefix: &str) -> Result<(), TestError> {
     let mut connection = mysql::Conn::new(mysql::Opts::from_url(url)?)?;
     let version = connection
@@ -122,11 +233,13 @@ fn ensure_mysql_family_version(url: &str, expected_prefix: &str) -> Result<(), T
 }
 
 /// One locally owned ClickHouse 26.6.1.1193 fixture container.
+#[cfg(feature = "clickhouse")]
 pub struct ClickHouseServer {
     _container: Container<ClickHouse>,
     endpoint: String,
 }
 
+#[cfg(feature = "clickhouse")]
 impl ClickHouseServer {
     /// Starts ClickHouse and executes semicolon-delimited fixture statements.
     pub fn start(sql: &str) -> Result<Self, TestError> {
@@ -138,6 +251,7 @@ impl ClickHouseServer {
         let container = ClickHouse::default()
             .with_tag("26.6.1.1193")
             .with_env_var("CLICKHOUSE_SKIP_USER_SETUP", "1")
+            .with_startup_timeout(Duration::from_secs(180))
             .start()?;
         let endpoint = format!(
             "http://{}:{}",
@@ -204,10 +318,12 @@ pub type TestError = Box<dyn Error + Send + Sync>;
 /// Standard result type for one database fixture case.
 pub type TestResult = Result<(), TestError>;
 
+#[cfg(feature = "postgres")]
 const CONFIG_EXTENSION_CONTROL: &str = r"comment = 'dbmd extension configuration fixture'
 default_version = '1.0'
 relocatable = true
 ";
+#[cfg(feature = "postgres")]
 const CONFIG_EXTENSION_SQL: &str = r#"
 CREATE TYPE dbmd_extension_state AS ENUM ('enabled', 'disabled');
 CREATE TYPE dbmd_extension_pair AS (left_value integer, right_value text);
@@ -244,21 +360,27 @@ SELECT pg_catalog.pg_extension_config_dump('dbmd_extension_config', 'WHERE enabl
 "#;
 
 /// One locally owned PostgreSQL container shared by a suite of fixture cases.
+#[cfg(feature = "postgres")]
 pub struct PostgresServer {
     _container: PostgresContainer,
     host: String,
     port: u16,
 }
 
+#[cfg(feature = "postgres")]
 enum PostgresContainer {
     Core { _guard: Container<Postgres> },
     PgVector { _guard: Container<GenericImage> },
 }
 
+#[cfg(feature = "postgres")]
 impl PostgresServer {
     /// Starts the pinned PostgreSQL image and retains its RAII container guard.
     pub fn start() -> Result<Self, TestError> {
-        let container = Postgres::default().with_tag("18.4-alpine").start()?;
+        let container = Postgres::default()
+            .with_tag("18.4-alpine")
+            .with_startup_timeout(Duration::from_secs(180))
+            .start()?;
         let host = container.get_host()?.to_string();
         let port = container.get_host_port_ipv4(5432)?;
         let server = Self {
@@ -336,6 +458,7 @@ impl PostgresServer {
     }
 }
 
+#[cfg(feature = "postgres")]
 fn fixture_hash(bytes: &[u8]) -> u64 {
     bytes.iter().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
         (hash ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3)
@@ -343,11 +466,13 @@ fn fixture_hash(bytes: &[u8]) -> u64 {
 }
 
 /// One per-case database dropped forcibly when its fixture guard leaves scope.
+#[cfg(feature = "postgres")]
 pub struct PostgresDatabase<'a> {
     server: &'a PostgresServer,
     name: String,
 }
 
+#[cfg(feature = "postgres")]
 impl PostgresDatabase<'_> {
     /// Opens a client connected to this fixture's isolated logical database.
     ///
@@ -365,6 +490,7 @@ impl PostgresDatabase<'_> {
     }
 }
 
+#[cfg(feature = "postgres")]
 impl Drop for PostgresDatabase<'_> {
     fn drop(&mut self) {
         match Client::connect(&self.server.connection_string("postgres"), NoTls) {
@@ -388,6 +514,7 @@ impl Drop for PostgresDatabase<'_> {
 }
 
 /// One independently isolated fixture case in a shared-container suite.
+#[cfg(feature = "postgres")]
 #[derive(Clone, Copy)]
 pub struct PostgresCase {
     /// Stable case name used in aggregated failure reports.
@@ -397,6 +524,7 @@ pub struct PostgresCase {
 }
 
 /// Runs all fixture cases concurrently against one locally owned container.
+#[cfg(feature = "postgres")]
 pub fn run_postgres_cases(cases: &[PostgresCase]) {
     let server = PostgresServer::start().expect("shared PostgreSQL test container should start");
     let failures = thread::scope(|scope| {
@@ -428,6 +556,7 @@ pub fn run_postgres_cases(cases: &[PostgresCase]) {
     );
 }
 
+#[cfg(feature = "postgres")]
 fn error_chain(error: &(dyn Error + 'static)) -> String {
     let mut message = error.to_string();
     let mut source = error.source();

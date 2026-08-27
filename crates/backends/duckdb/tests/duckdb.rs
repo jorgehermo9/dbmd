@@ -1,3 +1,6 @@
+#[path = "support/duckdb.rs"]
+mod support;
+
 use std::str::FromStr;
 
 use dbmd_backend_duckdb::{
@@ -7,6 +10,7 @@ use dbmd_backend_duckdb::{
 use dbmd_core::SourceId;
 use dbmd_render::{OutputLayout, RenderContext, RenderOptions, RenderedArtifact, Renderer};
 use duckdb::{Config as DuckDbConnectionConfig, Connection};
+use support::TestDatabase;
 
 fn source_id() -> SourceId {
     SourceId::from_str("app").expect("test source ID should be valid")
@@ -134,8 +138,8 @@ fn source_configuration_rejects_a_nul_extension_directory() {
 
 #[test]
 fn missing_database_and_attachment_errors_are_source_scoped_without_directory_details() {
-    let directory = tempfile::tempdir().expect("temporary directory should be created");
-    let missing = directory.path().join("sentinel-missing-main.duckdb");
+    let main = TestDatabase::from_sql("");
+    let missing = main.sibling_path("sentinel-missing-main.duckdb");
     let source = DuckDbSource::new(
         SourceId::from_str("warehouse").expect("test source ID should be valid"),
         &missing,
@@ -146,16 +150,14 @@ fn missing_database_and_attachment_errors_are_source_scoped_without_directory_de
     assert!(error.to_string().contains("DuckDB source `warehouse`"));
     assert!(!error.to_string().contains("sentinel-missing-main"));
 
-    let main = directory.path().join("main.duckdb");
-    Connection::open(&main).expect("main fixture database should open");
     let source = DuckDbSource::new(
         SourceId::from_str("warehouse").expect("test source ID should be valid"),
-        main,
+        main.path(),
     )
     .expect("main source should be valid")
     .with_attached_database(
         "analytics",
-        directory.path().join("sentinel-missing-attachment.duckdb"),
+        main.sibling_path("sentinel-missing-attachment.duckdb"),
         true,
     )
     .expect("attachment configuration should be structurally valid");
@@ -169,25 +171,14 @@ fn missing_database_and_attachment_errors_are_source_scoped_without_directory_de
 
 #[test]
 fn introspects_and_renders_the_duckdb_schema_surface_deterministically() {
-    let directory = tempfile::tempdir().expect("temporary directory should be created");
-    let path = directory.path().join("app.duckdb");
-    let connection = Connection::open(&path).expect("DuckDB fixture should open");
-    let version: String = connection
-        .query_row("SELECT version()", [], |row| row.get(0))
-        .expect("DuckDB version should be queryable");
-    assert_eq!(version, "v1.5.4");
-    connection
-        .execute_batch(include_str!("fixtures/schema_surface.sql"))
-        .expect("DuckDB fixture DDL should execute");
-    drop(connection);
-    let warehouse_path = directory.path().join("warehouse.duckdb");
-    Connection::open(&warehouse_path)
-        .expect("attached DuckDB fixture should open")
-        .execute_batch("CREATE TABLE facts (id BIGINT PRIMARY KEY, amount DECIMAL(18, 2));")
-        .expect("attached DuckDB fixture DDL should execute");
+    let database = TestDatabase::from_sql(include_str!("fixtures/schema_surface.sql"));
+    let warehouse_path = database.create_sibling(
+        "warehouse.duckdb",
+        "CREATE TABLE facts (id BIGINT PRIMARY KEY, amount DECIMAL(18, 2));",
+    );
     let source = DuckDbSource::new(
         SourceId::from_str("analytics").expect("test source ID should be valid"),
-        &path,
+        database.path(),
     )
     .expect("source path should be valid")
     .with_attached_database("warehouse", &warehouse_path, true)

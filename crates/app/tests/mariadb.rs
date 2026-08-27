@@ -1,7 +1,8 @@
-use std::fs;
+mod support;
 
 use dbmd_app::{render, RenderOutput, RenderRequest};
 use dbmd_test_support::MariaDbServer;
+use support::TestProject;
 
 #[test]
 fn renders_mariadb_through_the_application_operation() {
@@ -9,12 +10,9 @@ fn renders_mariadb_through_the_application_operation() {
         "../../backends/mariadb/tests/fixtures/schema_surface.sql"
     ))
     .expect("MariaDB fixture should start");
-    let project = tempfile::tempdir().expect("temporary project should exist");
-    let config = project.path().join("dbmd.toml");
-    fs::write(
-        &config,
-        format!(
-            r#"[sources.commerce]
+    let project = TestProject::new();
+    let config = project.config(format!(
+        r#"[sources.commerce]
 backend = "mariadb"
 url = "{}"
 schema = "test"
@@ -22,10 +20,8 @@ schema = "test"
 [output]
 path = "DATABASE.md"
 "#,
-            server.url()
-        ),
-    )
-    .expect("config should be written");
+        server.url()
+    ));
 
     let report = render(RenderRequest::new(config).to_stdout())
         .expect("MariaDB application render should succeed");

@@ -1,11 +1,14 @@
+mod support;
+
 use std::{collections::BTreeMap, fs};
 
 use dbmd_app::{explain, DirectoryVariant, ExplainDestination, ExplainRequest, TemplateSource};
 use dbmd_backends::Backend;
+use support::TestProject;
 
 #[test]
 fn explains_resolution_without_connecting_or_exposing_credentials() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -57,7 +60,7 @@ sources = ["production", "local"]
 
 #[test]
 fn explains_every_composed_backend_without_connecting() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -132,7 +135,7 @@ sources = ["clicks", "duck", "maria", "mysql"]
 
 #[test]
 fn resolves_every_backend_specific_optional_field_without_exposing_values() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -236,7 +239,7 @@ sources = ["clicks", "duck", "maria", "mysql", "postgres", "sqlite"]
 
 #[test]
 fn rejects_backend_specific_attachment_invariants_during_local_resolution() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let cases = [
         (
             "SQLite reserved namespace",
@@ -280,7 +283,7 @@ path = "DATABASE.md"
 
 #[test]
 fn explains_render_overrides_and_known_single_file_output() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -338,7 +341,7 @@ sources = ["first"]
 
 #[test]
 fn preserves_environment_names_in_display_paths_without_exposing_values() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -376,7 +379,7 @@ dir = "${TEMPLATE_SECRET}/dbmd"
 
 #[test]
 fn reports_only_effective_destination_changes_as_overrides() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -399,7 +402,7 @@ path = "DATABASE.md"
 
 #[test]
 fn reports_the_implemented_directory_variant() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,

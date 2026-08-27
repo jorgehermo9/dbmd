@@ -1,10 +1,13 @@
+mod support;
+
 use std::fs;
 
 use dbmd_app::{init_agents, InitAgentsRequest};
+use support::TestProject;
 
 #[test]
 fn prints_agent_instructions_for_the_canonical_artifact() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -35,7 +38,7 @@ path = "docs/DATABASE.md"
 
 #[test]
 fn preserves_output_environment_references_without_expanding_them() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -58,7 +61,7 @@ path = "${OUTPUT_ROOT}/DATABASE.md"
 
 #[test]
 fn rejects_inline_duplicate_and_reversed_markers_without_modifying_the_file() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -100,7 +103,7 @@ path = "DATABASE.md"
 fn rejects_symlink_and_non_regular_instruction_destinations_without_touching_targets() {
     use std::os::unix::fs::symlink;
 
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -139,7 +142,7 @@ path = "DATABASE.md"
 
 #[test]
 fn explicit_file_update_preserves_unrelated_content_and_is_idempotent() {
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,
@@ -178,7 +181,7 @@ path = "DATABASE.md"
 fn explicit_file_update_preserves_existing_permissions() {
     use std::os::unix::fs::PermissionsExt;
 
-    let project = tempfile::tempdir().expect("temporary project should exist");
+    let project = TestProject::new();
     let config = project.path().join("dbmd.toml");
     fs::write(
         &config,

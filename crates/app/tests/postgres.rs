@@ -1,7 +1,10 @@
+mod support;
+
 use std::{collections::BTreeMap, fs};
 
 use dbmd_app::RenderRequest;
 use dbmd_test_support::{run_postgres_cases, PostgresCase, PostgresServer, TestResult};
+use support::TestProject;
 
 const CASES: &[PostgresCase] = &[PostgresCase {
     name: "render",
@@ -15,10 +18,8 @@ fn postgres_application_fixtures() {
 
 fn renders_a_postgres_source_through_the_application_api(server: &PostgresServer) -> TestResult {
     let database = server.database(include_str!("fixtures/postgres/render/schema.sql"))?;
-    let project = tempfile::tempdir()?;
-    let config_path = project.path().join("dbmd.toml");
-    fs::write(
-        &config_path,
+    let project = TestProject::new();
+    let config_path = project.config(
         r#"
 [sources.catalog]
 backend = "postgres"
@@ -27,7 +28,7 @@ url = "${DATABASE_URL}"
 [output]
 path = "DATABASE.md"
 "#,
-    )?;
+    );
     let environment = BTreeMap::from([("DATABASE_URL".to_string(), database.connection_string())]);
 
     let request = || RenderRequest::with_environment(&config_path, environment.clone());

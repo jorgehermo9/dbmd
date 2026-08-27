@@ -7,7 +7,7 @@ repository.workspace = true
 readme = "README.md"
 
 [features]
-mysql-tests = ["dep:dbmd-test-support"]
+mysql-tests = ["dep:dbmd-test-support", "dbmd-test-support/mysql"]
 
 [dependencies]
 dbmd-core = { path = "../../core" }

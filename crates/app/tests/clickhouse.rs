@@ -1,7 +1,8 @@
-use std::fs;
+mod support;
 
 use dbmd_app::{render, RenderOutput, RenderRequest};
 use dbmd_test_support::ClickHouseServer;
+use support::TestProject;
 
 #[test]
 fn renders_clickhouse_through_the_application_operation() {
@@ -14,12 +15,9 @@ fn renders_clickhouse_through_the_application_operation() {
         ],
     )
     .expect("ClickHouse fixture should start");
-    let project = tempfile::tempdir().expect("temporary project should exist");
-    let config = project.path().join("dbmd.toml");
-    fs::write(
-        &config,
-        format!(
-            r#"[sources.analytics]
+    let project = TestProject::new();
+    let config = project.config(format!(
+        r#"[sources.analytics]
 backend = "clickhouse"
 url = "{}"
 database = "analytics"
@@ -27,10 +25,8 @@ database = "analytics"
 [output]
 path = "DATABASE.md"
 "#,
-            server.endpoint()
-        ),
-    )
-    .expect("config should be written");
+        server.endpoint()
+    ));
 
     let report = render(RenderRequest::new(config).to_stdout())
         .expect("ClickHouse application render should succeed");
