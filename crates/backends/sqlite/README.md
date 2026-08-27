@@ -122,5 +122,5 @@ fixture evidence stay synchronized.
 ## Contract test
 
 ```sh
-just test-contract sqlite
+just test-integration-backend sqlite
 ```

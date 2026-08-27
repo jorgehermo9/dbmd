@@ -349,5 +349,5 @@ Raw server definitions remain a fidelity backstop for represented objects.
 ## Contract test
 
 ```sh
-just test-contract postgres
+just test-integration-backend postgres
 ```

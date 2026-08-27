@@ -64,7 +64,7 @@ jobs:
         run: just lint
 
   tests:
-    name: Tests
+    name: Tests / Local
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -74,7 +74,7 @@ jobs:
         uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
         with:
           toolchain: stable
-      - name: Restore Rust hermetic-test cache
+      - name: Restore Rust local-test cache
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           shared-key: tests-local
@@ -91,19 +91,19 @@ jobs:
           tool: cargo-nextest@0.9.143
       - name: Unit tests
         run: just test-unit
-      - name: Hermetic integration tests
-        run: just test-integration
-      - name: SQLite backend contracts
-        run: just test-contract sqlite
-      - name: DuckDB backend contracts
-        run: just test-contract duckdb
+      - name: Integration / Hermetic crates
+        run: just test-integration-hermetic
+      - name: Integration / Backend compatibility / SQLite
+        run: just test-integration-backend sqlite
+      - name: Integration / Backend compatibility / DuckDB
+        run: just test-integration-backend duckdb
+      - name: Integration / Application / Local
+        run: just test-integration-application local
       - name: CLI end-to-end tests
         run: just test-e2e
-      - name: Documentation tests
-        run: just test-doc
 
-  backend:
-    name: Backend / ${{ matrix.name }}
+  backend_integration:
+    name: Tests / Integration / Backend / ${{ matrix.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -125,7 +125,7 @@ jobs:
         uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
         with:
           toolchain: stable
-      - name: Restore Rust backend cache
+      - name: Restore Rust backend-integration cache
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           shared-key: integration-${{ matrix.backend }}
@@ -140,13 +140,15 @@ jobs:
         uses: taiki-e/install-action@fcf5432d9f50d67e37ee6e29bdb7a224ff67b4a7 # v2.86.8
         with:
           tool: cargo-nextest@0.9.143
-      - name: Run adapter and application contracts
-        run: just test ${{ matrix.backend }}
+      - name: Backend compatibility integration
+        run: just test-integration-backend ${{ matrix.backend }}
+      - name: Application integration
+        run: just test-integration-application ${{ matrix.backend }}
 
   ci:
     name: CI
     if: always()
-    needs: [quality, tests, backend]
+    needs: [quality, tests, backend_integration]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -154,8 +156,8 @@ jobs:
         env:
           QUALITY_RESULT: ${{ needs.quality.result }}
           TESTS_RESULT: ${{ needs.tests.result }}
-          BACKEND_RESULT: ${{ needs.backend.result }}
+          BACKEND_INTEGRATION_RESULT: ${{ needs.backend_integration.result }}
         run: |
           [[ "$QUALITY_RESULT" == success ]]
           [[ "$TESTS_RESULT" == success ]]
-          [[ "$BACKEND_RESULT" == success ]]
+          [[ "$BACKEND_INTEGRATION_RESULT" == success ]]

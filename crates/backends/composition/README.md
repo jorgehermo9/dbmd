@@ -34,8 +34,8 @@ just test-integration
 Backend-specific fixture suites run at their owning seams:
 
 ```sh
-just test-contract sqlite
-just test-contract postgres
+just test-integration-backend sqlite
+just test-integration-backend postgres
 ```
 
 User-visible behavior remains in the

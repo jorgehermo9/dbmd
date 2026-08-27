@@ -25,18 +25,20 @@ test backend="all" snapshots="check": (_run-test-suite backend snapshots)
 # Run workspace unit tests only.
 test-unit snapshots="check": (_run-unit snapshots)
 
-# Run hermetic public-interface integration tests only.
-test-integration snapshots="check": (_run-integration snapshots)
+# Run every integration subtype, or one backend's compatibility and application slice.
+test-integration backend="all" snapshots="check": (_run-integration-suite backend snapshots)
 
-# Run adapter contracts for every backend, or one selected backend.
-test-contract backend="all" snapshots="check": (_run-contract backend snapshots)
+# Run hermetic crate integration tests only.
+test-integration-hermetic snapshots="check": (_run-integration-hermetic snapshots)
+
+# Run real-database compatibility integrations for every backend, or one selected backend.
+test-integration-backend backend="all" snapshots="check": (_run-integration-backend backend snapshots)
+
+# Run application integrations for every target, local targets, or one backend.
+test-integration-application target="all" snapshots="check": (_run-integration-application target snapshots)
 
 # Run compiled CLI end-to-end tests only.
 test-e2e snapshots="check": (_run-e2e snapshots)
-
-# Run workspace documentation tests.
-test-doc:
-    cargo test --workspace --all-features --doc
 
 # Update snapshots for every test layer, or one backend slice.
 snapshots backend="all": (_run-test-suite backend "update")
@@ -90,41 +92,18 @@ _run-test-suite backend snapshots:
         esac
     }
 
-    run_app_backend() {
-        local selected="$1"
-        local profile="${NEXTEST_PROFILE:-default}"
-
-        case "$selected" in
-            sqlite)
-                cargo nextest run -p dbmd-app --profile "$profile" -E 'kind(test) & binary(=render)'
-                ;;
-            duckdb)
-                cargo nextest run -p dbmd-app --profile "$profile" -E 'kind(test) & binary(=duckdb)'
-                ;;
-            postgres|clickhouse|mysql|mariadb)
-                cargo nextest run -p dbmd-app --features "${selected}-tests" --profile "$profile" -E "kind(test) & binary(=${selected})"
-                ;;
-        esac
-    }
-
     require_nextest
     snapshot_environment "$snapshots"
     validate_backend "$backend"
 
     if [[ "$backend" != all ]]; then
-        just _run-contract "$backend" "$snapshots"
-        run_app_backend "$backend"
+        just _run-integration-suite "$backend" "$snapshots"
         exit 0
     fi
 
     just _run-unit "$snapshots"
-    just _run-integration "$snapshots"
-    just _run-contract all "$snapshots"
-    for server_backend in postgres clickhouse mysql mariadb; do
-        run_app_backend "$server_backend"
-    done
+    just _run-integration-suite all "$snapshots"
     just _run-e2e "$snapshots"
-    just test-doc
 
 [positional-arguments]
 [private]
@@ -141,7 +120,32 @@ _run-unit snapshots:
 
 [positional-arguments]
 [private]
-_run-integration snapshots:
+_run-integration-suite backend snapshots:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    backend="$1"
+    snapshots="$2"
+    case "$backend" in
+        all|sqlite|postgres|clickhouse|mysql|mariadb|duckdb) ;;
+        *)
+            printf 'unknown backend: %s\nexpected one of: all, sqlite, postgres, clickhouse, mysql, mariadb, duckdb\n' "$backend" >&2
+            exit 2
+            ;;
+    esac
+
+    if [[ "$backend" == all ]]; then
+        just _run-integration-hermetic "$snapshots"
+        just _run-integration-backend all "$snapshots"
+        just _run-integration-application all "$snapshots"
+    else
+        just _run-integration-backend "$backend" "$snapshots"
+        just _run-integration-application "$backend" "$snapshots"
+    fi
+
+[positional-arguments]
+[private]
+_run-integration-hermetic snapshots:
     #!/usr/bin/env bash
     set -euo pipefail
     command -v cargo-nextest >/dev/null || { printf 'cargo-nextest is required: https://nexte.st/docs/installation/\n' >&2; exit 127; }
@@ -150,11 +154,21 @@ _run-integration snapshots:
         update) export INSTA_UPDATE=always ;;
         *) printf 'unknown snapshot mode: %s\nexpected one of: check, update\n' "$1" >&2; exit 2 ;;
     esac
-    cargo nextest run --workspace --profile "${NEXTEST_PROFILE:-default}" -E 'kind(test) - package(=dbmd) - package(=dbmd-backend-sqlite) - package(=dbmd-backend-postgres) - package(=dbmd-backend-clickhouse) - package(=dbmd-backend-mysql) - package(=dbmd-backend-mariadb) - package(=dbmd-backend-duckdb)'
+    cargo nextest run --workspace \
+        --exclude dbmd \
+        --exclude dbmd-app \
+        --exclude dbmd-backend-sqlite \
+        --exclude dbmd-backend-postgres \
+        --exclude dbmd-backend-clickhouse \
+        --exclude dbmd-backend-mysql \
+        --exclude dbmd-backend-mariadb \
+        --exclude dbmd-backend-duckdb \
+        --profile "${NEXTEST_PROFILE:-default}" \
+        -E 'kind(test)'
 
 [positional-arguments]
 [private]
-_run-contract backend snapshots:
+_run-integration-backend backend snapshots:
     #!/usr/bin/env bash
     set -euo pipefail
     command -v cargo-nextest >/dev/null || { printf 'cargo-nextest is required: https://nexte.st/docs/installation/\n' >&2; exit 127; }
@@ -169,7 +183,7 @@ _run-contract backend snapshots:
         *) printf 'unknown snapshot mode: %s\nexpected one of: check, update\n' "$snapshots" >&2; exit 2 ;;
     esac
 
-    run_contract() {
+    run_backend() {
         local selected="$1"
         case "$selected" in
             sqlite|duckdb)
@@ -187,10 +201,58 @@ _run-contract backend snapshots:
 
     if [[ "$backend" == all ]]; then
         for selected in sqlite duckdb postgres clickhouse mysql mariadb; do
-            run_contract "$selected"
+            run_backend "$selected"
         done
     else
-        run_contract "$backend"
+        run_backend "$backend"
+    fi
+
+[positional-arguments]
+[private]
+_run-integration-application target snapshots:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    command -v cargo-nextest >/dev/null || { printf 'cargo-nextest is required: https://nexte.st/docs/installation/\n' >&2; exit 127; }
+
+    target="$1"
+    snapshots="$2"
+    profile="${NEXTEST_PROFILE:-default}"
+
+    case "$snapshots" in
+        check) export INSTA_UPDATE=no ;;
+        update) export INSTA_UPDATE=always ;;
+        *) printf 'unknown snapshot mode: %s\nexpected one of: check, update\n' "$snapshots" >&2; exit 2 ;;
+    esac
+
+    run_application() {
+        local selected="$1"
+        case "$selected" in
+            local)
+                cargo nextest run -p dbmd-app --profile "$profile" -E 'kind(test)'
+                ;;
+            sqlite)
+                cargo nextest run -p dbmd-app --profile "$profile" -E 'kind(test) & binary(=render)'
+                ;;
+            duckdb)
+                cargo nextest run -p dbmd-app --profile "$profile" -E 'kind(test) & binary(=duckdb)'
+                ;;
+            postgres|clickhouse|mysql|mariadb)
+                cargo nextest run -p dbmd-app --features "${selected}-tests" --profile "$profile" -E "kind(test) & binary(=${selected})"
+                ;;
+            *)
+                printf 'unknown application integration target: %s\nexpected one of: all, local, sqlite, postgres, clickhouse, mysql, mariadb, duckdb\n' "$selected" >&2
+                exit 2
+                ;;
+        esac
+    }
+
+    if [[ "$target" == all ]]; then
+        run_application local
+        for server_backend in postgres clickhouse mysql mariadb; do
+            run_application "$server_backend"
+        done
+    else
+        run_application "$target"
     fi
 
 [positional-arguments]

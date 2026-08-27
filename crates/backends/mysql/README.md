@@ -91,5 +91,5 @@ All values are Markdown-ready and deterministically ordered. See the
 ## Contract test
 
 ```sh
-just test-contract mysql
+just test-integration-backend mysql
 ```

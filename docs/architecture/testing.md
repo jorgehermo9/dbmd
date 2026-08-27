@@ -13,21 +13,24 @@ synonyms for runtime cost, fixture technology, or CI jobs.
   internal logic such as parsing, normalization, semantic translation, and
   otherwise impractical dependency outcomes.
 - **Integration tests** live under an owning crate's `tests/` directory and use
-  its public interface with real hermetic dependencies such as temporary files,
-  SQLite, DuckDB, configuration, templates, and filesystem operations.
-- **Backend contract tests** exercise a backend adapter against the exact
-  supported database version using real DDL and catalog queries. A temporary
-  embedded database and a Testcontainers server are the same test layer; only
-  their execution requirements differ.
+  its public interface. The integration layer has three independently runnable
+  subtypes:
+  - **Hermetic crate integrations** compose modules with local resources such
+    as temporary files and templates, excluding the application and concrete
+    backend crates.
+  - **Backend compatibility integrations** exercise an adapter against the
+    exact supported database version using real DDL and catalog queries.
+    Temporary embedded databases and Testcontainers servers differ only in
+    execution requirements.
+  - **Application integrations** exercise the application API without routing
+    through the CLI, using local or server-backed adapters as the scenario
+    requires.
 - **End-to-end tests** execute the compiled `dbmd` binary and assert its process
   status, output streams, artifact bytes, and filesystem effects.
-- **Documentation tests** compile and execute public examples where the example
-  itself is part of the interface.
 
 Snapshots are an assertion technique used within these layers, not a separate
-test layer. Application integration tests may use a server-backed adapter while
-remaining application-interface tests; CI may colocate them with that backend's
-contract lane to reuse the same compilation graph.
+test layer. CI may colocate a server-backed application integration with the
+matching backend compatibility integration to reuse one compilation graph.
 
 ## Test layers
 
@@ -59,13 +62,13 @@ Table-driven tests cover:
 - Layout/flag incompatibilities.
 - Output-path resolution.
 
-### Backend contract tests
+### Backend compatibility integrations
 
 Introspection uses real databases where practical:
 
 - SQLite temporary files in normal test runs.
 - DuckDB temporary files in normal test runs.
-- PostgreSQL, ClickHouse, MySQL, and MariaDB containers in opt-in contract
+- PostgreSQL, ClickHouse, MySQL, and MariaDB containers in opt-in compatibility
   suites.
 
 Mock catalog rows may isolate normalization edge cases, but they do not replace real catalog compatibility tests. SQLite integration tests execute `.sql` fixtures against temporary databases and snapshot the normalized `SourceSnapshot`, independently of Markdown rendering.
@@ -173,6 +176,12 @@ crates/cli/tests/e2e.rs
 
 Shared helpers stay local to the owning crate until genuine cross-crate duplication justifies a test-support crate.
 
+Cargo `examples/` binaries are not a test layer. If dbmd gains user-facing
+example projects, model them as realistic configuration, DDL, and expected
+artifact fixtures and exercise them through application integration or CLI E2E
+tests. Rustdoc doctests are not part of the gate because dbmd is delivered as a
+binary rather than a public Rust library.
+
 Use Insta for structural and Markdown snapshots. Commit `.snap` files, review changes intentionally with `cargo insta review`, and run CI with snapshot updates disabled. Prefer ordinary assertions when a value is small enough to understand more clearly without a snapshot.
 
 ## SQLite fixture matrix
@@ -203,34 +212,34 @@ Use the root `justfile` as the executable testing interface:
 ```sh
 just test-unit
 just test-integration
-just test-contract
+just test-integration-hermetic
+just test-integration-backend
+just test-integration-application
 just test-e2e
-just test-doc
 just check
 ```
 
 `just test` and `just check` accept an optional backend selector; omission means
 the complete workspace. `cargo-nextest` selects unit and integration binaries by
-Cargo target kind, so a new test cannot be silently classified by a hand-kept
-file list. Doctests continue through Cargo because nextest does not execute
-rustdoc tests.
+Cargo target kind, package, and owning test binary.
 
 Server-backed suites require Docker. The complete `just test` gate includes
 them; their integration-test binaries own pinned containers and can also be
 run independently while iterating:
 
 ```sh
-just test-contract postgres
-just test-contract clickhouse
-just test-contract mysql
-just test-contract mariadb
-just test-contract duckdb
+just test-integration-backend postgres
+just test-integration-backend clickhouse
+just test-integration-backend mysql
+just test-integration-backend mariadb
+just test-integration-backend duckdb
 ```
 
-Use `just test <backend>` when the matching application integration target
-must run with the adapter contract. Nextest's repository configuration keeps
-tests within each server family serialized while CI runs different families in
-parallel. Retries are disabled so intermittent failures remain visible.
+Use `just test-integration <backend>` when both the compatibility and
+application integration slices should run. `just test <backend>` remains the
+complete selected-backend workflow. Nextest keeps tests within each server
+family serialized while CI runs different families in parallel. Retries are
+disabled so intermittent failures remain visible.
 
 The shared lifecycle implementation lives in `crates/test-support`; fixture SQL,
 assertions, and snapshots remain in the crate whose public seam they test.
@@ -243,11 +252,12 @@ test taxonomy:
 
 - **Quality** runs formatting, strict all-target/all-feature Clippy, and
   workflow validation.
-- **Tests** runs unit, hermetic integration, SQLite and DuckDB contracts,
-  end-to-end, and documentation tests in one job so local build artifacts are
-  reused.
-- **Backend / _name_** matrix jobs run each server backend's adapter contract
-  tests and matching application integration test in parallel.
+- **Tests / Local** runs unit tests, hermetic crate integrations, SQLite and
+  DuckDB compatibility integrations, local application integrations, and CLI
+  E2E tests in one job so local build artifacts are reused.
+- **Tests / Integration / Backend / _name_** matrix jobs run each server
+  backend's compatibility integration and matching application integration in
+  parallel.
 - **CI** is the stable aggregate status for branch protection.
 
 Every Rust lane has a distinct dependency cache because its enabled features

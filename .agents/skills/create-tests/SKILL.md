@@ -50,36 +50,36 @@ the concentrated module logic.
 
 ### Integration
 
-Place tests under the owning crate's `tests/` directory and use only its public
-interface. Exercise real in-process dependencies: temporary files, SQLite,
-DuckDB, templates, configuration, rendering, and filesystem replacement.
-Integration tests prove the interaction of multiple modules without a spawned
-`dbmd` process.
+Place integration tests under the owning crate's `tests/` directory and use
+only its public interface. Choose one independently runnable subtype:
 
-### Backend contract
+- **Hermetic crate integration** composes crate modules with local resources
+  such as temporary files and templates, excluding the application and concrete
+  backend crates.
+- **Backend compatibility integration** exercises an adapter against the exact
+  supported database version using real temporary databases or pinned
+  Testcontainers images and real DDL. Prove catalog fidelity, semantic
+  normalization, deterministic order, render-context mapping, redaction, and
+  repeat introspection. Backend mocks do not satisfy a compatibility row.
+- **Application integration** exercises the application API without spawning
+  `dbmd`, using configuration, templates, rendering, filesystem replacement,
+  and local or server-backed adapters as required.
 
-Exercise every backend adapter against the exact supported database version.
-Use real temporary databases or pinned Testcontainers images and real DDL
-fixtures. Prove catalog fidelity, semantic normalization, deterministic order,
-render-context mapping, redaction, and repeat introspection. Backend mocks do
-not satisfy a contract row.
-
-Keep fixtures and snapshots beside the owning backend crate. A backend coverage
-README claims only surfaces backed by executable fixtures or an explicit
-documented exclusion.
+Keep backend fixtures and snapshots beside the owning backend crate. A backend
+coverage README claims only surfaces backed by executable fixtures or an
+explicit documented exclusion.
 
 ### End-to-end
 
 Exercise the compiled `dbmd` binary from `crates/cli/tests/`. Assert exit status,
 stdout, stderr, artifact bytes, and filesystem effects. Keep this tier focused
 on user-visible command coordination; backend catalog depth belongs to backend
-contract tests and application behavior belongs to application integration
-tests.
+compatibility integrations and application behavior belongs to application
+integrations.
 
-### Documentation
-
-Use doctests for public examples whose compilation and behavior form part of
-the interface. Do not duplicate ordinary tests as prose examples.
+Cargo `examples/` binaries are not a test layer. Test user-facing example
+projects through application integration or CLI E2E at the product seam they
+demonstrate.
 
 ## Fault selection
 
@@ -92,7 +92,7 @@ effects.
 When a database cannot emit the malformed value on demand, unit-test the
 acquisition decoder with the synthetic row or response. A test that replaces
 part of a live backend with a fake is a unit test wearing integration setup;
-split the synthetic reaction from the real contract scenario.
+split the synthetic reaction from the real backend compatibility scenario.
 
 ## Fixtures and determinism
 
@@ -133,5 +133,5 @@ temporary paths, timestamps, unordered collections, or credentials.
 
 For behavior changes, work red → green one matrix row at a time. Use the root
 `justfile` for tier and backend selection. Before completion, run the affected
-tier, formatting, strict Clippy, and the smallest complete backend/application
-slice; use `just check` for the full local gate.
+tier, formatting, strict Clippy, and the smallest complete backend and
+application integration slices; use `just check` for the full local gate.
