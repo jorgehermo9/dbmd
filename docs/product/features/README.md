@@ -1,6 +1,8 @@
 # Feature Specifications
 
-These documents define observable product behavior. Each document states its implementation status so planned behavior is not mistaken for an available command.
+These documents define durable observable product behavior. The root command
+reference describes availability; feature specifications do not double as
+implementation ledgers.
 
 ## Core lifecycle
 
@@ -20,11 +22,3 @@ These documents define observable product behavior. Each document states its imp
 
 - [CI and agent integration](ci-and-agent-integration.md) — GitHub Actions, pre-commit, and generated agent guidance.
 - [Statistics and manifests](statistics-and-manifest.md) — volatile or machine-readable companion artifacts.
-
-## Status vocabulary
-
-- Implemented: available in the CLI and covered by tests.
-- Partial: a bootstrap form exists but does not satisfy the specification.
-- Accepted: product behavior is chosen but not necessarily implemented.
-- Proposed: direction is useful but may change after real usage.
-- Deferred: explicitly outside the current milestone.

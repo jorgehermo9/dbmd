@@ -1,0 +1,397 @@
+#[path = "support/duckdb.rs"]
+mod support;
+
+use std::str::FromStr;
+
+use dbmd_backend_duckdb::{
+    introspect, render_source, template_files, ConstraintKind, DuckDbSource, DuckDbSourceError,
+    FunctionKind,
+};
+use dbmd_core::SourceId;
+use dbmd_render::{OutputLayout, RenderContext, RenderOptions, RenderedArtifact, Renderer};
+use duckdb::{Config as DuckDbConnectionConfig, Connection};
+use support::TestDatabase;
+
+fn source_id() -> SourceId {
+    SourceId::from_str("app").expect("test source ID should be valid")
+}
+
+#[test]
+fn source_configuration_rejects_an_empty_database_path() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), ""),
+        Err(DuckDbSourceError::EmptyPath)
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_an_empty_attachment_name() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("", "analytics.duckdb", true),
+        Err(DuckDbSourceError::EmptyAttachmentName)
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_a_reserved_attachment_name() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("system", "analytics.duckdb", true),
+        Err(DuckDbSourceError::ReservedAttachmentName(name)) if name == "system"
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_the_temp_attachment_name_case_insensitively() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("TeMp", "analytics.duckdb", true),
+        Err(DuckDbSourceError::ReservedAttachmentName(name)) if name == "TeMp"
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_a_nul_attachment_name() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("bad\0name", "analytics.duckdb", true),
+        Err(DuckDbSourceError::NulAttachmentName)
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_a_duplicate_attachment_name() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("analytics", "analytics.duckdb", true)
+            .expect("first attachment should be valid")
+            .with_attached_database("analytics", "other.duckdb", true),
+        Err(DuckDbSourceError::DuplicateAttachmentName(name)) if name == "analytics"
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_an_empty_attachment_path() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("analytics", "", true),
+        Err(DuckDbSourceError::EmptyAttachmentPath(name)) if name == "analytics"
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_a_nul_attachment_path() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_attached_database("analytics", "bad\0path", true),
+        Err(DuckDbSourceError::NulAttachmentPath(name)) if name == "analytics"
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_an_empty_secret_directory() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_secret_directory(""),
+        Err(DuckDbSourceError::EmptySecretDirectory)
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_a_nul_secret_directory() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_secret_directory("bad\0directory"),
+        Err(DuckDbSourceError::NulSecretDirectory)
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_an_empty_extension_directory() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_extension_directory(""),
+        Err(DuckDbSourceError::EmptyExtensionDirectory)
+    ));
+}
+
+#[test]
+fn source_configuration_rejects_a_nul_extension_directory() {
+    assert!(matches!(
+        DuckDbSource::new(source_id(), "app.duckdb")
+            .expect("base source should be valid")
+            .with_extension_directory("bad\0directory"),
+        Err(DuckDbSourceError::NulExtensionDirectory)
+    ));
+}
+
+#[test]
+fn missing_database_and_attachment_errors_are_source_scoped_without_directory_details() {
+    let main = TestDatabase::from_sql("");
+    let missing = main.sibling_path("sentinel-missing-main.duckdb");
+    let source = DuckDbSource::new(
+        SourceId::from_str("warehouse").expect("test source ID should be valid"),
+        &missing,
+    )
+    .expect("missing path is structurally valid");
+
+    let error = introspect(&source).expect_err("read-only missing database should fail");
+    assert!(error.to_string().contains("DuckDB source `warehouse`"));
+    assert!(!error.to_string().contains("sentinel-missing-main"));
+
+    let source = DuckDbSource::new(
+        SourceId::from_str("warehouse").expect("test source ID should be valid"),
+        main.path(),
+    )
+    .expect("main source should be valid")
+    .with_attached_database(
+        "analytics",
+        main.sibling_path("sentinel-missing-attachment.duckdb"),
+        true,
+    )
+    .expect("attachment configuration should be structurally valid");
+
+    let error = introspect(&source).expect_err("read-only missing attachment should fail");
+    assert!(error
+        .to_string()
+        .contains("DuckDB database `analytics` for source `warehouse`"));
+    assert!(!error.to_string().contains("sentinel-missing-attachment"));
+}
+
+#[test]
+fn introspects_and_renders_the_duckdb_schema_surface_deterministically() {
+    let database = TestDatabase::from_sql(include_str!("fixtures/schema_surface.sql"));
+    let warehouse_path = database.create_sibling(
+        "warehouse.duckdb",
+        "CREATE TABLE facts (id BIGINT PRIMARY KEY, amount DECIMAL(18, 2));",
+    );
+    let source = DuckDbSource::new(
+        SourceId::from_str("analytics").expect("test source ID should be valid"),
+        database.path(),
+    )
+    .expect("source path should be valid")
+    .with_attached_database("warehouse", &warehouse_path, true)
+    .expect("attached database should be valid");
+
+    let first = introspect(&source).expect("DuckDB introspection should succeed");
+    let second = introspect(&source).expect("repeat introspection should succeed");
+    assert_eq!(first, second);
+    assert_eq!(first.catalog().tables.len(), 3);
+    assert_eq!(first.catalog().views.len(), 1);
+    assert_eq!(first.catalog().sequences.len(), 1);
+    assert!(first
+        .catalog()
+        .databases
+        .iter()
+        .any(|database| { database.name == "warehouse" && database.readonly }));
+    assert!(first
+        .catalog()
+        .tables
+        .iter()
+        .any(|table| { table.database == "warehouse" && table.name == "facts" }));
+    assert!(first
+        .catalog()
+        .types
+        .iter()
+        .any(|value| value.name == "account_status" && value.labels == ["active", "disabled"]));
+    assert!(
+        first.catalog().types.iter().any(|value| {
+            value.name == "account_pair"
+                && value.definition == "STRUCT(account_id BIGINT, tenant_id BIGINT)"
+        }),
+        "types: {:?}",
+        first.catalog().types
+    );
+    assert!(
+        first.catalog().types.iter().any(|value| {
+            value.name == "reference_value"
+                && value.definition == "UNION(account_id BIGINT, external_id VARCHAR)"
+        }),
+        "types: {:?}",
+        first.catalog().types
+    );
+    assert!(first
+        .catalog()
+        .types
+        .iter()
+        .any(|value| value.name == "positive_integer" && value.logical_type == "INTEGER"));
+    assert!(first
+        .catalog()
+        .functions
+        .iter()
+        .any(|value| value.name == "normalize_email" && value.kind == FunctionKind::Macro));
+    assert!(
+        first
+            .catalog()
+            .functions
+            .iter()
+            .any(|value| value.name == "accounts_for_tenant"
+                && value.kind == FunctionKind::TableMacro)
+    );
+    let accounts = first
+        .catalog()
+        .tables
+        .iter()
+        .find(|table| table.name == "accounts")
+        .expect("accounts table should be present");
+    assert!(accounts.constraints.len() >= 5);
+    assert!(accounts
+        .constraints
+        .iter()
+        .any(|constraint| constraint.kind == ConstraintKind::ForeignKey
+            && constraint.referenced_table.as_deref() == Some("tenants")
+            && constraint.referenced_columns == ["tenant_id"]));
+    assert!(accounts
+        .constraints
+        .iter()
+        .any(|constraint| constraint.kind == ConstraintKind::Check));
+    assert_eq!(accounts.indexes.len(), 1);
+    assert_eq!(accounts.indexes[0].index_type, "ART");
+    assert!(
+        accounts.columns.iter().any(
+            |column| column.name == "normalized_email" && column.generated_expression.is_some()
+        ),
+        "columns: {:?}",
+        accounts.columns
+    );
+    let balance = accounts
+        .columns
+        .iter()
+        .find(|column| column.name == "balance")
+        .expect("balance column should be present");
+    assert_eq!(balance.numeric_precision, Some(18));
+    assert_eq!(balance.numeric_precision_radix, Some(10));
+    assert_eq!(balance.numeric_scale, Some(2));
+    let mut stable_catalog = first.catalog().clone();
+    for database in &mut stable_catalog.databases {
+        database.path = database
+            .path
+            .as_ref()
+            .map(|_| "[DATABASE PATH]".to_string());
+    }
+    insta::assert_yaml_snapshot!("duckdb_schema_surface", stable_catalog);
+
+    let context = RenderContext::new(vec![render_source(
+        first.id(),
+        first.display_name(),
+        first.catalog(),
+        false,
+    )]);
+    let renderer = Renderer::embedded(template_files()).expect("DuckDB templates should compile");
+    let RenderedArtifact::SingleFile(markdown) = renderer
+        .render(&context)
+        .expect("DuckDB catalog should render")
+    else {
+        panic!("default DuckDB rendering should produce one file");
+    };
+    let markdown = String::from_utf8(markdown).expect("Markdown should be UTF-8");
+    assert!(markdown.contains("analytics.accounts"));
+    assert!(markdown.contains("normalize_email"));
+    insta::assert_snapshot!("duckdb_markdown", markdown);
+    let repeated = renderer
+        .render(&context)
+        .expect("repeat DuckDB presentation should render");
+    assert_eq!(repeated.as_single_file(), Some(markdown.as_bytes()));
+    let RenderedArtifact::Directory(files) = renderer
+        .render_with_options(
+            &context,
+            RenderOptions {
+                layout: OutputLayout::Directory,
+                ..RenderOptions::default()
+            },
+        )
+        .expect("DuckDB directory profile should render")
+    else {
+        panic!("directory options should produce a directory artifact");
+    };
+    let index_path = "index.md"
+        .parse()
+        .expect("static artifact path should parse");
+    let index = String::from_utf8(files[&index_path].clone()).expect("index should be UTF-8");
+    assert!(index.contains("tables/app%2Eanalytics.accounts.md"));
+    assert!(files
+        .keys()
+        .any(|path| path.as_str() == "tables/app%2Eanalytics.accounts.md"));
+}
+
+#[test]
+fn introspects_persistent_secret_metadata_without_secret_material() {
+    let directory = tempfile::tempdir().expect("temporary project should be created");
+    let database_path = directory.path().join("secrets.duckdb");
+    let secret_directory = directory.path().join("stored-secrets");
+    let extension_directory = directory.path().join("extensions");
+    std::fs::create_dir(&secret_directory).expect("secret directory should be created");
+    std::fs::create_dir(&extension_directory).expect("extension directory should be created");
+    let connection_config = DuckDbConnectionConfig::default()
+        .with("extension_directory", extension_directory.to_string_lossy())
+        .expect("extension directory should be valid");
+    let connection = Connection::open_with_flags(&database_path, connection_config)
+        .expect("DuckDB database should open");
+    let escaped_directory = secret_directory.to_string_lossy().replace('\'', "''");
+    connection
+        .execute_batch(&format!(
+            "SET secret_directory = '{escaped_directory}';
+             CREATE PERSISTENT SECRET agent_storage (
+                 TYPE http,
+                 BEARER_TOKEN 'dbmd-secret-sentinel',
+                 SCOPE 'https://dbmd.invalid/api'
+             );"
+        ))
+        .expect("persistent DuckDB secret fixture should be created");
+    drop(connection);
+
+    let source = DuckDbSource::new(
+        SourceId::from_str("secrets").expect("test source ID should be valid"),
+        &database_path,
+    )
+    .expect("DuckDB source should be valid")
+    .with_secret_directory(&secret_directory)
+    .expect("secret directory should be valid")
+    .with_extension_directory(&extension_directory)
+    .expect("extension directory should be valid");
+    let snapshot = introspect(&source).expect("DuckDB secret metadata should be introspected");
+
+    assert_eq!(snapshot.catalog().secrets.len(), 1);
+    let secret = &snapshot.catalog().secrets[0];
+    assert_eq!(secret.name, "agent_storage");
+    assert_eq!(secret.secret_type, "http");
+    assert_eq!(secret.provider, "config");
+    assert!(secret.persistent);
+    assert_eq!(secret.scope, ["https://dbmd.invalid/api"]);
+    let serialized = serde_json::to_string(&snapshot).expect("catalog should serialize");
+    assert!(!serialized.contains("dbmd-secret-sentinel"));
+
+    let context = RenderContext::new(vec![render_source(
+        snapshot.id(),
+        snapshot.display_name(),
+        snapshot.catalog(),
+        false,
+    )]);
+    let renderer = Renderer::embedded(template_files()).expect("DuckDB templates should compile");
+    let RenderedArtifact::SingleFile(markdown) = renderer
+        .render(&context)
+        .expect("DuckDB secret metadata should render")
+    else {
+        panic!("default DuckDB rendering should produce one file");
+    };
+    let markdown = String::from_utf8(markdown).expect("Markdown should be UTF-8");
+    assert!(markdown.contains("agent_storage"));
+    assert!(markdown.contains("https://dbmd.invalid/api"));
+    assert!(!markdown.contains("dbmd-secret-sentinel"));
+    insta::assert_snapshot!("duckdb_secret_metadata", markdown);
+    let repeated = renderer
+        .render(&context)
+        .expect("repeat DuckDB secret presentation should render");
+    assert_eq!(repeated.as_single_file(), Some(markdown.as_bytes()));
+}

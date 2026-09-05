@@ -1,0 +1,8 @@
+[sources.analytics]
+display_name = "DuckDB analytics warehouse"
+backend = "duckdb"
+path = "runtime/warehouse.duckdb"
+
+[output]
+path = "DATABASE.md"
+sources = ["analytics"]

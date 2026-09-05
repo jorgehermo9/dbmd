@@ -1,0 +1,447 @@
+---
+source: crates/backends/duckdb/tests/duckdb.rs
+expression: stable_catalog
+---
+databases:
+  - name: app
+    path: "[DATABASE PATH]"
+    comment: ~
+    database_type: duckdb
+    readonly: true
+    tags:
+      storage_version: v1.0.0+
+    options: {}
+  - name: warehouse
+    path: "[DATABASE PATH]"
+    comment: ~
+    database_type: duckdb
+    readonly: true
+    tags:
+      storage_version: v1.0.0+
+    options: {}
+schemas:
+  - database: app
+    name: analytics
+    comment: ~
+    tags: {}
+tables:
+  - database: app
+    schema: analytics
+    name: accounts
+    comment: User accounts
+    temporary: false
+    columns:
+      - name: tenant_id
+        position: 1
+        data_type: BIGINT
+        numeric_precision: 64
+        numeric_precision_radix: 2
+        numeric_scale: 0
+        nullable: false
+        default: ~
+        generated_expression: ~
+        comment: ~
+      - name: account_id
+        position: 2
+        data_type: BIGINT
+        numeric_precision: 64
+        numeric_precision_radix: 2
+        numeric_scale: 0
+        nullable: false
+        default: "nextval('analytics.account_id_seq')"
+        generated_expression: ~
+        comment: ~
+      - name: email
+        position: 3
+        data_type: VARCHAR
+        numeric_precision: ~
+        numeric_precision_radix: ~
+        numeric_scale: ~
+        nullable: false
+        default: ~
+        generated_expression: ~
+        comment: Canonical email address
+      - name: normalized_email
+        position: 4
+        data_type: VARCHAR
+        numeric_precision: ~
+        numeric_precision_radix: ~
+        numeric_scale: ~
+        nullable: true
+        default: ~
+        generated_expression: CAST(lower(email) AS VARCHAR)
+        comment: ~
+      - name: status
+        position: 5
+        data_type: "ENUM('active', 'disabled')"
+        numeric_precision: ~
+        numeric_precision_radix: ~
+        numeric_scale: ~
+        nullable: false
+        default: "'active'"
+        generated_expression: ~
+        comment: ~
+      - name: balance
+        position: 6
+        data_type: "DECIMAL(18,2)"
+        numeric_precision: 18
+        numeric_precision_radix: 10
+        numeric_scale: 2
+        nullable: false
+        default: "0"
+        generated_expression: ~
+        comment: ~
+      - name: metadata
+        position: 7
+        data_type: "STRUCT(\"source\" VARCHAR, tags VARCHAR[])"
+        numeric_precision: ~
+        numeric_precision_radix: ~
+        numeric_scale: ~
+        nullable: true
+        default: ~
+        generated_expression: ~
+        comment: ~
+      - name: typed_pair
+        position: 8
+        data_type: "STRUCT(account_id BIGINT, tenant_id BIGINT)"
+        numeric_precision: ~
+        numeric_precision_radix: ~
+        numeric_scale: ~
+        nullable: true
+        default: ~
+        generated_expression: ~
+        comment: ~
+      - name: typed_reference
+        position: 9
+        data_type: "UNION(account_id BIGINT, external_id VARCHAR)"
+        numeric_precision: ~
+        numeric_precision_radix: ~
+        numeric_scale: ~
+        nullable: true
+        default: ~
+        generated_expression: ~
+        comment: ~
+      - name: retry_count
+        position: 10
+        data_type: INTEGER
+        numeric_precision: 32
+        numeric_precision_radix: 2
+        numeric_scale: 0
+        nullable: true
+        default: ~
+        generated_expression: ~
+        comment: ~
+    constraints:
+      - catalog_index: 0
+        name: accounts_tenant_id_not_null
+        kind: not_null
+        text: NOT NULL
+        expression: ~
+        columns:
+          - tenant_id
+        referenced_table: ~
+        referenced_columns: []
+      - catalog_index: 1
+        name: accounts_tenant_id_tenant_id_fkey
+        kind: foreign_key
+        text: FOREIGN KEY (tenant_id) REFERENCES analytics.tenants(tenant_id)
+        expression: ~
+        columns:
+          - tenant_id
+        referenced_table: tenants
+        referenced_columns:
+          - tenant_id
+      - catalog_index: 2
+        name: accounts_account_id_pkey
+        kind: primary_key
+        text: PRIMARY KEY(account_id)
+        expression: ~
+        columns:
+          - account_id
+        referenced_table: ~
+        referenced_columns: []
+      - catalog_index: 3
+        name: accounts_email_not_null
+        kind: not_null
+        text: NOT NULL
+        expression: ~
+        columns:
+          - email
+        referenced_table: ~
+        referenced_columns: []
+      - catalog_index: 4
+        name: accounts_status_not_null
+        kind: not_null
+        text: NOT NULL
+        expression: ~
+        columns:
+          - status
+        referenced_table: ~
+        referenced_columns: []
+      - catalog_index: 5
+        name: accounts_balance_not_null
+        kind: not_null
+        text: NOT NULL
+        expression: ~
+        columns:
+          - balance
+        referenced_table: ~
+        referenced_columns: []
+      - catalog_index: 6
+        name: accounts_tenant_id_email_key
+        kind: unique
+        text: "UNIQUE(tenant_id, email)"
+        expression: ~
+        columns:
+          - tenant_id
+          - email
+        referenced_table: ~
+        referenced_columns: []
+      - catalog_index: 7
+        name: accounts_balance_check
+        kind: check
+        text: CHECK((balance >= 0))
+        expression: (balance >= 0)
+        columns:
+          - balance
+        referenced_table: ~
+        referenced_columns: []
+      - catalog_index: 8
+        name: accounts_account_id_not_null
+        kind: not_null
+        text: NOT NULL
+        expression: ~
+        columns:
+          - account_id
+        referenced_table: ~
+        referenced_columns: []
+    indexes:
+      - name: accounts_email_idx
+        index_type: ART
+        unique: false
+        primary: false
+        expressions: "[email]"
+        comment: ~
+        definition: CREATE INDEX accounts_email_idx ON analytics.accounts(email);
+        tags: {}
+    definition: "CREATE TABLE analytics.accounts(tenant_id BIGINT NOT NULL, account_id BIGINT DEFAULT(nextval('analytics.account_id_seq')) PRIMARY KEY, email VARCHAR NOT NULL, normalized_email VARCHAR GENERATED ALWAYS AS(lower(email)), status ENUM('active', 'disabled') DEFAULT('active') NOT NULL, balance DECIMAL(18,2) DEFAULT(0) NOT NULL, metadata STRUCT(\"source\" VARCHAR, tags VARCHAR[]), typed_pair STRUCT(account_id BIGINT, tenant_id BIGINT), typed_reference UNION(account_id BIGINT, external_id VARCHAR), retry_count INTEGER, FOREIGN KEY (tenant_id) REFERENCES analytics.tenants(tenant_id), UNIQUE(tenant_id, email), CHECK((balance >= 0)));"
+    tags: {}
+  - database: app
+    schema: analytics
+    name: tenants
+    comment: Application tenants
+    temporary: false
+    columns:
+      - name: tenant_id
+        position: 1
+        data_type: BIGINT
+        numeric_precision: 64
+        numeric_precision_radix: 2
+        numeric_scale: 0
+        nullable: false
+        default: ~
+        generated_expression: ~
+        comment: ~
+      - name: name
+        position: 2
+        data_type: VARCHAR
+        numeric_precision: ~
+        numeric_precision_radix: ~
+        numeric_scale: ~
+        nullable: false
+        default: ~
+        generated_expression: ~
+        comment: ~
+    constraints:
+      - catalog_index: 9
+        name: tenants_tenant_id_pkey
+        kind: primary_key
+        text: PRIMARY KEY(tenant_id)
+        expression: ~
+        columns:
+          - tenant_id
+        referenced_table: ~
+        referenced_columns: []
+      - catalog_index: 10
+        name: tenants_name_not_null
+        kind: not_null
+        text: NOT NULL
+        expression: ~
+        columns:
+          - name
+        referenced_table: ~
+        referenced_columns: []
+      - catalog_index: 11
+        name: tenants_name_key
+        kind: unique
+        text: "UNIQUE(\"name\")"
+        expression: ~
+        columns:
+          - name
+        referenced_table: ~
+        referenced_columns: []
+      - catalog_index: 12
+        name: tenants_tenant_id_not_null
+        kind: not_null
+        text: NOT NULL
+        expression: ~
+        columns:
+          - tenant_id
+        referenced_table: ~
+        referenced_columns: []
+    indexes: []
+    definition: "CREATE TABLE analytics.tenants(tenant_id BIGINT PRIMARY KEY, \"name\" VARCHAR NOT NULL UNIQUE);"
+    tags: {}
+  - database: warehouse
+    schema: main
+    name: facts
+    comment: ~
+    temporary: false
+    columns:
+      - name: id
+        position: 1
+        data_type: BIGINT
+        numeric_precision: 64
+        numeric_precision_radix: 2
+        numeric_scale: 0
+        nullable: false
+        default: ~
+        generated_expression: ~
+        comment: ~
+      - name: amount
+        position: 2
+        data_type: "DECIMAL(18,2)"
+        numeric_precision: 18
+        numeric_precision_radix: 10
+        numeric_scale: 2
+        nullable: true
+        default: ~
+        generated_expression: ~
+        comment: ~
+    constraints:
+      - catalog_index: 13
+        name: facts_id_pkey
+        kind: primary_key
+        text: PRIMARY KEY(id)
+        expression: ~
+        columns:
+          - id
+        referenced_table: ~
+        referenced_columns: []
+      - catalog_index: 14
+        name: facts_id_not_null
+        kind: not_null
+        text: NOT NULL
+        expression: ~
+        columns:
+          - id
+        referenced_table: ~
+        referenced_columns: []
+    indexes: []
+    definition: "CREATE TABLE facts(id BIGINT PRIMARY KEY, amount DECIMAL(18,2));"
+    tags: {}
+views:
+  - database: app
+    schema: analytics
+    name: active_accounts
+    comment: Active accounts only
+    temporary: false
+    definition: "CREATE VIEW analytics.active_accounts AS SELECT tenant_id, account_id, email FROM analytics.accounts WHERE (status = 'active');"
+    tags: {}
+sequences:
+  - database: app
+    schema: analytics
+    name: account_id_seq
+    comment: Account identifiers
+    temporary: false
+    start: 1000
+    minimum: 1
+    maximum: 9223372036854775807
+    increment: 10
+    cycle: false
+    definition: CREATE SEQUENCE account_id_seq INCREMENT BY 10 MINVALUE 1 MAXVALUE 9223372036854775807 START 1000 NO CYCLE;
+    tags: {}
+types:
+  - database: app
+    schema: analytics
+    name: account_pair
+    logical_type: STRUCT
+    definition: "STRUCT(account_id BIGINT, tenant_id BIGINT)"
+    size: 0
+    category: COMPOSITE
+    labels: []
+    comment: ~
+    tags: {}
+  - database: app
+    schema: analytics
+    name: account_status
+    logical_type: ENUM
+    definition: "ENUM('active', 'disabled')"
+    size: 1
+    category: ~
+    labels:
+      - active
+      - disabled
+    comment: Account lifecycle
+    tags: {}
+  - database: app
+    schema: analytics
+    name: positive_integer
+    logical_type: INTEGER
+    definition: INTEGER
+    size: 4
+    category: NUMERIC
+    labels: []
+    comment: ~
+    tags: {}
+  - database: app
+    schema: analytics
+    name: reference_value
+    logical_type: UNION
+    definition: "UNION(account_id BIGINT, external_id VARCHAR)"
+    size: 0
+    category: COMPOSITE
+    labels: []
+    comment: ~
+    tags: {}
+functions:
+  - database: app
+    schema: analytics
+    name: accounts_for_tenant
+    kind: table_macro
+    description: ~
+    comment: ~
+    return_type: ~
+    parameters:
+      - owner_id
+    parameter_types: []
+    varargs: ~
+    definition: SELECT * FROM analytics.accounts WHERE (tenant_id = owner_id)
+    side_effects: ~
+    stability: ~
+    tags: {}
+  - database: app
+    schema: analytics
+    name: normalize_email
+    kind: macro
+    description: ~
+    comment: ~
+    return_type: ~
+    parameters:
+      - value
+    parameter_types: []
+    varargs: ~
+    definition: "lower(\"value\")"
+    side_effects: ~
+    stability: ~
+    tags: {}
+extensions:
+  - name: core_functions
+    loaded: true
+    installed: true
+    version: ~
+    description: Core function library
+    aliases: []
+    install_mode: statically_linked
+    installed_from: ~
+secrets: []

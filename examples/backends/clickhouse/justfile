@@ -1,0 +1,18 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list
+
+render: setup
+    CLICKHOUSE_URL=http://127.0.0.1:58123 dbmd render
+
+verify: setup
+    CLICKHOUSE_URL=http://127.0.0.1:58123 dbmd verify
+
+down:
+    docker compose down --volumes --remove-orphans
+
+[private]
+setup:
+    docker compose down --volumes --remove-orphans
+    docker compose up --detach --wait

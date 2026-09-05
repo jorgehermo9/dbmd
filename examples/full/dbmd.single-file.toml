@@ -1,0 +1,48 @@
+[sources.sqlite_app]
+display_name = "SQLite application"
+backend = "sqlite"
+path = "runtime/app.db"
+
+[sources.duckdb_analytics]
+display_name = "DuckDB analytics"
+backend = "duckdb"
+path = "runtime/warehouse.duckdb"
+
+[sources.postgres_app]
+display_name = "PostgreSQL application"
+backend = "postgres"
+url = "${POSTGRES_URL}"
+
+[sources.clickhouse_events]
+display_name = "ClickHouse events"
+backend = "clickhouse"
+url = "${CLICKHOUSE_URL}"
+database = "analytics"
+
+[sources.mysql_commerce]
+display_name = "MySQL commerce"
+backend = "mysql"
+url = "${MYSQL_URL}"
+schema = "test"
+
+[sources.mariadb_commerce]
+display_name = "MariaDB commerce"
+backend = "mariadb"
+url = "${MARIADB_URL}"
+schema = "test"
+include_global_objects = true
+
+[output]
+path = "DATABASE.md"
+sources = [
+    "sqlite_app",
+    "postgres_app",
+    "mysql_commerce",
+    "mariadb_commerce",
+    "duckdb_analytics",
+    "clickhouse_events",
+]
+
+[output.layout]
+kind = "single_file"
+source_layout = "nested"

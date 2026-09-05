@@ -1,0 +1,346 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: snapshot
+---
+id: types
+display_name: ~
+catalog:
+  database:
+    name: dbmd_test_8d27cbfe4ca0f203
+    owner: postgres
+    encoding: UTF8
+    locale_provider: libc
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    locale: ~
+    icu_rules: ~
+    collation_version: ~
+    tablespace: pg_default
+    template: false
+    allow_connections: true
+    connection_limit: -1
+    configuration: []
+    comment: ~
+  cluster_databases: []
+  tablespaces: []
+  namespaces:
+    - name: public
+      owner: pg_database_owner
+      extension: ~
+      comment: standard public schema
+    - name: type_system
+      owner: postgres
+      extension: ~
+      comment: ~
+  enums: []
+  composite_types: []
+  domains: []
+  base_types:
+    - namespace: type_system
+      name: pending_value
+      owner: postgres
+      extension: ~
+      defined: false
+      details: ~
+      array_type: ~
+      comment: Forward-declared shell type
+      definition: "CREATE TYPE \"type_system\".\"pending_value\";"
+    - namespace: type_system
+      name: scalar_token
+      owner: postgres
+      extension: ~
+      defined: true
+      details:
+        internal_length: 4
+        passed_by_value: true
+        category: N
+        preferred: true
+        delimiter: ","
+        input: type_system.scalar_token_in
+        output: type_system.scalar_token_out
+        receive: ~
+        send: ~
+        type_modifier_input: ~
+        type_modifier_output: ~
+        analyze: ~
+        subscript: ~
+        element_type: ~
+        alignment: int
+        storage: plain
+        collatable: false
+        default: "0"
+      array_type: type_system._scalar_token
+      comment: Integer-backed application token
+      definition: "CREATE TYPE \"type_system\".\"scalar_token\" (\n    INPUT = type_system.scalar_token_in,\n    OUTPUT = type_system.scalar_token_out,\n    INTERNALLENGTH = 4,\n    PASSEDBYVALUE,\n    ALIGNMENT = int4,\n    STORAGE = plain,\n    CATEGORY = 'N',\n    PREFERRED = true,\n    DEFAULT = '0',\n    ARRAY_TYPE = type_system._scalar_token\n);"
+  range_types:
+    - namespace: type_system
+      name: measurement_range
+      owner: postgres
+      extension: ~
+      subtype: double precision
+      subtype_operator_class: pg_catalog.float8_ops
+      collation: ~
+      canonical: ~
+      subtype_diff: pg_catalog.float8mi
+      multirange:
+        namespace: type_system
+        name: measurement_ranges
+        owner: postgres
+        extension: ~
+        comment: Disjoint measurement intervals
+      comment: One continuous measurement interval
+      definition: "CREATE TYPE \"type_system\".\"measurement_range\" AS RANGE (\n    SUBTYPE = double precision,\n    SUBTYPE_OPCLASS = pg_catalog.float8_ops,\n    SUBTYPE_DIFF = pg_catalog.float8mi,\n    MULTIRANGE_TYPE_NAME = \"type_system\".\"measurement_ranges\"\n);"
+  sequences: []
+  tables:
+    - namespace: type_system
+      name: measurements
+      extension: ~
+      comment: ~
+      columns:
+        - name: token
+          data_type: type_system.scalar_token
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: accepted
+          data_type: type_system.measurement_range
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: historical
+          data_type: type_system.measurement_ranges
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints:
+        - name: measurements_accepted_not_null
+          kind: not_null
+          columns:
+            - accepted
+          expression: ~
+          references: ~
+          definition: NOT NULL accepted
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: measurements_historical_not_null
+          kind: not_null
+          columns:
+            - historical
+          expression: ~
+          references: ~
+          definition: NOT NULL historical
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: measurements_token_not_null
+          kind: not_null
+          columns:
+            - token
+          expression: ~
+          references: ~
+          definition: NOT NULL token
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+      indexes: []
+      kind: table
+      owner: postgres
+      persistence: permanent
+      access_method: heap
+      typed_table: ~
+      replica_identity: default
+      options: []
+      foreign: ~
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+  views: []
+  triggers: []
+  functions:
+    - namespace: type_system
+      name: scalar_token_in
+      extension: ~
+      signature: (cstring)
+      arguments: cstring
+      definition: "CREATE OR REPLACE FUNCTION type_system.scalar_token_in(cstring)\n RETURNS type_system.scalar_token\n LANGUAGE internal\n IMMUTABLE STRICT\nAS $function$int4in$function$\n"
+      comment: ~
+      return_type: type_system.scalar_token
+      owner: postgres
+      kind: ordinary
+      language: internal
+      volatility: immutable
+      parallel: unsafe
+      security_definer: false
+      strict: true
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "1"
+      rows: ~
+      configuration: []
+      transforms: []
+    - namespace: type_system
+      name: scalar_token_out
+      extension: ~
+      signature: (type_system.scalar_token)
+      arguments: type_system.scalar_token
+      definition: "CREATE OR REPLACE FUNCTION type_system.scalar_token_out(type_system.scalar_token)\n RETURNS cstring\n LANGUAGE internal\n IMMUTABLE STRICT\nAS $function$int4out$function$\n"
+      comment: ~
+      return_type: cstring
+      owner: postgres
+      kind: ordinary
+      language: internal
+      volatility: immutable
+      parallel: unsafe
+      security_definer: false
+      strict: true
+      leakproof: false
+      returns_set: false
+      support_function: ~
+      cost: "1"
+      rows: ~
+      configuration: []
+      transforms: []
+  procedures: []
+  aggregates: []
+  casts: []
+  conversions: []
+  operators: []
+  operator_families: []
+  operator_classes: []
+  access_methods: []
+  languages:
+    - name: plpgsql
+      owner: postgres
+      extension: plpgsql
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: PL/pgSQL procedural language
+  transforms: []
+  rules: []
+  event_triggers: []
+  statistics: []
+  foreign_data_wrappers: []
+  foreign_servers: []
+  user_mappings: []
+  text_search_parsers: []
+  text_search_templates: []
+  text_search_dictionaries: []
+  text_search_configurations: []
+  extensions:
+    - name: plpgsql
+      owner: postgres
+      namespace: pg_catalog
+      relocatable: false
+      version: "1.0"
+      configuration: []
+      members:
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_call_handler
+          arguments: []
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_inline_handler
+          arguments:
+            - pg_catalog.internal
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_validator
+          arguments:
+            - pg_catalog.oid
+        - object_type: language
+          names:
+            - plpgsql
+          arguments: []
+      comment: PL/pgSQL procedural language
+  publications: []
+  subscriptions: []
+  privileges:
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: create
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: usage
+      grantable: false
+  default_privileges: []
+  security_labels: []
+  large_objects: []
+  roles: []
+  role_database_settings: []
+  collations: []

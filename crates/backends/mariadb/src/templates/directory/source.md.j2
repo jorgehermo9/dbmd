@@ -1,0 +1,28 @@
+# Database: {{ source.name }}
+
+{% if source.nested -%}
+Source: `{{ source.id }}`
+
+Backend: `{{ source.backend }}`
+
+{% endif -%}
+{% if source.data.namespaces -%}
+## Schemas
+
+| Name | Details |
+|---|---|
+{% for namespace in source.data.namespaces -%}
+| {{ namespace.name }} | {{ namespace.comment or "-" }} |
+{% endfor %}
+
+{% endif -%}
+{% for pair in [("Tables", "tables", source.data.tables), ("Views", "views", source.data.views), ("Triggers", "triggers", source.data.triggers), ("Routines, Sequences, and Events", "objects", source.data.functions)] -%}
+{% if pair[2] -%}
+## {{ pair[0] }}
+
+{% for object in pair[2] -%}
+- [{{ object.qualified_name }}]({{ pair[1] }}/{{ object.file_name }})
+{% endfor %}
+
+{% endif -%}
+{% endfor -%}

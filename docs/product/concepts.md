@@ -1,7 +1,5 @@
 # Product Concepts
 
-Status: accepted vocabulary; refine through real backend fixtures before declaring a stable external data model.
-
 The canonical definitions live in [CONTEXT.md](../../CONTEXT.md). This document explains how those terms form the product model.
 
 ## Conceptual model
@@ -19,7 +17,7 @@ Project configuration
         └── template set
 
 Ordered source snapshots
-  → Project snapshot
+  → Database context
   → Render
   → Agent-readable artifact
   → Compare with canonical artifact
@@ -40,11 +38,12 @@ database = "default"
 
 `analytics` controls CLI selection, ordering references, generated paths, verification identity, and fallback headings. `display_name` is presentation-only. Changing the display name may change rendered prose but never changes source identity.
 
-Source IDs are filesystem-safe ASCII slugs. The exact MVP grammar is owned by the [multiple-sources specification](features/multi-source.md#identity).
+Source IDs are filesystem-safe ASCII slugs. The exact grammar is owned by the
+[multiple-sources specification](features/multi-source.md#identity).
 
 ## Snapshots
 
-A source snapshot is the normalized structural state of one source at render time. A project snapshot is the ordered collection selected for an output.
+A source snapshot is the normalized structural state of one source at introspection time. A database context is the ordered collection of source snapshots selected for an operation.
 
 The distinction matters because:
 
@@ -52,8 +51,9 @@ The distinction matters because:
 - The same backend may appear more than once.
 - Output order is part of the canonical artifact.
 - Source identity must survive normalization and rendering.
+- A project may configure sources that are not selected for a particular operation.
 
-A snapshot represents database structure, not operational history. It is not a migration plan, live connection, or long-term event log.
+A source snapshot represents database structure, not operational history. It is not a migration plan, live connection, or long-term event log. Database context does not imply the complete state of a project; configuration, template selection, and output policy remain separate.
 
 ## Namespace and qualification
 
@@ -62,6 +62,9 @@ A snapshot represents database structure, not operational history. It is not a m
 - PostgreSQL schema: `public.users`.
 - SQLite attached database: `main.users`.
 - ClickHouse database: `analytics.events`.
+- MySQL schema: `app.users`.
+- MariaDB database/schema: `app.users`.
+- DuckDB catalog and schema: `warehouse.analytics.events`.
 
 Rendered qualification should preserve backend meaning. The normalized model may share a namespace field, but dbmd must not invent equivalence between backend capabilities.
 
@@ -120,4 +123,6 @@ Drift is an exact difference between a fresh render and the committed canonical 
 - Newly required files.
 - Extra stale files in a dbmd-owned directory artifact.
 
-Semantic or whitespace-normalized comparison is outside MVP. Deterministic generation is the mechanism for avoiding meaningless churn.
+Semantic or whitespace-normalized comparison is outside the verification
+contract. Deterministic generation is the mechanism for avoiding meaningless
+churn.

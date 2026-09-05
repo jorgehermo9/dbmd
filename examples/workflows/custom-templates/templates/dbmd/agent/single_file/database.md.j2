@@ -1,0 +1,12 @@
+{% if context.sources | length == 1 -%}
+# Database: {{ context.sources[0].name }}
+
+{% else -%}
+# Database Context
+
+{% endif -%}
+> This project owns the complete template set used for this artifact.
+
+{% for source in context.sources -%}
+{% include source.single_file_template -%}
+{% endfor -%}

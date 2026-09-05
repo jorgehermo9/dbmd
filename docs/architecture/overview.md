@@ -1,123 +1,156 @@
 # Architecture Overview
 
-Status: Phase 1 structure implemented; driver, config, render-context, and artifact-writer boundaries remain target architecture.
-
 ## Principles
 
-### Explicit semantics
+### Preserve backend semantics
 
-Normalization computes backend behavior that affects query correctness or performance. Renderers receive explicit values and provenance rather than reimplementing backend rules in template conditionals.
+Database families may use the same noun for concepts with different
+catalog shape and behavior. Backend modules normalize those facts into their
+own typed catalogs instead of flattening them into one universal relational
+model. Raw SQL definitions remain a fidelity backstop where structured catalog
+fields are incomplete.
 
-### Typed where behavior differs
+### Keep the composition boundary explicit
 
-Common schema concepts share a model. Backend extensions remain typed when their meaning affects behavior. Complex SQL expressions may remain raw strings until dbmd needs structural understanding.
+dbmd supports compiled-in backends. One closed composition root knows which
+backend modules are present and dispatches configuration, introspection,
+presentation mapping, and template manifests. Core identity and the rendering
+engine remain independent of that list.
 
 ### Determinism before presentation
 
-Stable ordering and computed semantics are established before templates run. Templates choose layout; they do not repair unstable catalog order or infer hidden defaults.
+Catalog adapters establish stable ordering and effective semantics before
+templates run. Templates choose layout; they do not repair catalog order or
+infer database rules.
 
-### Templates are an external boundary
+### Deep operation interfaces
 
-Internal Rust types can evolve in response to drivers. A dedicated render context will isolate public template compatibility from those changes.
+The CLI is a presentation layer over small application operations. The
+application resolves configuration and coordinates backend and artifact
+modules without exposing their internal steps to callers.
 
-### Narrow vertical slices
-
-SQLite proves the end-to-end architecture before new abstraction crates or generalized driver frameworks are introduced. PostgreSQL and ClickHouse then deepen the model with real edge cases.
-
-## Current workspace
+## Workspace
 
 ```text
 crates/
-  core/      normalized schema-model sketch
-  render/    embedded MiniJinja renderer
-  cli/       command parsing and orchestration bootstrap
+  core/              source identity envelopes and aggregate invariants
+  backends/
+    composition/     closed built-in backend registry and dispatch
+    relational/      equivalent relational leaf and presentation values
+    sqlite/          SQLite vertical backend implementation
+    postgres/        PostgreSQL vertical backend implementation
+    clickhouse/       ClickHouse vertical backend implementation
+    mysql/            MySQL vertical backend implementation
+    mariadb/          MariaDB vertical backend implementation
+    duckdb/           DuckDB vertical backend implementation
+  render/            presentation engine, common templates, and artifact assembly
+  app/               config resolution, operations, verification, and safe output
+  cli/               argument parsing and report/error presentation
 ```
 
-Package names remain prefixed (`dbmd-core`, `dbmd-render`) while directories stay concise.
-
-Current implementation:
-
-- `core` contains one `DatabaseSchema` and common/backend-specific object structs.
-- `render` serializes core structs, adds a few computed fields, and renders two embedded templates.
-- `cli` creates a placeholder PostgreSQL table in memory and prints the result.
-
-No current module parses config, connects to a database, normalizes catalog rows, writes an artifact, or verifies drift.
-
-## Target data flow
+The dependency direction is:
 
 ```text
-CLI arguments ─┐
-               ├→ resolved project contract
-dbmd.toml ─────┘        │
-                        ├→ selected source plans
-                        │        │
-                        │        ├→ backend connection
-                        │        ├→ raw catalog rows
-                        │        └→ normalized source snapshot
-                        │
-                        └→ ordered project snapshot
-                                  │
-                                  ├→ render context
-                                  ├→ selected template set
-                                  └→ in-memory artifact
-                                            │
-                                            ├→ stdout
-                                            ├→ atomic output replacement
-                                            └→ temporary verification comparison
+cli → app
+app → backends/composition, core, render
+backends/composition → concrete backend crates, core, render
+concrete backend → core, relational where applicable, render, its database client
+relational → render
 ```
 
-The resolved contract carries no expanded secrets into render contexts or diagnostics.
+`render` does not depend on `core` or backend catalog types. `core` has no
+database, configuration, filesystem, CLI, or template dependencies.
 
-## Primary boundaries
+## Backend composition
 
-### Configuration boundary
+`dbmd-backends` is the registry of compiled-in database families. Its crate
+contains only closed dispatch types and functions. Concrete semantics stay in
+sibling backend crates, while equivalent relational support stays separate:
 
-Parsing, environment expansion, defaults, CLI precedence, source selection, and compatibility validation produce a resolved contract. Commands consume this result rather than independently interpreting config.
+```text
+backends/
+  composition/       SourceConfig, Source, Catalog, Backend, dispatch
+  relational/        equivalent relational leaf and presentation values
+  sqlite/
+    src/catalog.rs
+    src/introspect.rs
+    src/render.rs
+    src/templates/
+    README.md
+  postgres/
+    src/catalog.rs
+    src/introspect.rs
+    src/render.rs
+    src/templates/
+    README.md
+  clickhouse/        same vertical ownership, using ClickHouse HTTP catalogs
+  mysql/             same vertical ownership, using MySQL catalogs
+  mariadb/           same vertical ownership, using MariaDB catalogs
+  duckdb/            same vertical ownership, using embedded DuckDB catalogs
+```
 
-### Driver boundary
+Adding a compiled-in backend adds one sibling crate and wires it into the closed
+composition crate. It does not add vendor variants to `dbmd-core` or imports to
+`dbmd-render`. A public driver trait and runtime plugin ABI are intentionally
+absent until a concrete runtime-extension consumer exists.
 
-A driver owns database I/O and catalog-specific row types. Catalog queries and compatibility logic do not leak into core normalization or rendering.
+## Data flow
 
-### Normalization boundary
+```text
+CLI + dbmd.toml
+  → resolved application plan
+  → selected backend Source values
+  → backend introspection
+  → SourceSnapshot<backend Catalog>
+  → composition DatabaseContext<Catalog enum>
+  → backend-owned presentation data + object manifest
+  → RenderSource envelope
+  → versioned RenderContext
+  → common + selected backend template manifests
+  → in-memory RenderedArtifact
+  → stdout, atomic replacement, or verification comparison
+```
 
-Normalization maps raw backend metadata to source snapshots, establishes deterministic order, and records observed/effective/unknown facts.
+Template completeness and output-path safety are validated before connection
+where selected backend manifests are known from configuration. Expanded secrets
+never enter catalogs, render contexts, diagnostics, or generated artifacts.
 
-### Render boundary
+## Module responsibilities
 
-The render-context builder computes presentation-ready facts and qualified names. MiniJinja renders an in-memory file set with strict undefined behavior.
+### Core
 
-### Artifact boundary
+`dbmd-core` owns `SourceId`, `SourceSnapshot<C>`, and `DatabaseContext<C>`.
+These types preserve stable identity and source order and reject empty or
+duplicate aggregates. The generic catalog parameter prevents core from
+registering every database family.
 
-Output writing and verification operate on a common in-memory artifact representation: one file or a relative-path-to-bytes map. Render writes it atomically; verify compares it without modifying the canonical destination.
+### Backend crates
 
-## Crate evolution
+Each backend owns source connection inputs, catalog queries, normalization,
+catalog types, render mapping, backend template fragments, fixture tests, and a
+coverage matrix beside the code. `dbmd-relational` owns only leaf vocabulary and
+presentation helpers whose meaning is equivalent across multiple backends.
 
-Do not create a crate solely because architecture diagrams name a boundary. During the SQLite slice:
+### Backend composition
 
-- Config and SQLite driver modules may begin inside `cli` if their APIs remain testable.
-- `core` owns normalized snapshots and semantic helpers without database dependencies.
-- `render` owns render-context construction, template loading, and in-memory artifact generation.
+`dbmd-backends` converts concrete snapshots into a closed composition catalog
+for application use. It owns the compiled backend list and heterogeneous
+dispatch, but no database driver, catalog query, or backend template body.
 
-Extract `config`, `drivers`, or test-support crates when a second consumer, a second backend, or compile-time dependency pressure proves the seam.
+### Render
 
-## Command responsibility
+`dbmd-render` owns the versioned presentation envelope, Markdown escaping and
+code fencing, strict MiniJinja execution, safe artifact-relative paths, and the
+single-file/directory in-memory artifact. It receives already-prepared
+`RenderSource` values containing opaque backend data and generic object
+manifests. It has no table/view/trigger/function branches.
 
-- `init` scaffolds project-owned files.
-- `render` creates and replaces an artifact.
-- `verify` compares a fresh temporary artifact with the canonical artifact.
-- `doctor` diagnoses operational readiness.
-- `explain` reports resolution and planning.
-- `lint` evaluates schema policy.
+### Application and CLI
 
-Shared preflight and introspection internals do not blur these user-facing responsibilities.
-
-## Security model
-
-- Committed config references environment variables rather than containing credentials.
-- Expanded secrets stay in connection construction and are redacted from errors.
-- Template contexts never contain DSNs or environment values.
-- Output paths are validated before destructive replacement.
-- Verify writes only to temporary locations.
+`dbmd-app` owns parsing, environment expansion, defaults, source selection,
+preflight, orchestration, atomic output, and verification. `dbmd-cli` maps Clap
+values to operation requests and presents structured results. Neither command
+code nor application orchestration reaches into concrete catalog fields.
 
 ## Related documents
 
@@ -125,5 +158,10 @@ Shared preflight and introspection internals do not blur these user-facing respo
 - [Rendering](rendering.md)
 - [Configuration and CLI](config-and-cli.md)
 - [Testing](testing.md)
-- [Product feature specifications](../product/features/README.md)
-- [Architecture decisions](../adr/README.md)
+- [SQLite backend coverage](../../crates/backends/sqlite/README.md)
+- [PostgreSQL backend coverage](../../crates/backends/postgres/README.md)
+- [ClickHouse backend coverage](../../crates/backends/clickhouse/README.md)
+- [MySQL backend coverage](../../crates/backends/mysql/README.md)
+- [MariaDB backend coverage](../../crates/backends/mariadb/README.md)
+- [DuckDB backend coverage](../../crates/backends/duckdb/README.md)
+- [ADR-0005](../adr/0005-backend-owned-catalogs-and-templates.md)

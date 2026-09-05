@@ -1,0 +1,45 @@
+{% if source.nested -%}
+## Source: `{{ source.id }}`{% if source.has_display_name %} — {{ source.name }}{% endif %}
+
+Backend: `{{ source.backend }}`
+
+{% endif -%}
+{% if source.data.namespaces -%}
+{{ source.data.section_heading }} Namespaces
+
+| Name | Comment |
+|---|---|
+{% for namespace in source.data.namespaces -%}
+| {{ namespace.name }} | {{ namespace.comment or "-" }} |
+{% endfor %}
+
+{% endif -%}
+{% if source.data.tables -%}
+{{ source.data.section_heading }} Tables
+
+{% for object in source.data.tables -%}
+{% set heading = source.data.object_heading -%}
+{% set detail_heading = source.data.detail_heading -%}
+{% include "table.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.views -%}
+{{ source.data.section_heading }} Views
+
+{% for object in source.data.views -%}
+{% set heading = source.data.object_heading -%}
+{% set detail_heading = source.data.detail_heading -%}
+{% include "view.md.j2" %}
+
+{% endfor -%}
+{% endif -%}
+{% if source.data.triggers -%}
+{{ source.data.section_heading }} Triggers
+
+{% for object in source.data.triggers -%}
+{% set heading = source.data.object_heading -%}
+{% include "trigger.md.j2" %}
+
+{% endfor -%}
+{% endif -%}

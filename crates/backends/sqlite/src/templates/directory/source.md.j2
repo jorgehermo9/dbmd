@@ -1,0 +1,42 @@
+# Database: {{ source.name }}
+
+{% if source.nested -%}
+Source: `{{ source.id }}`
+
+Backend: `{{ source.backend }}`
+
+{% endif -%}
+{% if source.data.namespaces -%}
+## Namespaces
+
+| Name | Comment |
+|---|---|
+{% for namespace in source.data.namespaces -%}
+| {{ namespace.name }} | {{ namespace.comment or "-" }} |
+{% endfor %}
+
+{% endif -%}
+{% if source.data.tables -%}
+## Tables
+
+{% for object in source.data.tables -%}
+- [{{ object.qualified_name }}](tables/{{ object.file_name }})
+{% endfor %}
+
+{% endif -%}
+{% if source.data.views -%}
+## Views
+
+{% for object in source.data.views -%}
+- [{{ object.qualified_name }}](views/{{ object.file_name }})
+{% endfor %}
+
+{% endif -%}
+{% if source.data.triggers -%}
+## Triggers
+
+{% for object in source.data.triggers -%}
+- [{{ object.qualified_name }}](triggers/{{ object.file_name }})
+{% endfor %}
+
+{% endif -%}

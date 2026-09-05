@@ -1,7 +1,5 @@
 # Templates and Profiles
 
-Status: embedded bootstrap implemented; selectable profiles, custom roots, and directory entrypoints are accepted but not implemented.
-
 ## Purpose
 
 Templates control presentation while normalized snapshots and render contexts carry product semantics. Teams can choose built-in profiles or own a complete custom template set.
@@ -19,10 +17,10 @@ The selected template set is validated before dbmd opens a database connection.
 `output.profile` selects an arbitrary profile directory. Built-in product profiles are expected to include:
 
 - `agent` — default balance of compactness and explicit semantics.
-- `agent-compact` — more aggressive context-window optimization after the default stabilizes.
+- `agent-compact` — more aggressive context-window optimization.
 - `human` — optional human-oriented formatting without changing snapshot semantics.
 
-Only `agent` is required for the first useful release.
+The embedded template set provides the `agent` profile.
 
 ## Custom template roots
 
@@ -33,24 +31,43 @@ templates/dbmd/
   agent/
     single_file/
       database.md.j2
+      backends/
+        sqlite/source.md.j2
+        postgres/source.md.j2
+        clickhouse/source.md.j2
+        mysql/source.md.j2
+        mariadb/source.md.j2
+        duckdb/source.md.j2
     directory/
-      index.md.j2
+      root.md.j2
+      enum.md.j2
       table.md.j2
       view.md.j2
+      trigger.md.j2
       function.md.j2
-    partials/
-      columns.md.j2
-      clickhouse/
-        table-engine.md.j2
+      backends/
+        sqlite/source.md.j2
+        postgres/source.md.j2
+        clickhouse/source.md.j2
+        mysql/source.md.j2
+        mariadb/source.md.j2
+        duckdb/source.md.j2
 ```
 
 dbmd does not fall back from a missing custom entrypoint to an embedded template. This prevents accidental coupling to internal built-in paths.
 
 ## Required entrypoints
 
-- `PROFILE/single_file/database.md.j2` for single-file output.
-- `PROFILE/directory/index.md.j2` and `table.md.j2` for directory object output.
-- Additional object entrypoints become required when the selected snapshot contains those artifact types.
+- `PROFILE/single_file/database.md.j2`.
+- `PROFILE/directory/root.md.j2`.
+- `PROFILE/directory/table.md.j2`, `view.md.j2`, `trigger.md.j2`, and
+  `function.md.j2`, plus `enum.md.j2`.
+- `PROFILE/{single_file,directory}/backends/<backend>/source.md.j2` for every
+  backend compiled into dbmd.
+
+The loader requires the complete set before connection, independent of
+the selected layout or selected source. `dbmd init-templates` creates exactly
+this tree for the current binary.
 
 Builtin partial paths are internal implementation details. Custom sets own any partials they reference.
 
@@ -64,14 +81,54 @@ Builtin partial paths are internal implementation details. Custom sets own any p
 
 ## Render-context compatibility
 
-The current bootstrap serializes internal core structs with a few computed additions. That shape is explicitly unstable.
+Custom templates receive the dedicated, versioned render context rather than
+core model structs. The common root template receives `context`:
 
-Before custom templates are advertised as a supported compatibility surface, dbmd will introduce and document a dedicated render context. Compatibility can then be versioned independently from internal Rust model changes.
+| Field | Meaning |
+| --- | --- |
+| `context.version` | Integer render-context shape version. |
+| `context.sources` | Sources in resolved operation order. |
 
-An `explain` or diagnostic mode should make the resolved template root, profile, layout, entrypoints, and context version visible. A future context-dump mode may support template authors if it can avoid exposing sensitive data.
+Every source value has this common envelope:
 
-## Open decisions
+| Field | Meaning |
+| --- | --- |
+| `id` | Stable source ID used for selection and nested paths. |
+| `name` | Markdown-ready display name, falling back to the source ID. |
+| `has_display_name` | Whether `name` came from an explicit configured display name. |
+| `backend` | Stable backend tag: `clickhouse`, `duckdb`, `mariadb`, `mysql`, `postgres`, or `sqlite`. |
+| `single_file_template` | Backend-owned entrypoint included by `single_file/database.md.j2`. |
+| `directory_template` | Backend-owned source-index entrypoint selected internally by the renderer; available to templates for inspection but normally not dispatched manually. |
+| `nested` | Whether source headings/directories are explicit for this render. |
+| `data` | Opaque backend-owned presentation payload documented below. |
 
-- When to declare the render context stable enough for compatibility guarantees.
-- Exact directory entrypoints for enums, extensions, and source indexes.
-- Whether a safe machine-readable example context should be emitted for template development.
+A single-file backend entrypoint receives `source`. A directory backend
+entrypoint also receives `source`; each declared directory object template
+receives `source`, `object`, `heading` (`#`), and `detail_heading` (`##`).
+Generated object paths and object template selection are backend-owned and are
+not derived by custom templates.
+
+Backend payload references:
+
+- [SQLite template context](../../../crates/backends/sqlite/README.md#template-context)
+- [PostgreSQL template context](../../../crates/backends/postgres/README.md#template-context)
+- [ClickHouse template context](../../../crates/backends/clickhouse/README.md#template-context)
+- [MySQL template context](../../../crates/backends/mysql/README.md#template-context)
+- [MariaDB template context](../../../crates/backends/mariadb/README.md#template-context)
+- [DuckDB template context](../../../crates/backends/duckdb/README.md#template-context)
+
+All catalog-derived strings in these payloads are already Markdown-ready.
+Collections retain deterministic catalog order. Optional values are either a
+string or null; an empty list means that object family has no represented
+members.
+
+Context versioning identifies shape but does not constitute an indefinitely
+stable external compatibility guarantee. A field addition, removal, or meaning
+change is a reviewed product-contract change: update the backend reference,
+embedded templates, render-context snapshots, and context version when old
+custom templates cannot continue to render correctly. Strict undefined-value
+handling makes incompatible custom profiles fail before output replacement.
+The context documented here is version `2`.
+
+`explain` exposes the resolved template root, profile, layout, and required
+entrypoints without exposing expanded environment values.

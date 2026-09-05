@@ -1,0 +1,24 @@
+[package]
+name = "dbmd-test-support"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[features]
+default = []
+clickhouse = ["dep:reqwest", "dep:testcontainers-modules"]
+mariadb = ["dep:mysql", "dep:testcontainers-modules"]
+mysql = ["dep:mysql", "dep:testcontainers-modules"]
+postgres = ["dep:postgres", "dep:testcontainers-modules"]
+
+[dependencies]
+mysql = { workspace = true, optional = true }
+postgres = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
+tempfile.workspace = true
+testcontainers-modules = { workspace = true, optional = true }
+
+[dev-dependencies]
+rstest.workspace = true

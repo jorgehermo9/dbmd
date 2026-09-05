@@ -1,0 +1,8 @@
+[sources.catalog]
+display_name = "PostgreSQL application catalog"
+backend = "postgres"
+url = "${POSTGRES_URL}"
+
+[output]
+path = "DATABASE.md"
+sources = ["catalog"]

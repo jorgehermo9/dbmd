@@ -1,0 +1,401 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: markdown
+---
+# Database: `advanced`
+
+## Database
+
+### `dbmd_test_df2b78feb085d431`
+
+**Owner:** `postgres`
+
+**Encoding:** `UTF8`
+
+**Locale provider:** `libc`
+
+**LC_COLLATE:** `en_US.utf8`
+
+**LC_CTYPE:** `en_US.utf8`
+
+**Tablespace:** `pg_default`
+
+**Template:** no
+
+**Allows connections:** yes
+
+**Connection limit:** -1
+
+
+
+## Namespaces
+
+| Name | Owner | Comment |
+|---|---|---|
+| `advanced` | `postgres` | - |
+| `public` | `pg_database_owner` | standard public schema |
+
+
+## Tables
+
+### `advanced.deleted_orders`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | yes | - | storage `plain` |
+| `deleted_at` | `timestamp with time zone` | no | `CURRENT_TIMESTAMP` | storage `plain` |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `deleted_orders_deleted_at_not_null` | `not_null` | `deleted_at` | `NOT NULL deleted_at` |
+
+
+#### PostgreSQL
+
+**Kind:** `table`
+
+**Owner:** `postgres`
+
+**Persistence:** `permanent`
+
+**Replica identity:** `default`
+
+**Access method:** `heap`
+
+
+
+### `advanced.orders`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | no | - | storage `plain` |
+| `customer_id` | `bigint` | no | - | storage `plain` |
+| `region` | `text` | no | - | collation `pg_catalog."default"`; storage `extended` |
+| `amount` | `numeric(12,2)` | no | - | storage `main` |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `orders_amount_not_null` | `not_null` | `amount` | `NOT NULL amount` |
+| `orders_customer_id_not_null` | `not_null` | `customer_id` | `NOT NULL customer_id` |
+| `orders_id_not_null` | `not_null` | `id` | `NOT NULL id` |
+| `orders_pkey` | `primary_key` | `id` | `PRIMARY KEY (id)`; no inherit |
+| `orders_region_not_null` | `not_null` | `region` | `NOT NULL region` |
+
+
+#### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `orders_pkey` | `id` ascending opclass `pg_catalog.int8_ops` nulls `last` | yes | postgres `btree`; owner `postgres`; constraint `orders_pkey` | - |
+
+
+#### PostgreSQL
+
+**Kind:** `table`
+
+**Owner:** `postgres`
+
+**Persistence:** `permanent`
+
+**Replica identity:** `default`
+
+**Access method:** `heap`
+
+
+
+## Functions
+
+### `advanced.capture_schema_change()`
+
+**Kind:** `ordinary`
+
+**Arguments:** ``
+
+**Returns:** `event_trigger`
+
+**Owner:** `postgres`
+
+**Language:** `plpgsql`
+
+**Volatility:** `volatile`
+
+**Parallel:** `unsafe`
+
+**Security:** `invoker`
+
+**Null input:** called
+
+**Leakproof:** no
+
+**Returns set:** no
+
+**Cost:** 100
+
+```sql
+CREATE OR REPLACE FUNCTION advanced.capture_schema_change()
+ RETURNS event_trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    NULL;
+END;
+$function$
+
+```
+
+
+## Rewrite Rules
+
+### `advanced.orders.archive_order_delete`
+
+Archives replicated deletes
+
+**Event:** `delete`
+
+**Instead:** no
+
+**Enabled:** `replica`
+
+```sql
+CREATE RULE archive_order_delete AS
+    ON DELETE TO advanced.orders DO  INSERT INTO advanced.deleted_orders (id)
+  VALUES (old.id);
+```
+
+
+## Event Triggers
+
+### `capture_schema_change`
+
+Captures selected schema changes
+
+**Owner:** `postgres`
+
+**Event:** `DDL command end`
+
+**Function:** `advanced.capture_schema_change()`
+
+**Enabled:** `always`
+
+**Tags:** `CREATE TABLE, ALTER TABLE`
+
+```sql
+CREATE EVENT TRIGGER "capture_schema_change" ON ddl_command_end WHEN TAG IN ('CREATE TABLE', 'ALTER TABLE') EXECUTE FUNCTION advanced.capture_schema_change();
+```
+
+
+## Extended Statistics
+
+### `advanced.orders_dependencies`
+
+Cross-column order distribution
+
+**Owner:** `postgres`
+
+**Kinds:** `ndistinct, dependencies, mcv`
+
+**Statistics target:** 500
+
+**Columns:** `customer_id, region`
+
+```sql
+CREATE STATISTICS advanced.orders_dependencies ON customer_id, region FROM advanced.orders
+```
+
+
+### `advanced.orders_expression`
+
+**Owner:** `postgres`
+
+**Kinds:** `expressions`
+
+**Statistics target:** -1
+
+**Expression:** `lower(region)`
+
+```sql
+CREATE STATISTICS advanced.orders_expression ON lower(region) FROM advanced.orders
+```
+
+
+## Text Search Parsers
+
+### `advanced.default_parser`
+
+Fixture parser backed by PostgreSQL defaults
+
+**Start function:** `pg_catalog.prsd_start(pg_catalog.internal,integer)`
+
+**Token function:** `pg_catalog.prsd_nexttoken(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)`
+
+**End function:** `pg_catalog.prsd_end(pg_catalog.internal)`
+
+**Headline function:** `pg_catalog.prsd_headline(pg_catalog.internal,pg_catalog.internal,pg_catalog.tsquery)`
+
+**Token-types function:** `pg_catalog.prsd_lextype(pg_catalog.internal)`
+
+
+
+## Text Search Templates
+
+### `advanced.simple_template`
+
+Fixture simple dictionary template
+
+**Init function:** `pg_catalog.dsimple_init(pg_catalog.internal)`
+
+**Lexize function:** `pg_catalog.dsimple_lexize(pg_catalog.internal,pg_catalog.internal,pg_catalog.internal,pg_catalog.internal)`
+
+
+
+## Text Search Dictionaries
+
+### `advanced.simple_dictionary`
+
+Fixture stop-word dictionary
+
+**Owner:** `postgres`
+
+**Template:** `advanced.simple_template`
+
+**Options:** `stopwords = 'english'`
+
+
+
+## Text Search Configurations
+
+### `advanced.search_configuration`
+
+Fixture search pipeline
+
+**Owner:** `postgres`
+
+**Parser:** `advanced.default_parser`
+
+**Mapping:** `asciiword`: `advanced.simple_dictionary, pg_catalog.english_stem`
+
+
+
+## Publications
+
+### `advanced_publication`
+
+**Owner:** `postgres`
+
+**All tables:** no
+
+**Actions:** `insert, update, delete, truncate`
+
+**Generated columns:** `none`
+
+**Publish via partition root:** no
+
+**Table:** `advanced.orders`
+
+
+
+## Subscriptions
+
+### `advanced_subscription`
+
+Disconnected fixture subscription
+
+**Owner:** `postgres`
+
+**Enabled:** no
+
+**Binary:** yes
+
+**Streaming:** `parallel`
+
+**Two phase:** `pending`
+
+**Disable on error:** yes
+
+**Password required:** no
+
+**Run as owner:** yes
+
+**Failover:** yes
+
+**Synchronous commit:** `remote apply`
+
+**Publications:** `advanced_publication`
+
+**Origin:** `no origin`
+
+**Connection:** `<redacted>`
+
+**Skip LSN:** `0/16B6C50`
+
+
+
+## Object Privileges
+
+### `schema public → PUBLIC USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `USAGE`
+
+
+
+### `schema public → pg_database_owner CREATE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `CREATE`
+
+
+
+### `schema public → pg_database_owner USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `USAGE`
+
+
+
+## Extensions
+
+### `plpgsql`
+
+PL/pgSQL procedural language
+
+**Owner:** `postgres`
+
+**Schema:** `pg_catalog`
+
+**Version:** `1.0`
+
+**Relocatable:** no
+
+**Owned objects:** 4 (`function`: 3, `language`: 1)

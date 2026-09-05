@@ -1,0 +1,16 @@
+services:
+  mariadb:
+    image: mariadb:12.3.2
+    command: ["--plugin-load-add=auth_mysql_sha2"]
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "1"
+      MARIADB_DATABASE: test
+    ports:
+      - "63306:3306"
+    volumes:
+      - ./schema/commerce:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 1s
+      timeout: 5s
+      retries: 120

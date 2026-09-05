@@ -1,18 +1,11 @@
 # Configuration and CLI Architecture
 
-Status: accepted product shape; not implemented.
-
 ## Canonical config
 
-The default file is `dbmd.toml`. MVP supports one named multi-source shape and one configured output:
+The default file is `dbmd.toml`. Configuration uses one named multi-source
+shape and one configured output:
 
 ```toml
-[sources.analytics]
-display_name = "Analytics"
-backend = "clickhouse"
-url = "${CLICKHOUSE_URL}"
-database = "default"
-
 [sources.app]
 backend = "postgres"
 url = "${DATABASE_URL}"
@@ -21,10 +14,21 @@ url = "${DATABASE_URL}"
 backend = "sqlite"
 path = "./dev.db"
 
+[sources.local.attachments.analytics]
+path = "./analytics.db"
+
+[sources.warehouse]
+backend = "duckdb"
+path = "./warehouse.duckdb"
+
+[sources.warehouse.attachments.archive]
+path = "./archive.duckdb"
+read_only = true
+
 [output]
 path = "DATABASE.md"
 profile = "agent"
-sources = ["analytics", "app"]
+sources = ["app", "local"]
 
 [output.layout]
 kind = "single_file"
@@ -34,7 +38,7 @@ source_layout = "auto"
 dir = "templates/dbmd"
 ```
 
-There is no `[source]` shorthand, YAML config, or `[outputs.<name>]` map in MVP.
+There is no `[source]` shorthand, YAML config, or `[outputs.<name>]` map.
 
 ## Parsing stages
 
@@ -55,7 +59,7 @@ struct ResolvedProject { /* defaults and expanded connections */ }
 struct RenderPlan { /* selected sources, templates, destination */ }
 ```
 
-Avoid passing partially resolved config deep into drivers or renderers.
+Avoid passing partially resolved config deep into introspection or rendering modules.
 
 ## Environment expansion
 
@@ -65,7 +69,7 @@ Rules must be simple and documented:
 
 - No shell execution.
 - No command substitution.
-- No implicit `.env` loading in MVP unless explicitly adopted later.
+- No implicit `.env` loading.
 - Errors name variables but never expanded values.
 - Redacted diagnostics preserve enough non-secret structure to identify a source.
 
@@ -107,21 +111,38 @@ source preflight
 
 Render and verify fail fast enough to avoid partial work. Doctor may continue independent checks to provide a fuller diagnosis.
 
-## Driver dispatch
+## Introspection dispatch
 
-The first backend can use direct SQLite dispatch without committing to an async trait. Directional options are:
+Each supported database family exposes a concrete vertical crate under
+`crates/backends/`.
+The `dbmd-backends` composition crate provides a closed source enum and dispatch
+function, without a driver trait:
 
 ```rust
-enum BackendDriver {
-    Sqlite(SqliteDriver),
-    Postgres(PostgresDriver),
-    ClickHouse(ClickHouseDriver),
+pub enum Source {
+    Clickhouse(ClickHouseSource),
+    Duckdb(DuckDbSource),
+    Mariadb(MariaDbSource),
+    Mysql(MySqlSource),
+    Postgres(PostgresSource),
+    Sqlite(SqliteSource),
 }
+pub fn introspect(source: &Source) -> Result<SourceSnapshot<Catalog>, IntrospectionError>;
 ```
 
-or a trait once common async behavior is proven. The stable boundary is a driver producing a normalized `SourceSnapshot`; dynamic dispatch is not itself a product requirement.
+A generic backend trait is not part of this boundary because application
+orchestration needs closed dispatch, not runtime-extensible drivers. The stable behavior is
+introspection producing a normalized source envelope around one backend-owned
+catalog; dynamic dispatch is not itself a product requirement.
 
-Avoid async runtime adoption until PostgreSQL or ClickHouse clients require it. A sync SQLite vertical slice should not pay that cost preemptively.
+The same composition root owns the internally tagged `SourceConfig` enum while
+each backend module owns its committed field struct and concrete source
+construction. App supplies project-relative path bases and a value-expansion
+closure, so environment policy and required-variable reporting remain
+project-level concerns without App destructuring concrete backend fields.
+
+Adapters use synchronous clients. Runtime choice is internal and not part of
+the public seam.
 
 ## Output-path validation
 
@@ -131,19 +152,34 @@ Directory replacement rejects repository root, home, `.git`, and other nonsensic
 
 The writer treats directory output as fully owned. It must avoid deleting arbitrary paths when config values, symlinks, or relative traversal are involved.
 
-## Command modules
+## Application and CLI modules
 
-CLI parsing should produce command-specific input types. Orchestration modules may share:
+The CLI parses command-specific values, converts them to application requests, calls one operation, and presents its report or error. It does not read project configuration, connect to databases, render templates, or write artifacts itself.
+
+Application interfaces are operation-oriented and intentionally small:
+
+```rust
+pub fn render(request: RenderRequest) -> Result<RenderReport, RenderError>;
+pub fn verify(request: VerifyRequest) -> Result<VerifyReport, VerifyError>;
+pub fn explain(request: ExplainRequest) -> Result<ExplainReport, ExplainError>;
+pub fn doctor(request: DoctorRequest) -> DoctorReport;
+```
+
+`dbmd-app` may internally compose:
 
 - Config loader.
 - Resolver and validators.
 - Source planner.
-- Driver dispatch.
+- Introspection dispatch.
 - Snapshot normalization.
 - Renderer.
 - Artifact writer/comparator.
 
-Commands decide which capabilities to invoke and how to report outcomes. This keeps `doctor`, `verify`, and `lint` from becoming modes of one oversized command function.
+Application operations decide which capabilities to invoke and return structured
+results. CLI commands decide only how to present those results. Explain reuses
+resolved plans without database access. Doctor reuses local preflight and only
+dispatches introspection when connections are explicitly enabled. This keeps
+doctor, verify, and lint from becoming modes of one oversized command function.
 
 ## Error taxonomy
 
@@ -161,11 +197,11 @@ Use structured internal errors with user-facing context:
 - Output write/replace.
 - Verification drift.
 
-Credentials are redacted at construction, not through hopeful formatting discipline at the final display boundary.
+Credentials are redacted at construction, not through hopeful formatting discipline at the final display seam.
 
-## Open implementation decisions
+## Path bases
 
-- Config modules inside `cli` versus a crate after reuse appears.
-- Relative path base for explicit `--config` and one-off CLI usage.
-- Async boundary timing.
-- Exact atomic directory replacement behavior across operating systems.
+Configured paths, including SQLite and DuckDB database/attachment paths and CLI
+output/template overrides, resolve relative to the selected config file.
+Configless SQLite and DuckDB paths resolve relative to the process working
+directory.

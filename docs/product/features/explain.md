@@ -1,7 +1,5 @@
 # Explain
 
-Status: proposed and planned after configuration resolution exists.
-
 ## Purpose
 
 `dbmd explain` shows how dbmd resolves a requested operation without requiring users to infer precedence across CLI flags, config, and built-in defaults.
@@ -15,18 +13,32 @@ Status: proposed and planned after configuration resolution exists.
 - Layout, directory variant, and source layout.
 - Profile and template root.
 - Required template entrypoints.
-- Planned output files when they can be known before introspection.
+- Output files that can be determined before introspection.
 - Environment variable names that were required, never their values.
 
 ## Behavior
 
-Explain performs local parsing and resolution by default. A future connection-aware mode may include backend versions or introspection plans, but it must be explicit.
+Explain performs local parsing and resolution only. It does not connect to a
+database; connection and compatibility diagnosis belongs to `doctor --connect`.
 
 Output-shaping overrides accepted by `render` are also accepted by `explain` so users can inspect a one-off plan before executing it.
 
 ## Formats
 
-Human-readable text is the initial requirement. JSON is valuable for support tooling but should follow only after the resolved-config model stabilizes.
+The format is deterministic human-readable text. Structured JSON
+is not part of the current command contract.
+
+## Command
+
+```sh
+dbmd explain [--config dbmd.toml]
+  [--source ID ...]
+  [--output PATH | --stdout]
+  [--template-root PATH]
+```
+
+These flags use the same config-relative path and precedence rules as
+`dbmd render`.
 
 ## Safety
 

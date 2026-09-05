@@ -1,0 +1,9 @@
+[sources.analytics]
+display_name = "ClickHouse event platform"
+backend = "clickhouse"
+url = "${CLICKHOUSE_URL}"
+database = "analytics"
+
+[output]
+path = "DATABASE.md"
+sources = ["analytics"]

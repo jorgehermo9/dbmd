@@ -1,0 +1,13 @@
+{{ heading }} {{ object.qualified_name }}
+
+{% if object.comment -%}
+{{ object.comment }}
+
+{% endif -%}
+{% for fact in object.facts -%}
+**{{ fact.label }}:** {{ fact.value }}
+
+{% endfor -%}
+{% if object.definition -%}
+{{ object.definition }}
+{% endif -%}

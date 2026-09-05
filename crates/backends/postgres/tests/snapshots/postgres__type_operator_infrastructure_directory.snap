@@ -1,0 +1,97 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: "String::from_utf8(files[&index_path].clone())?"
+---
+# Database: `infrastructure`
+
+## Database
+
+- [`dbmd_test_408d5f230f335760`](database/database.dbmd_test_408d5f230f335760.md)
+
+## Namespaces
+
+| Name | Owner | Comment |
+|---|---|---|
+| `infrastructure` | `postgres` | - |
+| `public` | `pg_database_owner` | standard public schema |
+
+
+## Enum Types
+
+- [`infrastructure.label_a`](enums/infrastructure.label_a.md)
+- [`infrastructure.label_b`](enums/infrastructure.label_b.md)
+
+
+## Base and Shell Types
+
+- [`infrastructure.label_c`](base-types/infrastructure.label_c.md)
+
+
+## Functions
+
+- [`infrastructure.fixture_btree_handler(internal)`](functions/infrastructure.fixture_btree_handler%28internal%29.md)
+- [`infrastructure.label_a_to_b(infrastructure.label_a)`](functions/infrastructure.label_a_to_b%28infrastructure%2Elabel_a%29.md)
+- [`infrastructure.label_c_in(cstring)`](functions/infrastructure.label_c_in%28cstring%29.md)
+- [`infrastructure.label_c_out(infrastructure.label_c)`](functions/infrastructure.label_c_out%28infrastructure%2Elabel_c%29.md)
+- [`infrastructure.nonzero(integer)`](functions/infrastructure.nonzero%28integer%29.md)
+- [`infrastructure.same_integer(integer, integer)`](functions/infrastructure.same_integer%28integer%2C%20integer%29.md)
+
+
+## Procedures
+
+- [`infrastructure.accept_integer(IN value integer)`](procedures/infrastructure.accept_integer%28IN%20value%20integer%29.md)
+
+
+## Casts
+
+- [`infrastructure.label_a AS infrastructure.label_b`](casts/casts.infrastructure%2Elabel_a%20AS%20infrastructure%2Elabel_b.md)
+- [`infrastructure.label_b AS infrastructure.label_c`](casts/casts.infrastructure%2Elabel_b%20AS%20infrastructure%2Elabel_c.md)
+- [`infrastructure.label_c AS integer`](casts/casts.infrastructure%2Elabel_c%20AS%20integer.md)
+
+
+## Encoding Conversions
+
+- [`infrastructure.utf8_to_latin1`](conversions/infrastructure.utf8_to_latin1.md)
+
+
+## Operators
+
+- [`infrastructure.!!(NONE, integer)`](operators/infrastructure.%21%21%28NONE%2C%20integer%29.md)
+- [`infrastructure.===(integer, integer)`](operators/infrastructure.%3D%3D%3D%28integer%2C%20integer%29.md)
+
+
+## Operator Families
+
+- [`infrastructure.integer_family`](operator-families/infrastructure.btree%2Einteger_family.md)
+
+
+## Operator Classes
+
+- [`infrastructure.integer_class`](operator-classes/infrastructure.btree%2Einteger_class.md)
+
+
+## Access Methods
+
+- [`fixture_btree`](access-methods/access-methods.fixture_btree.md)
+
+
+## Procedural Languages
+
+- [`fixture_pl`](languages/languages.fixture_pl.md)
+
+
+## Transforms
+
+- [`integer FOR fixture_pl`](transforms/transforms.integer%20FOR%20fixture_pl.md)
+
+
+## Object Privileges
+
+- [`schema public → PUBLIC USAGE`](privileges/schema.public-pg_database_owner-PUBLIC-USAGE.md)
+- [`schema public → pg_database_owner CREATE`](privileges/schema.public-pg_database_owner-pg_database_owner-CREATE.md)
+- [`schema public → pg_database_owner USAGE`](privileges/schema.public-pg_database_owner-pg_database_owner-USAGE.md)
+
+
+## Extensions
+
+- [`plpgsql`](extensions/extensions.plpgsql.md)

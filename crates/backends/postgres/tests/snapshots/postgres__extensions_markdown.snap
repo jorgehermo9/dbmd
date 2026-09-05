@@ -1,0 +1,177 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: markdown
+---
+# Database: `vectors`
+
+## Database
+
+### `dbmd_test_e2a9f743d30b21f3`
+
+**Owner:** `postgres`
+
+**Encoding:** `UTF8`
+
+**Locale provider:** `libc`
+
+**LC_COLLATE:** `en_US.utf8`
+
+**LC_CTYPE:** `en_US.utf8`
+
+**Tablespace:** `pg_default`
+
+**Template:** no
+
+**Allows connections:** yes
+
+**Connection limit:** -1
+
+**Collation version:** `2.36`
+
+
+
+## Namespaces
+
+| Name | Owner | Comment |
+|---|---|---|
+| `app` | `postgres` | - |
+| `public` | `pg_database_owner` | standard public schema |
+
+
+## Tables
+
+### `app.items`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `bigint` | no | - | storage `plain` |
+| `embedding` | `vector(3)` | no | - | storage `external` |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `items_embedding_not_null` | `not_null` | `embedding` | `NOT NULL embedding` |
+| `items_id_not_null` | `not_null` | `id` | `NOT NULL id` |
+| `items_pkey` | `primary_key` | `id` | `PRIMARY KEY (id)`; no inherit |
+
+
+#### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `items_embedding_hnsw_idx` | `embedding` ascending opclass `public.vector_l2_ops` | no | postgres `hnsw`; owner `postgres`; option `m=8`; option `ef_construction=32` | - |
+| `items_embedding_ivfflat_idx` | `embedding` ascending opclass `public.vector_cosine_ops` | no | postgres `ivfflat`; owner `postgres`; option `lists=10` | - |
+| `items_pkey` | `id` ascending opclass `pg_catalog.int8_ops` nulls `last` | yes | postgres `btree`; owner `postgres`; constraint `items_pkey` | - |
+
+
+#### PostgreSQL
+
+**Kind:** `table`
+
+**Owner:** `postgres`
+
+**Persistence:** `permanent`
+
+**Replica identity:** `default`
+
+**Access method:** `heap`
+
+
+
+## Object Privileges
+
+### `schema public → PUBLIC USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `USAGE`
+
+
+
+### `schema public → pg_database_owner CREATE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `CREATE`
+
+
+
+### `schema public → pg_database_owner USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `USAGE`
+
+
+
+## Extensions
+
+### `dbmd_fixture`
+
+dbmd extension configuration fixture
+
+**Owner:** `postgres`
+
+**Schema:** `public`
+
+**Version:** `1.0`
+
+**Relocatable:** yes
+
+**Configuration table:** `public.dbmd_extension_config`; where `WHERE enabled`
+
+**Owned objects:** 29 (`aggregate`: 1, `cast`: 1, `collation`: 1, `function`: 8, `procedure`: 1, `sequence`: 1, `table`: 1, `type`: 14, `view`: 1)
+
+
+
+### `plpgsql`
+
+PL/pgSQL procedural language
+
+**Owner:** `postgres`
+
+**Schema:** `pg_catalog`
+
+**Version:** `1.0`
+
+**Relocatable:** no
+
+**Owned objects:** 4 (`function`: 3, `language`: 1)
+
+
+
+### `vector`
+
+Vector similarity search support
+
+**Owner:** `postgres`
+
+**Schema:** `public`
+
+**Version:** `0.8.2`
+
+**Relocatable:** yes
+
+**Owned objects:** 237 (`access method`: 2, `aggregate`: 4, `cast`: 23, `function`: 114, `operator`: 40, `operator class`: 24, `operator family`: 24, `type`: 6)

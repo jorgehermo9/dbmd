@@ -1,0 +1,7 @@
+# Database Context
+
+## Sources
+
+{% for source in sources -%}
+- [{{ source.name }}]({{ source.path }}) — `{{ source.id }}` (`{{ source.backend }}`)
+{% endfor -%}

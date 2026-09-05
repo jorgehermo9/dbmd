@@ -1,7 +1,5 @@
 # Lint
 
-Status: accepted product scope; deferred until render and verify are stable.
-
 ## Purpose
 
 `dbmd lint` answers: is this database structure well documented and agent-friendly?
@@ -37,9 +35,3 @@ Lint warnings must not alter generated Markdown unless a profile explicitly choo
 ## Exit behavior
 
 Configured error-severity findings exit non-zero. Warnings are reported without failing by default. Invalid lint configuration is an operational error, not a lint finding.
-
-## Open decisions
-
-- Initial rule set and default severities.
-- Suppression syntax and whether suppressions live in `dbmd.toml` or a separate policy file.
-- Human text, JSON, SARIF, or a staged combination for CI consumption.

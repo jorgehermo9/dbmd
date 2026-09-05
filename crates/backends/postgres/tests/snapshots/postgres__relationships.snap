@@ -1,0 +1,482 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: snapshot
+---
+id: billing
+display_name: ~
+catalog:
+  database:
+    name: dbmd_test_120e65eea1a927eb
+    owner: postgres
+    encoding: UTF8
+    locale_provider: libc
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    locale: ~
+    icu_rules: ~
+    collation_version: ~
+    tablespace: pg_default
+    template: false
+    allow_connections: true
+    connection_limit: -1
+    configuration: []
+    comment: ~
+  cluster_databases: []
+  tablespaces: []
+  namespaces:
+    - name: billing
+      owner: postgres
+      extension: ~
+      comment: ~
+    - name: public
+      owner: pg_database_owner
+      extension: ~
+      comment: standard public schema
+  enums: []
+  composite_types: []
+  domains: []
+  base_types: []
+  range_types: []
+  sequences: []
+  tables:
+    - namespace: billing
+      name: accounts
+      extension: ~
+      comment: ~
+      columns:
+        - name: tenant_id
+          data_type: bigint
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: account_id
+          data_type: bigint
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: email
+          data_type: text
+          collation: "pg_catalog.\"default\""
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints:
+        - name: accounts_account_id_not_null
+          kind: not_null
+          columns:
+            - account_id
+          expression: ~
+          references: ~
+          definition: NOT NULL account_id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: accounts_pk
+          kind: primary_key
+          columns:
+            - tenant_id
+            - account_id
+          expression: ~
+          references: ~
+          definition: "PRIMARY KEY (tenant_id, account_id)"
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: true
+          temporal: false
+          comment: ~
+        - name: accounts_tenant_email_unique
+          kind: unique
+          columns:
+            - tenant_id
+            - email
+          expression: ~
+          references: ~
+          definition: "UNIQUE (tenant_id, email)"
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: true
+          temporal: false
+          comment: ~
+        - name: accounts_tenant_id_not_null
+          kind: not_null
+          columns:
+            - tenant_id
+          expression: ~
+          references: ~
+          definition: NOT NULL tenant_id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+      indexes:
+        - name: accounts_pk
+          extension: ~
+          unique: true
+          terms:
+            - target:
+                column: tenant_id
+              collation: ~
+              operator_class: pg_catalog.int8_ops
+              operator_class_parameters: []
+              order: ascending
+              nulls_order: last
+            - target:
+                column: account_id
+              collation: ~
+              operator_class: pg_catalog.int8_ops
+              operator_class_parameters: []
+              order: ascending
+              nulls_order: last
+          predicate: ~
+          definition: "CREATE UNIQUE INDEX accounts_pk ON billing.accounts USING btree (tenant_id, account_id)"
+          method: btree
+          included_columns: []
+          nulls_not_distinct: false
+          valid: true
+          ready: true
+          clustered: false
+          replica_identity: false
+          owner: postgres
+          tablespace: ~
+          options: []
+          partitioned: false
+          parent_index: ~
+          constraint: accounts_pk
+          comment: ~
+        - name: accounts_tenant_email_unique
+          extension: ~
+          unique: true
+          terms:
+            - target:
+                column: tenant_id
+              collation: ~
+              operator_class: pg_catalog.int8_ops
+              operator_class_parameters: []
+              order: ascending
+              nulls_order: last
+            - target:
+                column: email
+              collation: "pg_catalog.\"default\""
+              operator_class: pg_catalog.text_ops
+              operator_class_parameters: []
+              order: ascending
+              nulls_order: last
+          predicate: ~
+          definition: "CREATE UNIQUE INDEX accounts_tenant_email_unique ON billing.accounts USING btree (tenant_id, email)"
+          method: btree
+          included_columns: []
+          nulls_not_distinct: false
+          valid: true
+          ready: true
+          clustered: false
+          replica_identity: false
+          owner: postgres
+          tablespace: ~
+          options: []
+          partitioned: false
+          parent_index: ~
+          constraint: accounts_tenant_email_unique
+          comment: ~
+      kind: table
+      owner: postgres
+      persistence: permanent
+      access_method: heap
+      typed_table: ~
+      replica_identity: default
+      options: []
+      foreign: ~
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+    - namespace: billing
+      name: invoices
+      extension: ~
+      comment: ~
+      columns:
+        - name: tenant_id
+          data_type: bigint
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: account_id
+          data_type: bigint
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: invoice_number
+          data_type: text
+          collation: "pg_catalog.\"default\""
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints:
+        - name: invoices_account_fk
+          kind: foreign_key
+          columns:
+            - tenant_id
+            - account_id
+          expression: ~
+          references:
+            namespace: billing
+            table: accounts
+            columns:
+              - tenant_id
+              - account_id
+            on_update: cascade
+            on_delete: restrict
+            match_type: full
+            deferrability:
+              deferrable: true
+              initially: deferred
+          definition: "FOREIGN KEY (tenant_id, account_id) REFERENCES billing.accounts(tenant_id, account_id) MATCH FULL ON UPDATE CASCADE ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED"
+          exclusion_operators: []
+          deferrable: true
+          initially_deferred: true
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: true
+          temporal: false
+          comment: ~
+        - name: invoices_account_id_not_null
+          kind: not_null
+          columns:
+            - account_id
+          expression: ~
+          references: ~
+          definition: NOT NULL account_id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: invoices_invoice_number_not_null
+          kind: not_null
+          columns:
+            - invoice_number
+          expression: ~
+          references: ~
+          definition: NOT NULL invoice_number
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: invoices_tenant_id_not_null
+          kind: not_null
+          columns:
+            - tenant_id
+          expression: ~
+          references: ~
+          definition: NOT NULL tenant_id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+      indexes: []
+      kind: table
+      owner: postgres
+      persistence: permanent
+      access_method: heap
+      typed_table: ~
+      replica_identity: default
+      options: []
+      foreign: ~
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+  views: []
+  triggers: []
+  functions: []
+  procedures: []
+  aggregates: []
+  casts: []
+  conversions: []
+  operators: []
+  operator_families: []
+  operator_classes: []
+  access_methods: []
+  languages:
+    - name: plpgsql
+      owner: postgres
+      extension: plpgsql
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: PL/pgSQL procedural language
+  transforms: []
+  rules: []
+  event_triggers: []
+  statistics: []
+  foreign_data_wrappers: []
+  foreign_servers: []
+  user_mappings: []
+  text_search_parsers: []
+  text_search_templates: []
+  text_search_dictionaries: []
+  text_search_configurations: []
+  extensions:
+    - name: plpgsql
+      owner: postgres
+      namespace: pg_catalog
+      relocatable: false
+      version: "1.0"
+      configuration: []
+      members:
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_call_handler
+          arguments: []
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_inline_handler
+          arguments:
+            - pg_catalog.internal
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_validator
+          arguments:
+            - pg_catalog.oid
+        - object_type: language
+          names:
+            - plpgsql
+          arguments: []
+      comment: PL/pgSQL procedural language
+  publications: []
+  subscriptions: []
+  privileges:
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: create
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: usage
+      grantable: false
+  default_privileges: []
+  security_labels: []
+  large_objects: []
+  roles: []
+  role_database_settings: []
+  collations: []

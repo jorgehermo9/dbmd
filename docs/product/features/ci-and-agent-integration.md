@@ -1,7 +1,5 @@
 # CI and Agent Integration
 
-Status: accepted product scope; planned after verify.
-
 ## GitHub Action
 
 The official action installs dbmd and runs the canonical drift check. Its minimal interface should support:
@@ -16,22 +14,29 @@ The action must preserve `dbmd verify` exit semantics rather than introducing a 
 
 ## Generated workflow
 
-`dbmd init ci` initially generates a GitHub Actions workflow that:
+`dbmd init ci` generates a GitHub Actions workflow that:
 
 1. Checks out the repository.
 2. Installs the selected dbmd version.
-3. Provides documented source secrets.
+3. Provides an explicit location for source secrets through normal workflow
+   environment configuration.
 4. Runs `dbmd verify`.
 
-Other CI systems follow only in response to demand.
+The generated install command pins the current dbmd version. Existing workflow
+files are protected unless `--force` is explicit.
+
+Generators for other CI systems are outside the current product scope.
 
 ## Pre-commit
 
-The project will document a copy-paste hook recipe for local drift checks. Generation may follow if users need managed installation. Hooks must not hide the normal `dbmd render` and `dbmd verify` commands.
+The pre-commit integration is a copy-paste hook recipe for local drift checks.
+Managed hook generation is outside this contract. Hooks must
+not hide the normal `dbmd render` and `dbmd verify` commands.
 
 ## Agent instructions
 
-Generated snippets should tell compatible agents to:
+`dbmd init agents` prints a snippet or updates an explicitly named regular file
+through an isolated idempotent marker block. Generated guidance tells agents to:
 
 - Read the canonical artifact before reconstructing database state from migrations.
 - Prefer the artifact for structural questions when verification is expected to be current.
@@ -45,8 +50,5 @@ A distributable agent skill may teach artifact navigation across supported layou
 
 The skill must treat the canonical artifact as context, not as proof that production data or runtime state matches a development environment.
 
-## Open decisions
-
-- Exact GitHub Action inputs and release pinning policy.
-- Initial agent ecosystems for packaged instructions.
-- Whether the skill should execute verification or only recommend it based on task authority.
+The snippet is ecosystem-neutral and can be installed in `AGENTS.md`,
+`CLAUDE.md`, or another instruction file selected by the project.

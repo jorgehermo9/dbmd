@@ -1,0 +1,11 @@
+[package]
+name = "dbmd-relational"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+dbmd-render = { path = "../../render" }
+serde.workspace = true

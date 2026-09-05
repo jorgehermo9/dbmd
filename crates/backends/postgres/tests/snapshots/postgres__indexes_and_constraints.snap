@@ -1,0 +1,559 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: snapshot
+---
+id: search
+display_name: ~
+catalog:
+  database:
+    name: dbmd_test_e1c3d82fdd4575ee
+    owner: postgres
+    encoding: UTF8
+    locale_provider: libc
+    lc_collate: en_US.utf8
+    lc_ctype: en_US.utf8
+    locale: ~
+    icu_rules: ~
+    collation_version: ~
+    tablespace: pg_default
+    template: false
+    allow_connections: true
+    connection_limit: -1
+    configuration: []
+    comment: ~
+  cluster_databases: []
+  tablespaces: []
+  namespaces:
+    - name: public
+      owner: pg_database_owner
+      extension: ~
+      comment: standard public schema
+    - name: search
+      owner: postgres
+      extension: ~
+      comment: ~
+  enums: []
+  composite_types: []
+  domains: []
+  base_types: []
+  range_types: []
+  sequences: []
+  tables:
+    - namespace: search
+      name: documents
+      extension: ~
+      comment: ~
+      columns:
+        - name: id
+          data_type: bigint
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: tenant_id
+          data_type: bigint
+          collation: ~
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: title
+          data_type: text
+          collation: "pg_catalog.\"C\""
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: body
+          data_type: text
+          collation: "pg_catalog.\"default\""
+          nullable: false
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: published
+          data_type: boolean
+          collation: ~
+          nullable: false
+          default: "false"
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: plain
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+        - name: active_window
+          data_type: int4range
+          collation: ~
+          nullable: true
+          default: ~
+          comment: ~
+          enum_values: []
+          identity: ~
+          generated: ~
+          storage: extended
+          compression: ~
+          statistics_target: -1
+          options: []
+          foreign_options: []
+          locally_defined: true
+          inheritance_count: 0
+      constraints:
+        - name: documents_active_window_exclude
+          kind: exclusion
+          columns:
+            - active_window
+          expression: ~
+          references: ~
+          definition: EXCLUDE USING gist (active_window WITH &&)
+          exclusion_operators:
+            - "pg_catalog.&&(pg_catalog.anyrange,pg_catalog.anyrange)"
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: true
+          temporal: false
+          comment: ~
+        - name: documents_body_not_null
+          kind: not_null
+          columns:
+            - body
+          expression: ~
+          references: ~
+          definition: NOT NULL body
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: documents_id_not_null
+          kind: not_null
+          columns:
+            - id
+          expression: ~
+          references: ~
+          definition: NOT NULL id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: documents_published_not_null
+          kind: not_null
+          columns:
+            - published
+          expression: ~
+          references: ~
+          definition: NOT NULL published
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: documents_tenant_id_not_null
+          kind: not_null
+          columns:
+            - tenant_id
+          expression: ~
+          references: ~
+          definition: NOT NULL tenant_id
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: documents_title_check
+          kind: check
+          columns:
+            - title
+          expression: "title <> ''::text"
+          references: ~
+          definition: "CHECK (title <> ''::text) NOT VALID"
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: false
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: Rejects empty titles
+        - name: documents_title_not_null
+          kind: not_null
+          columns:
+            - title
+          expression: ~
+          references: ~
+          definition: NOT NULL title
+          exclusion_operators: []
+          deferrable: false
+          initially_deferred: false
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: false
+          temporal: false
+          comment: ~
+        - name: documents_title_unique
+          kind: unique
+          columns:
+            - tenant_id
+            - title
+          expression: ~
+          references: ~
+          definition: "UNIQUE NULLS NOT DISTINCT (tenant_id, title) DEFERRABLE INITIALLY DEFERRED"
+          exclusion_operators: []
+          deferrable: true
+          initially_deferred: true
+          enforced: true
+          validated: true
+          locally_defined: true
+          no_inherit: true
+          temporal: false
+          comment: ~
+      indexes:
+        - name: documents_active_window_exclude
+          extension: ~
+          unique: false
+          terms:
+            - target:
+                column: active_window
+              collation: ~
+              operator_class: pg_catalog.range_ops
+              operator_class_parameters: []
+              order: ascending
+              nulls_order: ~
+          predicate: ~
+          definition: CREATE INDEX documents_active_window_exclude ON search.documents USING gist (active_window)
+          method: gist
+          included_columns: []
+          nulls_not_distinct: false
+          valid: true
+          ready: true
+          clustered: false
+          replica_identity: false
+          owner: postgres
+          tablespace: ~
+          options: []
+          partitioned: false
+          parent_index: ~
+          constraint: documents_active_window_exclude
+          comment: ~
+        - name: documents_brin_idx
+          extension: ~
+          unique: false
+          terms:
+            - target:
+                column: id
+              collation: ~
+              operator_class: pg_catalog.int8_bloom_ops
+              operator_class_parameters:
+                - n_distinct_per_range=32
+                - false_positive_rate=0.05
+              order: ascending
+              nulls_order: ~
+          predicate: ~
+          definition: "CREATE INDEX documents_brin_idx ON search.documents USING brin (id int8_bloom_ops (n_distinct_per_range='32', false_positive_rate='0.05'))"
+          method: brin
+          included_columns: []
+          nulls_not_distinct: false
+          valid: true
+          ready: true
+          clustered: false
+          replica_identity: false
+          owner: postgres
+          tablespace: ~
+          options: []
+          partitioned: false
+          parent_index: ~
+          constraint: ~
+          comment: ~
+        - name: documents_cluster_idx
+          extension: ~
+          unique: false
+          terms:
+            - target:
+                column: id
+              collation: ~
+              operator_class: pg_catalog.int8_ops
+              operator_class_parameters: []
+              order: ascending
+              nulls_order: last
+          predicate: ~
+          definition: CREATE INDEX documents_cluster_idx ON search.documents USING btree (id)
+          method: btree
+          included_columns: []
+          nulls_not_distinct: false
+          valid: true
+          ready: true
+          clustered: true
+          replica_identity: false
+          owner: postgres
+          tablespace: ~
+          options: []
+          partitioned: false
+          parent_index: ~
+          constraint: ~
+          comment: ~
+        - name: documents_lookup_idx
+          extension: ~
+          unique: true
+          terms:
+            - target:
+                column: tenant_id
+              collation: ~
+              operator_class: pg_catalog.int8_ops
+              operator_class_parameters: []
+              order: ascending
+              nulls_order: last
+            - target:
+                expression: lower(title)
+              collation: "pg_catalog.\"C\""
+              operator_class: pg_catalog.text_ops
+              operator_class_parameters: []
+              order: descending
+              nulls_order: first
+          predicate: published
+          definition: "CREATE UNIQUE INDEX documents_lookup_idx ON search.documents USING btree (tenant_id, lower(title) DESC) INCLUDE (body) NULLS NOT DISTINCT WITH (fillfactor='75') WHERE published"
+          method: btree
+          included_columns:
+            - body
+          nulls_not_distinct: true
+          valid: true
+          ready: true
+          clustered: false
+          replica_identity: false
+          owner: postgres
+          tablespace: ~
+          options:
+            - fillfactor=75
+          partitioned: false
+          parent_index: ~
+          constraint: ~
+          comment: Published-document lookup
+        - name: documents_replica_idx
+          extension: ~
+          unique: true
+          terms:
+            - target:
+                column: id
+              collation: ~
+              operator_class: pg_catalog.int8_ops
+              operator_class_parameters: []
+              order: ascending
+              nulls_order: last
+          predicate: ~
+          definition: CREATE UNIQUE INDEX documents_replica_idx ON search.documents USING btree (id)
+          method: btree
+          included_columns: []
+          nulls_not_distinct: false
+          valid: true
+          ready: true
+          clustered: false
+          replica_identity: true
+          owner: postgres
+          tablespace: ~
+          options: []
+          partitioned: false
+          parent_index: ~
+          constraint: ~
+          comment: ~
+        - name: documents_title_unique
+          extension: ~
+          unique: true
+          terms:
+            - target:
+                column: tenant_id
+              collation: ~
+              operator_class: pg_catalog.int8_ops
+              operator_class_parameters: []
+              order: ascending
+              nulls_order: last
+            - target:
+                column: title
+              collation: "pg_catalog.\"C\""
+              operator_class: pg_catalog.text_ops
+              operator_class_parameters: []
+              order: ascending
+              nulls_order: last
+          predicate: ~
+          definition: "CREATE UNIQUE INDEX documents_title_unique ON search.documents USING btree (tenant_id, title) NULLS NOT DISTINCT"
+          method: btree
+          included_columns: []
+          nulls_not_distinct: true
+          valid: true
+          ready: true
+          clustered: false
+          replica_identity: false
+          owner: postgres
+          tablespace: ~
+          options: []
+          partitioned: false
+          parent_index: ~
+          constraint: documents_title_unique
+          comment: ~
+      kind: table
+      owner: postgres
+      persistence: permanent
+      access_method: heap
+      typed_table: ~
+      replica_identity: index
+      options: []
+      foreign: ~
+      tablespace: ~
+      inherits: []
+      partition_key: ~
+      partition_parent: ~
+      partition_bound: ~
+      row_level_security: false
+      force_row_level_security: false
+      policies: []
+  views: []
+  triggers: []
+  functions: []
+  procedures: []
+  aggregates: []
+  casts: []
+  conversions: []
+  operators: []
+  operator_families: []
+  operator_classes: []
+  access_methods: []
+  languages:
+    - name: plpgsql
+      owner: postgres
+      extension: plpgsql
+      procedural: true
+      trusted: true
+      handler: pg_catalog.plpgsql_call_handler()
+      inline_handler: pg_catalog.plpgsql_inline_handler(pg_catalog.internal)
+      validator: pg_catalog.plpgsql_validator(pg_catalog.oid)
+      comment: PL/pgSQL procedural language
+  transforms: []
+  rules: []
+  event_triggers: []
+  statistics: []
+  foreign_data_wrappers: []
+  foreign_servers: []
+  user_mappings: []
+  text_search_parsers: []
+  text_search_templates: []
+  text_search_dictionaries: []
+  text_search_configurations: []
+  extensions:
+    - name: plpgsql
+      owner: postgres
+      namespace: pg_catalog
+      relocatable: false
+      version: "1.0"
+      configuration: []
+      members:
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_call_handler
+          arguments: []
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_inline_handler
+          arguments:
+            - pg_catalog.internal
+        - object_type: function
+          names:
+            - pg_catalog
+            - plpgsql_validator
+          arguments:
+            - pg_catalog.oid
+        - object_type: language
+          names:
+            - plpgsql
+          arguments: []
+      comment: PL/pgSQL procedural language
+  publications: []
+  subscriptions: []
+  privileges:
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: PUBLIC
+      privilege: usage
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: create
+      grantable: false
+    - object_kind: schema
+      object_identity: public
+      grantor: pg_database_owner
+      grantee: pg_database_owner
+      privilege: usage
+      grantable: false
+  default_privileges: []
+  security_labels: []
+  large_objects: []
+  roles: []
+  role_database_settings: []
+  collations: []

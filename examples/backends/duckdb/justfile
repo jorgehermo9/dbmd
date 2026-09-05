@@ -1,0 +1,19 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list
+
+render: setup
+    dbmd render
+
+verify: setup
+    dbmd verify
+
+down:
+    rm -f runtime/warehouse.duckdb
+
+[private]
+setup:
+    mkdir -p runtime
+    rm -f runtime/warehouse.duckdb
+    duckdb runtime/warehouse.duckdb < schema/analytics/01-schema.sql

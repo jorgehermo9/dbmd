@@ -8,5 +8,12 @@ repository.workspace = true
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
-dbmd-core = { path = "../core" }
+dbmd-app = { path = "../app" }
+
+[dev-dependencies]
+dbmd-backends = { path = "../backends/composition" }
 dbmd-render = { path = "../render" }
+dbmd-test-support = { path = "../test-support" }
+duckdb.workspace = true
+rstest.workspace = true
+rusqlite.workspace = true

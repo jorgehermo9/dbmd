@@ -1,0 +1,12 @@
+[sources.app]
+display_name = "Templated application database"
+backend = "sqlite"
+path = "runtime/app.db"
+
+[output]
+path = "DATABASE.md"
+sources = ["app"]
+profile = "agent"
+
+[templates]
+dir = "templates/dbmd"

@@ -1,0 +1,30 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+postgres_url := "postgres://dbmd:dbmd-example@127.0.0.1:65432/dbmd"
+clickhouse_url := "http://127.0.0.1:48123"
+mysql_url := "mysql://root@127.0.0.1:43307/test"
+mariadb_url := "mysql://root@127.0.0.1:43308/test"
+
+default:
+    @just --list
+
+render: setup
+    POSTGRES_URL={{postgres_url}} CLICKHOUSE_URL={{clickhouse_url}} MYSQL_URL={{mysql_url}} MARIADB_URL={{mariadb_url}} dbmd render
+    POSTGRES_URL={{postgres_url}} CLICKHOUSE_URL={{clickhouse_url}} MYSQL_URL={{mysql_url}} MARIADB_URL={{mariadb_url}} dbmd render --config dbmd.single-file.toml
+
+verify: setup
+    POSTGRES_URL={{postgres_url}} CLICKHOUSE_URL={{clickhouse_url}} MYSQL_URL={{mysql_url}} MARIADB_URL={{mariadb_url}} dbmd verify
+    POSTGRES_URL={{postgres_url}} CLICKHOUSE_URL={{clickhouse_url}} MYSQL_URL={{mysql_url}} MARIADB_URL={{mariadb_url}} dbmd verify --config dbmd.single-file.toml
+
+down:
+    docker compose down --volumes --remove-orphans
+    rm -f runtime/app.db runtime/warehouse.duckdb
+
+[private]
+setup:
+    mkdir -p runtime
+    rm -f runtime/app.db runtime/warehouse.duckdb
+    sqlite3 runtime/app.db < schema/sqlite_app/01-schema.sql
+    duckdb runtime/warehouse.duckdb < schema/duckdb_analytics/01-schema.sql
+    docker compose down --volumes --remove-orphans
+    docker compose up --detach --wait

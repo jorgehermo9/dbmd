@@ -1,0 +1,458 @@
+---
+source: crates/app/tests/render.rs
+expression: markdown
+---
+# Database Context
+
+## Source: `analytics` — `Analytics`
+
+Backend: `sqlite`
+
+### Namespaces
+
+| Name | Comment |
+|---|---|
+| `main` | - |
+
+
+### Tables
+
+#### `main.daily_metrics`
+
+##### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `metric_date` | `TEXT` | no | - |  |
+| `active_accounts` | `INTEGER` | no | - |  |
+
+
+##### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| - | `primary_key` | `metric_date` | - |
+| - | `not_null` | `active_accounts` | - |
+| - | `check` | `active_accounts` | `active_accounts >= 0` |
+
+
+##### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `sqlite_autoindex_daily_metrics_1` | `metric_date` ascending collate `BINARY` | yes | `primary_key` | - |
+
+
+##### SQLite
+
+**Kind:** `ordinary`
+
+Strict table.
+
+Without rowid.
+
+```sql
+CREATE TABLE daily_metrics (
+    metric_date TEXT PRIMARY KEY,
+    active_accounts INTEGER NOT NULL CHECK (active_accounts >= 0)
+) WITHOUT ROWID, STRICT
+```
+
+
+### Views
+
+#### `main.latest_metric`
+
+| Column | Type | Nullable |
+|---|---|---|
+| `metric_date` | `TEXT` | unknown |
+| `active_accounts` | `INTEGER` | unknown |
+
+
+```sql
+CREATE VIEW latest_metric AS
+SELECT metric_date, active_accounts FROM daily_metrics ORDER BY metric_date DESC LIMIT 1
+```
+
+## Source: `app` — `Application`
+
+Backend: `sqlite`
+
+### Namespaces
+
+| Name | Comment |
+|---|---|
+| `main` | - |
+
+
+### Tables
+
+#### `main.account_search`
+
+##### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `email` | `` | yes | - |  |
+| `account_search` | `` | yes | - | virtual_table_hidden |
+| `rank` | `` | yes | - | virtual_table_hidden |
+
+
+##### SQLite
+
+**Kind:** `virtual` using `fts5` with arguments `email, content='accounts', content_rowid='id'`
+
+```sql
+CREATE VIRTUAL TABLE account_search USING fts5(email, content='accounts', content_rowid='id')
+```
+
+
+#### `main.account_search_config`
+
+##### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `k` | `` | no | - |  |
+| `v` | `` | yes | - |  |
+
+
+##### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| - | `primary_key` | `k` | - |
+
+
+##### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `sqlite_autoindex_account_search_config_1` | `k` ascending collate `BINARY` | yes | `primary_key` | - |
+
+
+##### SQLite
+
+**Kind:** `shadow` owned by `account_search`
+
+Without rowid.
+
+```sql
+CREATE TABLE 'account_search_config'(k PRIMARY KEY, v) WITHOUT ROWID
+```
+
+
+#### `main.account_search_data`
+
+##### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `INTEGER` | no | - |  |
+| `block` | `BLOB` | yes | - |  |
+
+
+##### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| - | `primary_key` | `id` | - |
+
+
+##### SQLite
+
+**Kind:** `shadow` owned by `account_search`
+
+```sql
+CREATE TABLE 'account_search_data'(id INTEGER PRIMARY KEY, block BLOB)
+```
+
+
+#### `main.account_search_docsize`
+
+##### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `INTEGER` | no | - |  |
+| `sz` | `BLOB` | yes | - |  |
+
+
+##### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| - | `primary_key` | `id` | - |
+
+
+##### SQLite
+
+**Kind:** `shadow` owned by `account_search`
+
+```sql
+CREATE TABLE 'account_search_docsize'(id INTEGER PRIMARY KEY, sz BLOB)
+```
+
+
+#### `main.account_search_idx`
+
+##### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `segid` | `` | no | - |  |
+| `term` | `` | no | - |  |
+| `pgno` | `` | yes | - |  |
+
+
+##### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| - | `primary_key` | `segid, term` | - |
+
+
+##### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `sqlite_autoindex_account_search_idx_1` | `segid` ascending collate `BINARY`, `term` ascending collate `BINARY` | yes | `primary_key` | - |
+
+
+##### SQLite
+
+**Kind:** `shadow` owned by `account_search`
+
+Without rowid.
+
+```sql
+CREATE TABLE 'account_search_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID
+```
+
+
+#### `main.accounts`
+
+##### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `INTEGER` | no | - |  |
+| `tenant_id` | `INTEGER` | no | - |  |
+| `organization_slug` | `TEXT` | no | - |  |
+| `email` | `TEXT` | yes | - | collate `NOCASE` |
+| `balance_cents` | `INTEGER` | no | `0` |  |
+| `normalized_email` | `TEXT` | yes | - | stored_generated; as `lower (email)` |
+
+
+##### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `accounts_pk` | `primary_key` | `id` | -; autoincrement |
+| - | `not_null` | `tenant_id` | - |
+| - | `not_null` | `organization_slug` | - |
+| `accounts_email_key` | `unique` | `email` | -; conflict `ignore` |
+| - | `not_null` | `balance_cents` | - |
+| `accounts_balance_check` | `check` | `balance_cents` | `balance_cents >= 0` |
+| `accounts_organization_fk` | `foreign_key` | `tenant_id, organization_slug` | references `main.organizations(tenant_id, slug)`; update `cascade`, delete `restrict`; match `simple`; deferrable initially `deferred` |
+| `accounts_email_check` | `check` | `` | `length (email) > 3` |
+
+
+##### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `accounts_active_email_idx` | `tenant_id` ascending collate `BINARY`, `lower (email)` descending collate `NOCASE` | yes | `create_index` | `balance_cents >= 0` |
+| `sqlite_autoindex_accounts_1` | `email` ascending collate `NOCASE` | yes | `unique_constraint` | - |
+
+
+##### SQLite
+
+**Kind:** `ordinary`
+
+Strict table.
+
+```sql
+CREATE TABLE accounts (
+    id INTEGER CONSTRAINT accounts_pk PRIMARY KEY AUTOINCREMENT,
+    tenant_id INTEGER NOT NULL,
+    organization_slug TEXT NOT NULL,
+    email TEXT COLLATE NOCASE CONSTRAINT accounts_email_key UNIQUE ON CONFLICT IGNORE,
+    balance_cents INTEGER NOT NULL DEFAULT (0)
+        CONSTRAINT accounts_balance_check CHECK (balance_cents >= 0),
+    normalized_email TEXT GENERATED ALWAYS AS (lower(email)) STORED,
+    CONSTRAINT accounts_organization_fk
+        FOREIGN KEY (tenant_id, organization_slug)
+        REFERENCES organizations
+        MATCH simple
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+        DEFERRABLE INITIALLY DEFERRED,
+    CONSTRAINT accounts_email_check CHECK (length(email) > 3)
+) STRICT
+```
+
+
+#### `main.imported`
+
+##### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `` | yes | - |  |
+| `label` | `` | yes | - |  |
+
+
+##### SQLite
+
+**Kind:** `ordinary`
+
+```sql
+CREATE TABLE imported(id,label)
+```
+
+
+#### `main.migration_target`
+
+##### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | `INTEGER` | no | - |  |
+| `name` | `TEXT` | no | - |  |
+| `generated_name` | `TEXT` | yes | - | virtual_generated; as `upper (name)` |
+| `optional_note` | `TEXT` | yes | - |  |
+
+
+##### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| - | `primary_key` | `id` | - |
+| - | `not_null` | `name` | - |
+
+
+##### SQLite
+
+**Kind:** `ordinary`
+
+```sql
+CREATE TABLE "migration_target" (id INTEGER PRIMARY KEY, name TEXT NOT NULL, generated_name TEXT AS (upper(name)) VIRTUAL, optional_note TEXT)
+```
+
+
+#### `main.organizations`
+
+##### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `tenant_id` | `INTEGER` | no | - |  |
+| `slug` | `TEXT` | no | - | collate `NOCASE` |
+
+
+##### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| - | `not_null` | `tenant_id` | - |
+| - | `not_null` | `slug` | - |
+| `organizations_pk` | `primary_key` | `tenant_id, slug` | - |
+
+
+##### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `sqlite_autoindex_organizations_1` | `tenant_id` ascending collate `BINARY`, `slug` ascending collate `NOCASE` | yes | `primary_key` | - |
+
+
+##### SQLite
+
+**Kind:** `ordinary`
+
+Strict table.
+
+Without rowid.
+
+```sql
+CREATE TABLE organizations (
+    tenant_id INTEGER NOT NULL,
+    slug TEXT COLLATE NOCASE NOT NULL,
+    CONSTRAINT organizations_pk PRIMARY KEY (tenant_id, slug)
+) WITHOUT ROWID, STRICT
+```
+
+
+### Views
+
+#### `main.account_balances`
+
+| Column | Type | Nullable |
+|---|---|---|
+| `id` | `INTEGER` | unknown |
+| `balance_cents` | `INTEGER` | unknown |
+
+
+```sql
+CREATE VIEW account_balances AS
+SELECT id, balance_cents FROM accounts
+```
+
+#### `main.account_directory`
+
+| Column | Type | Nullable |
+|---|---|---|
+| `account_id` | `INTEGER` | unknown |
+| `email` | `TEXT` | unknown |
+
+
+```sql
+CREATE VIEW account_directory (account_id, email) AS
+SELECT id, email FROM accounts
+```
+
+### Triggers
+
+#### `main.account_directory.account_directory_insert`
+
+**INSTEAD OF INSERT** on `main.account_directory`.
+
+```sql
+CREATE TRIGGER account_directory_insert
+INSTEAD OF INSERT ON account_directory
+BEGIN
+    INSERT INTO accounts (id, tenant_id, organization_slug, email)
+    VALUES (NEW.account_id, 1, 'default', NEW.email);
+END
+```
+
+#### `main.accounts.accounts_normalize_email`
+
+**AFTER UPDATE OF email** on `main.accounts`.
+
+When: `NEW.email <> lower (NEW.email)`
+
+```sql
+CREATE TRIGGER accounts_normalize_email
+AFTER UPDATE OF email ON accounts
+WHEN NEW.email != lower(NEW.email)
+BEGIN
+    UPDATE accounts SET email = lower(NEW.email) WHERE id = NEW.id;
+END
+```
+
+#### `main.accounts.accounts_prevent_root_delete`
+
+**BEFORE DELETE** on `main.accounts`.
+
+When: `OLD.id = 0`
+
+```sql
+CREATE TRIGGER accounts_prevent_root_delete
+BEFORE DELETE ON accounts
+WHEN OLD.id = 0
+BEGIN
+    SELECT RAISE(IGNORE);
+END
+```

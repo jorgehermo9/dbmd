@@ -1,7 +1,5 @@
 # Render
 
-Status: partial. The CLI renders a hard-coded in-memory schema to stdout; configuration, introspection, selection, and file output are not implemented.
-
 ## Purpose
 
 `dbmd render` produces an agent-readable artifact from current database structure. A plain invocation uses the canonical project contract in `dbmd.toml` and replaces the configured output.
@@ -19,7 +17,11 @@ Resolution order is:
 2. Project configuration.
 3. Built-in optional defaults.
 
-Output-shaping overrides are permitted for one-off renders. They do not redefine what a later plain `dbmd verify` checks.
+Output-shaping overrides are permitted for one-off renders. They do not redefine
+what a subsequent plain `dbmd verify` checks.
+
+The override contract includes `--config`, repeated `--source`, `--output`,
+`--stdout`, and `--template-root`.
 
 ## One-off usage
 
@@ -27,9 +29,14 @@ A developer should be able to try dbmd without first creating a config file:
 
 ```sh
 dbmd render --backend sqlite --path ./dev.db --output DATABASE.md
+dbmd render --backend duckdb --path ./warehouse.duckdb --stdout
 ```
 
-Backend-specific connection arguments are mutually exclusive with conflicting configured source selection. Validation occurs before opening a database connection.
+Configless one-off rendering is available for file-backed SQLite and DuckDB.
+Server-backed sources use named project configuration so credentials and
+backend-specific fields have one canonical shape. Backend-specific connection
+arguments are mutually exclusive with conflicting configured source selection.
+Validation occurs before opening a database connection.
 
 ## Preflight
 
@@ -92,7 +99,11 @@ The default `agent` profile includes supported instances of:
 - Fully qualified foreign-key targets and actions.
 - Backend facts that affect query shape or performance.
 
-Examples include SQLite generated columns and `WITHOUT ROWID`, PostgreSQL index predicates and row-level security, and ClickHouse engines, keys, TTLs, codecs, and settings.
+Examples include SQLite generated columns and `WITHOUT ROWID`; PostgreSQL index
+predicates and row-level security; ClickHouse engines, keys, TTLs, codecs, and
+settings; MySQL functional/invisible indexes and generated columns; MariaDB
+sequences and system-versioned tables; and DuckDB attached catalogs, macros,
+types, sequences, and extensions.
 
 Committed Markdown excludes timestamps, hashes, dbmd versions, and generated-by headers by default. Source identity appears as schema context when multiple sources require disambiguation.
 
@@ -116,9 +127,3 @@ Errors identify the owning stage:
 - Output writing.
 
 Messages should name the source and relevant path without printing credentials.
-
-## Open decisions
-
-- Whether archive or manifest stdout modes are useful for directory layout after MVP.
-- Whether subset filters belong under each source, under output selection, or both.
-- Whether directory `sections` should ship beside `objects` or follow later.

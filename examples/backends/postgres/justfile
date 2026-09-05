@@ -1,0 +1,18 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list
+
+render: setup
+    POSTGRES_URL=postgres://dbmd:dbmd-example@127.0.0.1:55432/dbmd dbmd render
+
+verify: setup
+    POSTGRES_URL=postgres://dbmd:dbmd-example@127.0.0.1:55432/dbmd dbmd verify
+
+down:
+    docker compose down --volumes --remove-orphans
+
+[private]
+setup:
+    docker compose down --volumes --remove-orphans
+    docker compose up --detach --wait

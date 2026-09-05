@@ -1,0 +1,13 @@
+[sources.app]
+display_name = "Application Database"
+backend = "sqlite"
+path = "${DBMD_TEST_DATABASE}"
+
+[output]
+path = "database"
+sources = ["app"]
+profile = "agent"
+
+[output.layout]
+kind = "directory"
+source_layout = "auto"

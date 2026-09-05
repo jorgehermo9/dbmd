@@ -12,13 +12,17 @@ The Markdown output produced by dbmd. It prioritizes explicit database semantics
 
 The database family whose metadata rules dbmd understands, such as SQLite, PostgreSQL, or ClickHouse. A backend determines how a source is introspected and which semantics must be preserved.
 
+### Catalog
+
+The backend-owned, normalized structural content inside a source snapshot. A catalog is not a copy of vendor catalog rows: it expresses the database family's semantics in stable dbmd types while retaining raw definitions where they are the fidelity backstop.
+
 ### Canonical artifact
 
 The one output destination declared by a project's committed configuration. It is the artifact that `render` updates and `verify` checks. Alternate one-off renders are not canonical artifacts.
 
 ### Database context
 
-The stable schema information an agent needs to reason correctly about a database: objects, relationships, constraints, indexes, definitions, comments, and backend-specific behavior. Volatile operational statistics are not database context by default.
+The ordered collection of source snapshots selected for one operation. It contains the stable schema information an agent needs to reason correctly about the selected databases: objects, relationships, constraints, indexes, definitions, comments, and backend-specific behavior. It does not include project configuration, credentials, templates, output policy, or volatile operational statistics by default.
 
 ### Drift
 
@@ -44,13 +48,13 @@ The file organization of an agent-readable artifact. The supported product conce
 
 A named presentation policy for generated artifacts, such as `agent`, `agent-compact`, or `human`. A profile changes rendering, not the underlying source snapshot.
 
-### Project snapshot
-
-The ordered collection of source snapshots selected for one render.
-
 ### Schema object
 
 A database object represented by dbmd, such as a table, view, materialized view, function, enum, extension, constraint, or index.
+
+### Schema surface
+
+The persistent and connection-visible database structures a backend can expose for introspection. Schema-surface coverage concerns the resulting objects and semantics, not the historical DDL operations that created them.
 
 ### Source
 
@@ -62,7 +66,7 @@ The filesystem-safe key that identifies a source in configuration, CLI selection
 
 ### Source snapshot
 
-The normalized, point-in-time structural description produced by introspecting one source. It contains schema objects and the backend facts needed to understand them.
+The normalized, point-in-time structural description produced by introspecting one source. It is a common identity envelope containing the source ID, optional display name, and exactly one backend-owned catalog.
 
 ### Template set
 
@@ -76,6 +80,6 @@ A relevant fact that dbmd cannot determine confidently. Unknown is distinct from
 
 - A project configuration declares one or more sources and one canonical artifact.
 - Introspecting a source produces a source snapshot.
-- Selecting and ordering source snapshots produces a project snapshot.
-- A profile, output layout, and template set transform a project snapshot into an agent-readable artifact.
+- Selecting and ordering source snapshots produces a database context.
+- A profile, output layout, and template set transform a database context into an agent-readable artifact.
 - Comparing a fresh artifact with the canonical artifact detects drift.

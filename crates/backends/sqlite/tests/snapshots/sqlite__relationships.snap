@@ -1,0 +1,191 @@
+---
+source: crates/backends/sqlite/tests/sqlite.rs
+expression: snapshot
+---
+id: app
+display_name: ~
+catalog:
+  namespaces:
+    - name: main
+      comment: ~
+  tables:
+    - namespace: main
+      name: albums
+      comment: ~
+      columns:
+        - name: artist
+          data_type: TEXT
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: title
+          data_type: TEXT
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: not_null
+          columns:
+            - artist
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: ~
+          kind: not_null
+          columns:
+            - title
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: ~
+          kind: primary_key
+          columns:
+            - artist
+            - title
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: false
+      indexes:
+        - name: sqlite_autoindex_albums_1
+          unique: true
+          terms:
+            - target:
+                column: artist
+              collation: BINARY
+              order: ascending
+            - target:
+                column: title
+              collation: BINARY
+              order: ascending
+          predicate: ~
+          definition: ~
+          origin: primary_key
+      without_rowid: true
+      strict: false
+      definition: "CREATE TABLE albums (\n    artist TEXT NOT NULL,\n    title TEXT NOT NULL,\n    PRIMARY KEY (artist, title)\n) WITHOUT ROWID"
+      kind:
+        kind: ordinary
+    - namespace: main
+      name: tracks
+      comment: ~
+      columns:
+        - name: id
+          data_type: INTEGER
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: album_artist
+          data_type: TEXT
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: album_title
+          data_type: TEXT
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+        - name: name
+          data_type: TEXT
+          nullable: false
+          default: ~
+          comment: ~
+          kind: normal
+          collation: BINARY
+          generated_expression: ~
+      constraints:
+        - name: ~
+          kind: primary_key
+          columns:
+            - id
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: ~
+          kind: not_null
+          columns:
+            - id
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: ~
+          kind: not_null
+          columns:
+            - album_artist
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: ~
+          kind: not_null
+          columns:
+            - album_title
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: ~
+          kind: not_null
+          columns:
+            - name
+          expression: ~
+          references: ~
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: true
+        - name: ~
+          kind: foreign_key
+          columns:
+            - album_artist
+            - album_title
+          expression: ~
+          references:
+            namespace: main
+            table: albums
+            columns:
+              - artist
+              - title
+            on_update: cascade
+            on_delete: restrict
+            match_type: ~
+            deferrability:
+              deferrable: false
+              initially: immediate
+          conflict_resolution: ~
+          auto_increment: false
+          declared_on_column: false
+      indexes: []
+      without_rowid: false
+      strict: false
+      definition: "CREATE TABLE tracks (\n    id INTEGER PRIMARY KEY NOT NULL,\n    album_artist TEXT NOT NULL,\n    album_title TEXT NOT NULL,\n    name TEXT NOT NULL,\n    FOREIGN KEY (album_artist, album_title)\n        REFERENCES albums (artist, title)\n        ON UPDATE CASCADE\n        ON DELETE RESTRICT\n)"
+      kind:
+        kind: ordinary
+  views: []
+  triggers: []

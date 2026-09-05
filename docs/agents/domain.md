@@ -17,7 +17,7 @@ This is a single-context repository.
 
 ## Use the glossary
 
-Use the glossary's canonical term when it defines a concept. In particular, distinguish source, source ID, source snapshot, project snapshot, canonical artifact, namespace, observed fact, effective fact, unknown fact, and drift.
+Use the glossary's canonical term when it defines a concept. In particular, distinguish source, source ID, source snapshot, database context, canonical artifact, namespace, observed fact, effective fact, unknown fact, and drift.
 
 Do not substitute “database documentation” when the intended concept is the agent-readable artifact, and do not use “schema” for every backend namespace.
 

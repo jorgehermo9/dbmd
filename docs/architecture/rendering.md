@@ -1,123 +1,87 @@
 # Rendering Architecture
 
-Status: embedded single-file bootstrap implemented; dedicated render context, profiles, directory artifacts, and atomic writing are target architecture.
+## Boundary
 
-## Current implementation
+`dbmd-render` is backend-neutral. It owns a versioned presentation envelope,
+Markdown escaping, strict MiniJinja execution, common artifact templates, and
+in-memory artifact assembly. It does not import `dbmd-core` or any backend
+catalog, and it does not enumerate database object families.
 
-`dbmd-render` embeds `database.md.j2` and `table.md.j2`, configures MiniJinja with strict undefined behavior, serializes core structs, and injects computed `qualified_name` and ClickHouse `engine_clause` fields.
-
-This is an appropriate bootstrap but has intentional limitations:
-
-- Internal serde shape leaks into templates.
-- Only one implicit profile and single-file layout exist.
-- The database template contains a generated-by line that conflicts with the accepted artifact policy.
-- Stable collection ordering is not enforced at the render boundary.
-- File output and directory artifacts do not exist.
-
-## Target pipeline
+Each backend maps its catalog to a `RenderSource`. The source contains opaque
+backend-owned serializable data plus a generic directory-object manifest. That
+mapping computes qualified names, display-ready facts, backend summaries,
+paths, and Markdown-safe values before template execution.
 
 ```text
-ProjectSnapshot
-  → RenderContextBuilder
+backend Catalog
+  → backend render mapping
+  → backend presentation data + object manifest
+  → RenderSource envelope
   → RenderContext
-  → TemplateResolver
-  → MiniJinja
+  → common + selected backend templates
   → RenderedArtifact
 ```
 
-`RenderedArtifact` is layout-neutral to downstream commands:
+## Template ownership
 
-```rust
-pub enum RenderedArtifact {
-    SingleFile(Vec<u8>),
-    Directory(BTreeMap<RelativePath, Vec<u8>>),
-}
-```
+Common templates that contain no database-family assumptions live in
+`dbmd-render`, including artifact roots and common object layouts. Templates
+whose structure or content depends on a backend live beside that backend under
+`backends/<backend>/src/templates/` and use namespaced internal template names.
 
-The exact Rust type may differ. The important property is that rendering completes in memory or a staging location before canonical artifact replacement.
+The compiled backend composition root supplies the manifests required by the
+selected sources. This lets template completeness be validated from the
+resolved source types before a database connection is opened.
+
+## Custom roots
+
+A custom root remains a complete independent set under ADR-0004. It contains
+the common profile entrypoints plus backend files for every backend compiled
+into dbmd. `dbmd init-templates` exports that complete tree. Missing files never
+fall back to embedded content.
+
+The durable external paths are documented in the
+[template product contract](../product/features/templates.md). Internal
+MiniJinja names are implementation details.
 
 ## Render context
 
-The context is a presentation-facing compatibility boundary. It should contain:
+The common context contains stable external backend tags, source identity,
+backend template entrypoints, opaque presentation data, and deterministically
+ordered object manifests. Each object declares its relative artifact path,
+template, and opaque presentation value. It never contains credentials,
+connection settings, environment values, driver handles, or internal errors.
 
-- Stable external backend tags.
-- Qualified names and safe path components.
-- Display-ready types and expressions.
-- Constraint and relationship summaries.
-- Provenance notes derived from typed facts.
-- Deterministically ordered object lists.
-- Source sections and navigation targets appropriate to the selected layout.
+`dbmd-render` validates and assembles declared paths without knowing whether an
+object is a table, trigger, extension, policy, or a future backend-only concept.
+Adding a catalog family changes only the owning backend mapping and templates.
 
-It must not contain credentials, driver handles, raw environment values, or arbitrary internal error types.
+Context version `2` identifies its shape but is not a promise that arbitrary
+custom templates remain source-compatible forever. Changes are reviewed through
+render-context and Markdown tests.
 
-Business semantics are computed before template execution. Templates may choose whether to display an optional provenance note, but cannot infer an effective primary key by comparing unrelated fields.
+## Artifacts and layouts
 
-## Template resolution
+`RenderedArtifact` is either one byte buffer or an ordered map of validated
+relative paths to bytes. Rendering finishes in memory before output
+replacement.
 
-Resolution inputs are:
+- Single-file layout renders all selected backend source fragments into one
+  document.
+- Directory layout renders a root/source index plus the stable object files
+  declared by each backend manifest.
+- Source nesting follows the resolved source-layout policy.
 
-- Template root: custom or embedded.
-- Profile.
-- Layout.
-- Artifact kind.
+The application owns stdout, atomic file/tree replacement, and exact
+verification comparison. The renderer never owns canonical filesystem policy.
 
-Backend is context data and can select internal partials; it is not a required top-level entrypoint dimension.
+## Determinism and safety
 
-Custom roots are complete sets, not overlays. Only the entrypoints required by the selected layout and emitted artifact kinds are mandatory. Partials are private to each set.
-
-See the [template product contract](../product/features/templates.md) for paths and precedence.
-
-## Layouts
-
-### Single file
-
-The main database template renders all selected sources into one byte stream. Source headings depend on source-layout policy.
-
-### Directory objects
-
-An index links to stable object paths. Each table, view, function, enum, or other supported object uses its corresponding entrypoint. Filenames include a namespace component when required to avoid collisions.
-
-### Directory sections
-
-Section-oriented files are a later variant for teams preferring fewer files. The in-memory artifact abstraction should not assume one object per file, but the first directory implementation may support only objects.
-
-## Markdown policy
-
-Default artifacts contain schema context only. Remove the bootstrap `Generated by dbmd.` line before the first useful release.
-
-Do not include timestamps, tool versions, fingerprints, schema hashes, or generated comments by default. Artifact ownership comes from configuration and exact verification.
-
-Markdown tables and code blocks must escape or delimit catalog-provided content safely. Golden fixtures should cover pipes, backticks, multiline comments, non-ASCII names, and SQL definitions containing Markdown fences.
-
-## Determinism
-
-- Context collections are ordered before reaching templates.
-- Ordered maps or sorted key/value vectors back all template iteration.
-- Templates do not call non-deterministic functions.
-- Newline style and trailing newline policy are fixed.
-- Embedded template versions change output only through reviewed source changes.
-
-## Error handling
-
-Template loading errors name the selected root, profile, layout, and missing entrypoint. Execution errors preserve MiniJinja source spans and useful context paths without dumping the full potentially sensitive context.
-
-Validation runs before database connection when the required template set can be known from config. Artifact-kind-specific entrypoints discovered after introspection produce rendering errors without replacing existing output.
-
-## Output writer
-
-Rendering and writing are separate:
-
-- Stdout receives only a resolved single-file artifact.
-- Single-file output uses a temporary sibling file and rename.
-- Directory output uses a temporary sibling tree and replacement.
-- Verify compares a temporary artifact through the same render path and never calls the canonical writer.
-
-Path validation and destructive ownership rules live in command/output orchestration, not inside templates.
-
-## Compatibility milestones
-
-1. Stabilize default SQLite output with internal templates.
-2. Introduce an explicit render-context type and snapshots.
-3. Document a context version before promoting custom templates as compatible product surface.
-4. Add directory object entrypoints.
-5. Add additional profiles only when their differences can be maintained with golden tests.
+- Catalog and context collections are ordered before templates execute.
+- Templates use strict undefined behavior and no nondeterministic functions.
+- Markdown tables escape catalog-provided pipes and line breaks.
+- Code fences expand around stored SQL containing backticks.
+- Generated paths use encoded safe components and reject absolute/traversal
+  forms.
+- Artifacts contain no timestamps, connection details, or generated metadata by
+  default.

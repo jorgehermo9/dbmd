@@ -1,0 +1,258 @@
+---
+source: crates/backends/postgres/tests/postgres.rs
+expression: markdown
+---
+# Database: `storage`
+
+## Database
+
+### `dbmd_test_39d76eb4c498b23b`
+
+**Owner:** `postgres`
+
+**Encoding:** `UTF8`
+
+**Locale provider:** `libc`
+
+**LC_COLLATE:** `en_US.utf8`
+
+**LC_CTYPE:** `en_US.utf8`
+
+**Tablespace:** `pg_default`
+
+**Template:** no
+
+**Allows connections:** yes
+
+**Connection limit:** -1
+
+
+
+## Namespaces
+
+| Name | Owner | Comment |
+|---|---|---|
+| `public` | `pg_database_owner` | standard public schema |
+| `storage` | `postgres` | - |
+
+
+## Composite Types
+
+### `storage.device_row`
+
+**Owner:** `postgres`
+
+**Attribute:** `device_id` `bigint`
+
+**Attribute:** `payload` `text`; collation `pg_catalog."default"`
+
+```sql
+CREATE TYPE "storage"."device_row" AS (
+    "device_id" bigint,
+    "payload" text COLLATE pg_catalog."default"
+);
+```
+
+
+## Tables
+
+### `storage.event_payloads`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `event_id` | `bigint` | no | - | storage `plain` |
+| `payload` | `text` | yes | - | collation `pg_catalog."default"`; storage `external`; compression `lz4`; statistics target 777; option `n_distinct=-0.5` |
+
+
+#### Constraints
+
+| Name | Kind | Columns | Details |
+|---|---|---|---|
+| `event_payloads_event_id_not_null` | `not_null` | `event_id` | `NOT NULL event_id` |
+| `event_payloads_pkey` | `primary_key` | `event_id` | `PRIMARY KEY (event_id)`; no inherit |
+
+
+#### Indexes
+
+| Name | Terms | Unique | Origin / details | Predicate |
+|---|---|---|---|---|
+| `event_payloads_pkey` | `event_id` ascending opclass `pg_catalog.int8_ops` nulls `last` | yes | postgres `btree`; owner `postgres`; constraint `event_payloads_pkey` | - |
+
+
+#### PostgreSQL
+
+**Kind:** `table`
+
+**Owner:** `postgres`
+
+**Persistence:** `unlogged`
+
+**Replica identity:** `full`
+
+**Access method:** `heap`
+
+**Option:** `fillfactor=70`
+
+
+
+### `storage.remote_events`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `event_id` | `bigint` | yes | - | storage `plain`; foreign option `remote_name=external_id` |
+| `payload` | `text` | yes | - | collation `pg_catalog."default"`; storage `extended` |
+
+
+#### PostgreSQL
+
+**Kind:** `foreign_table`
+
+**Owner:** `postgres`
+
+**Persistence:** `permanent`
+
+**Replica identity:** `nothing`
+
+**Foreign server:** `fixture_server`
+
+**Foreign-data wrapper:** `fixture_wrapper`
+
+**Foreign option:** `schema_name=remote`
+
+**Foreign option:** `table_name=events`
+
+
+
+### `storage.typed_devices`
+
+#### Columns
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `device_id` | `bigint` | yes | - | storage `plain` |
+| `payload` | `text` | yes | - | collation `pg_catalog."default"`; storage `extended` |
+
+
+#### PostgreSQL
+
+**Kind:** `table`
+
+**Owner:** `postgres`
+
+**Persistence:** `permanent`
+
+**Replica identity:** `default`
+
+**Access method:** `heap`
+
+**Of type:** `storage.device_row`
+
+
+
+## Foreign-Data Wrappers
+
+### `fixture_wrapper`
+
+Fixture foreign-data wrapper
+
+**Owner:** `postgres`
+
+**Option:** `api_token=<redacted>`
+
+**Option:** `endpoint=catalog.example`
+
+
+
+## Foreign Servers
+
+### `fixture_server`
+
+Fixture foreign server
+
+**Owner:** `postgres`
+
+**Foreign-data wrapper:** `fixture_wrapper`
+
+**Type:** `catalog`
+
+**Version:** `1.0`
+
+**Option:** `host=catalog.example`
+
+**Option:** `password=<redacted>`
+
+
+
+## User Mappings
+
+### `PUBLIC ON fixture_server`
+
+**Option:** `user=catalog_reader`
+
+**Option:** `password=<redacted>`
+
+
+
+## Object Privileges
+
+### `schema public → PUBLIC USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `PUBLIC`
+
+**Privilege:** `USAGE`
+
+
+
+### `schema public → pg_database_owner CREATE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `CREATE`
+
+
+
+### `schema public → pg_database_owner USAGE`
+
+**Object type:** `schema`
+
+**Object:** `public`
+
+**Grantor:** `pg_database_owner`
+
+**Grantee:** `pg_database_owner`
+
+**Privilege:** `USAGE`
+
+
+
+## Extensions
+
+### `plpgsql`
+
+PL/pgSQL procedural language
+
+**Owner:** `postgres`
+
+**Schema:** `pg_catalog`
+
+**Version:** `1.0`
+
+**Relocatable:** no
+
+**Owned objects:** 4 (`function`: 3, `language`: 1)
